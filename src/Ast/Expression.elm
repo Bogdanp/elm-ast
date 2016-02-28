@@ -24,7 +24,7 @@ type Collect a
   = Cont a
   | Stop a
 
-{-| -}
+{-| Representations for Elm's expressions. -}
 type Expression
   = Character Char
   | String String
@@ -141,16 +141,13 @@ binop e =
   rec <| \() ->
     BinOp e <$ spaces
 
-binary : OpTable
-       -> Parser Expression
-       -> Parser Expression
-       -> Parser Expression
-binary ops term last =
+binary : OpTable -> Parser Expression
+binary ops =
   rec <| \() ->
     let
       next =
         between' spaces operator `andThen` \op ->
-          choice [ Cont <$> term, Stop <$> last ] `andThen` \e ->
+          choice [ Cont <$> application ops, Stop <$> expression ops ] `andThen` \e ->
             case e of
               Cont t -> ((::) (op, t)) <$> collect
               Stop e -> succeed [(op, e)]
@@ -158,7 +155,7 @@ binary ops term last =
       collect =
         choice [ next, succeed [] ]
     in
-      term `andThen` \e ->
+      application ops `andThen` \e ->
         collect `andThen` \eops ->
           split ops 0 e eops
 
@@ -178,7 +175,7 @@ expression ops =
            , caseExpression ops
            , ifExpression ops
            , lambda ops
-           , binary ops (application ops) (letExpression ops)
+           , binary ops
            ]
 
 
