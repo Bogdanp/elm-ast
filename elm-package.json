@@ -1,0 +1,21 @@
+{
+    "version": "1.0.0",
+    "summary": "A parser for Elm code",
+    "repository": "https://github.com/Bogdanp/elm-ast.git",
+    "license": "BSD3",
+    "source-directories": [
+        "src"
+    ],
+    "exposed-modules": [
+        "Ast",
+        "Ast.Expression",
+        "Ast.Statement",
+        "Ast.Module"
+    ],
+    "dependencies": {
+        "Bogdanp/elm-combine": "2.1.0 <= v < 3.0.0",
+        "circuithub/elm-list-extra": "3.9.0 <= v < 4.0.0",
+        "elm-lang/core": "3.0.0 <= v < 4.0.0"
+    },
+    "elm-version": "0.16.0 <= v < 0.17.0"
+}
