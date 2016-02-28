@@ -1,14 +1,16 @@
-module Ast.Statement ( Type(..), Statement(..)
-                     , statement
+module Ast.Statement ( ExportSet(..), Type(..), Statement(..)
+                     , statement, exports
                      ) where
+
+-- TODO: Fixity declarations
 
 {-| This module exposes parsers for Elm statements.
 
 # Types
-@docs Type, Statement
+@docs ExportSet, Type, Statement
 
 # Parsers
-@docs statement
+@docs statement, exports
 
 -}
 
@@ -18,9 +20,15 @@ import Combine.Infix exposing (..)
 import Combine.Num
 import String
 
-import Ast.Exports exposing (Exports(..), exports)
 import Ast.Expression exposing (Expression, expression)
 import Ast.Helpers exposing (..)
+
+{-| Representations for modules' exports. -}
+type ExportSet
+  = AllExport
+  | SubsetExport (List ExportSet)
+  | FunctionExport Name
+  | TypeExport Name (Maybe ExportSet)
 
 {-| Representations for Elm's type syntax. -}
 type Type
@@ -31,11 +39,10 @@ type Type
   | TypeTuple (List Type)
   | TypeApplication Type Type
 
--- TODO: Fixity declarations
 {-| Representations for Elm's statements. -}
 type Statement
-  = ModuleDeclaration ModuleName Exports
-  | ImportStatement ModuleName (Maybe Alias) (Maybe Exports)
+  = ModuleDeclaration ModuleName ExportSet
+  | ImportStatement ModuleName (Maybe Alias) (Maybe ExportSet)
   | TypeAliasDeclaration Type Type
   | TypeDeclaration Type (List Type)
   | PortTypeDeclaration Name Type
@@ -43,6 +50,39 @@ type Statement
   | FunctionTypeDeclaration Name Type
   | FunctionDeclaration Name (List Name) Expression
   | Comment String
+
+
+allExport : Parser ExportSet
+allExport =
+  AllExport <$ symbol ".."
+
+functionExport : Parser ExportSet
+functionExport =
+  FunctionExport <$> functionName
+
+constructorSubsetExports : Parser ExportSet
+constructorSubsetExports =
+  SubsetExport <$> commaSeparated (FunctionExport <$> upName)
+
+constructorExports : Parser (Maybe ExportSet)
+constructorExports =
+  maybe <| parens <| choice [ allExport
+                            , constructorSubsetExports
+                            ]
+
+typeExport : Parser ExportSet
+typeExport =
+  TypeExport <$> (upName <* spaces) <*> constructorExports
+
+subsetExport : Parser ExportSet
+subsetExport =
+  SubsetExport
+    <$> commaSeparated (functionExport `or` typeExport)
+
+{-| -}
+exports : Parser ExportSet
+exports =
+  parens <| choice [ allExport, subsetExport ]
 
 typeVariable : Parser Type
 typeVariable =
@@ -161,8 +201,8 @@ functionDeclaration : OpTable -> Parser Statement
 functionDeclaration ops =
   FunctionDeclaration
     <$> loName
-    <*> (many (between' spaces loName))
-    <*> (symbol "=" *> expression ops)
+    <*> (many (between' whitespace loName))
+    <*> (symbol "=" *> whitespace *> expression ops)
 
 singleLineComment : Parser Statement
 singleLineComment =

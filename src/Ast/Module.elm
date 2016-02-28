@@ -17,14 +17,13 @@ import Combine exposing (..)
 import Combine.Infix exposing (..)
 import Dict
 
-import Ast.Exports exposing (Exports(..), exports)
 import Ast.Helpers exposing (..)
-import Ast.Statement exposing (Statement(..), statement)
+import Ast.Statement exposing (ExportSet(..), Statement(..), statement, exports)
 
 {-| FIXME -}
 type alias Module
   = { name : ModuleName
-    , exports : Exports
+    , exports : ExportSet
     , opTable : OpTable
     , statements : List Statement
     }
