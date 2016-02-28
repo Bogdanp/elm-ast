@@ -22,16 +22,17 @@ import Ast.Exports exposing (Exports(..), exports)
 import Ast.Expression exposing (Expression, expression)
 import Ast.Helpers exposing (..)
 
-{-| FIXME -}
+{-| Representations for Elm's type syntax. -}
 type Type
   = TypeConstructor Name (List Type)
   | TypeVariable Name
   | TypeRecordConstructor Type (List (Name, Type))
   | TypeRecord (List (Name, Type))
+  | TypeTuple (List Type)
   | TypeApplication Type Type
 
 -- TODO: Fixity declarations
-{-| FIXME -}
+{-| Representations for Elm's statements. -}
 type Statement
   = ModuleDeclaration ModuleName Exports
   | ImportStatement ModuleName (Maybe Alias) (Maybe Exports)
@@ -54,6 +55,11 @@ typeConstant =
 typeApplication : Parser (Type -> Type -> Type)
 typeApplication =
   TypeApplication <$ symbol "->"
+
+typeTuple : Parser Type
+typeTuple =
+  rec <| \() ->
+    TypeTuple <$> parens (commaSeparated type')
 
 typeRecordPair : Parser (Name, Type)
 typeRecordPair =
@@ -86,6 +92,7 @@ typeParameter =
                               , typeConstant
                               , typeRecordConstructor
                               , typeRecord
+                              , typeTuple
                               , parens typeAnnotation
                               ]
 
@@ -101,6 +108,7 @@ type' =
                               , typeVariable
                               , typeRecordConstructor
                               , typeRecord
+                              , typeTuple
                               , parens typeAnnotation
                               ]
 
