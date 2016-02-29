@@ -6,6 +6,7 @@ import Combine.Infix exposing (..)
 import String
 
 type alias Name = String
+type alias QualifiedType = List Name
 type alias ModuleName = List String
 type alias Alias = String
 

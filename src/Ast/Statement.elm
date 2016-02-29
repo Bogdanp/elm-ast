@@ -32,7 +32,7 @@ type ExportSet
 
 {-| Representations for Elm's type syntax. -}
 type Type
-  = TypeConstructor Name (List Type)
+  = TypeConstructor QualifiedType (List Type)
   | TypeVariable Name
   | TypeRecordConstructor Type (List (Name, Type))
   | TypeRecord (List (Name, Type))
@@ -95,7 +95,7 @@ typeVariable =
 
 typeConstant : Parser Type
 typeConstant =
-  TypeConstructor <$> upName <*> succeed []
+  TypeConstructor <$> sepBy1 (string ".") upName <*> succeed []
 
 typeApplication : Parser (Type -> Type -> Type)
 typeApplication =
@@ -144,7 +144,7 @@ typeParameter =
 typeConstructor : Parser Type
 typeConstructor =
   rec <| \() ->
-    TypeConstructor <$> upName <*> many typeParameter
+    TypeConstructor <$> sepBy1 (string ".") upName <*> many typeParameter
 
 type' : Parser Type
 type' =
