@@ -18,7 +18,7 @@ is i s =
 
 are : String -> List Statement -> Assertion
 are i s =
-  case parse operators i of
+  case parse i of
     (Ok r, _) ->
       assertEqual r s
 
@@ -133,6 +133,40 @@ multipleDeclarations =
                                             (Integer 1))
          ]
 
+moduleFixityInput : String
+moduleFixityInput = """
+f = a ++ b ++ c
+
+infixl 1 ++
+
+g = a ** b ** c
+
+infixr 1 **
+"""
+
+moduleFixityDeclarations : Test
+moduleFixityDeclarations =
+  test "module fixity scanning"
+    <| moduleFixityInput `are`
+         [ FunctionDeclaration "f" [] (BinOp
+                                         (Variable ["++"])
+                                         (BinOp
+                                            (Variable ["++"])
+                                            (Variable ["a"])
+                                            (Variable ["b"]))
+                                         (Variable ["c"]))
+         , InfixDeclaration L 1 "++"
+         , FunctionDeclaration "g" [] (BinOp
+                                         (Variable ["**"])
+                                         (Variable ["a"])
+                                         (BinOp
+                                            (Variable ["**"])
+                                            (Variable ["b"])
+                                            (Variable ["c"])))
+         , InfixDeclaration R 1 "**"
+         ]
+
+
 
 all : Test
 all =
@@ -141,4 +175,5 @@ all =
     , infixDeclarations
     , singleDeclaration
     , multipleDeclarations
+    , moduleFixityDeclarations
     ]
