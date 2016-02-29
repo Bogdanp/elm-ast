@@ -82,7 +82,7 @@ range ops =
 list : OpTable -> Parser Expression
 list ops =
   rec <| \() ->
-    List <$> brackets (commaSeparated (expression ops))
+    List <$> brackets (commaSeparated' (expression ops))
 
 record : OpTable -> Parser Expression
 record ops =
@@ -96,12 +96,12 @@ letExpression ops =
       rec <| \() ->
         (,)
           <$> (between' whitespace loName)
-          <*> (symbol "=" *> whitespace *> expression ops)
+          <*> (symbol "=" *> expression ops)
   in
     rec <| \() ->
       Let
         <$> (symbol "let" *> many1 binding)
-        <*> (symbol "in" *> whitespace *> expression ops)
+        <*> (symbol "in" *> expression ops)
 
 ifExpression : OpTable -> Parser Expression
 ifExpression ops =
@@ -117,20 +117,20 @@ caseExpression ops =
     binding =
       rec <| \() ->
         (,)
-          <$> expression ops
+          <$> (whitespace *> expression ops)
           <*> (symbol "->" *> expression ops)
   in
     rec <| \() ->
       Case
-        <$> (symbol "case" *> expression ops <* symbol "of")
-        <*> many1 binding
+        <$> (symbol "case" *> expression ops)
+        <*> (symbol "of" *> many1 binding)
 
 lambda : OpTable -> Parser Expression
 lambda ops =
   rec <| \() ->
     Lambda
-      <$> (symbol "\\" *> many (between' spaces loName) <* symbol "->")
-      <*> (whitespace *> expression ops)
+      <$> (symbol "\\" *> many (between' spaces loName))
+      <*> (symbol "->" *> expression ops)
 
 application : OpTable -> Parser Expression
 application ops =
