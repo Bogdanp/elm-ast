@@ -3,7 +3,6 @@ module Ast.Helpers where
 import Combine exposing (..)
 import Combine.Char exposing (..)
 import Combine.Infix exposing (..)
-import Dict exposing (Dict)
 import String
 
 type alias Name = String
