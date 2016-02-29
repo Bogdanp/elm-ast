@@ -8123,6 +8123,7 @@ Elm.Ast.Helpers.make = function (_elm) {
       $Combine.regex("[a-zA-Z0-9-_\']*"));
    };
    var upName = name($Combine$Char.upper);
+   var spaces$ = $Combine.regex("[ \t]+");
    var spaces = $Combine.regex("[ \t]*");
    var initialSymbol = function (k) {
       return A2($Combine$Infix._op["<*"],
@@ -8134,17 +8135,28 @@ Elm.Ast.Helpers.make = function (_elm) {
       return A2($Combine.between,p,p);
    };
    var symbol = function (k) {
-      return A2(between$,spaces,$Combine.string(k));
+      return A2(between$,whitespace,$Combine.string(k));
    };
    var commaSeparated = function (p) {
       return A2($Combine.sepBy1,
       $Combine.string(","),
       A2(between$,whitespace,p));
    };
+   var commaSeparated$ = function (p) {
+      return A2($Combine.sepBy,
+      $Combine.string(","),
+      A2(between$,whitespace,p));
+   };
    var moduleName = A2(between$,
    spaces,
    A2($Combine.sepBy1,$Combine.string("."),upName));
-   var reservedOperators = _U.list(["=","..","->","--","|",":"]);
+   var reservedOperators = _U.list(["="
+                                   ,"."
+                                   ,".."
+                                   ,"->"
+                                   ,"--"
+                                   ,"|"
+                                   ,":"]);
    var symbolicOperator = A2($Combine.andThen,
    $Combine.regex("[+-/*=.$<>:&|^?%#@~!]+"),
    function (n) {
@@ -8223,9 +8235,11 @@ Elm.Ast.Helpers.make = function (_elm) {
                                     ,between$: between$
                                     ,whitespace: whitespace
                                     ,spaces: spaces
+                                    ,spaces$: spaces$
                                     ,symbol: symbol
                                     ,initialSymbol: initialSymbol
                                     ,commaSeparated: commaSeparated
+                                    ,commaSeparated$: commaSeparated$
                                     ,name: name
                                     ,loName: loName
                                     ,upName: upName
@@ -9297,12 +9311,9 @@ Elm.Ast.Expression.make = function (_elm) {
       return {ctor: "RecordUpdate",_0: a,_1: b};
    });
    var Record = function (a) {    return {ctor: "Record",_0: a};};
-   var Access = function (a) {    return {ctor: "Access",_0: a};};
-   var access = A2($Combine$Infix._op["<$>"],
-   Access,
-   $Combine.many1(A2($Combine$Infix._op["*>"],
-   $Combine.string("."),
-   $Ast$Helpers.loName)));
+   var Access = F2(function (a,b) {
+      return {ctor: "Access",_0: a,_1: b};
+   });
    var List = function (a) {    return {ctor: "List",_0: a};};
    var Range = F2(function (a,b) {
       return {ctor: "Range",_0: a,_1: b};
@@ -9318,6 +9329,11 @@ Elm.Ast.Expression.make = function (_elm) {
                            ,A2($Combine.sepBy1,
                            $Combine.string("."),
                            $Ast$Helpers.upName)])));
+   var access = A2($Combine$Infix._op["<*>"],
+   A2($Combine$Infix._op["<$>"],Access,variable),
+   $Combine.many1(A2($Combine$Infix._op["*>"],
+   $Combine.string("."),
+   $Ast$Helpers.loName)));
    var joinL = F2(function (es,ops) {
       joinL: while (true) {
          var _p4 = {ctor: "_Tuple2",_0: es,_1: ops};
@@ -9431,13 +9447,25 @@ Elm.Ast.Expression.make = function (_elm) {
    Integer,
    $Combine$Num.$int);
    var String = function (a) {    return {ctor: "String",_0: a};};
-   var string = A2($Combine$Infix._op["<$>"],
-   function (_p9) {
-      return String(A2($String.dropLeft,
-      1,
-      A2($String.dropRight,1,_p9)));
-   },
-   $Combine.regex("\"([^\"]|\\\")*\""));
+   var string = function () {
+      var multiString = A2($Combine$Infix._op["<$>"],
+      function (_p9) {
+         return String($String.concat(_p9));
+      },
+      A2($Combine$Infix._op["<*"],
+      A2($Combine$Infix._op["*>"],
+      $Combine.string("\"\"\""),
+      $Combine.many($Combine.regex("[^\"]*"))),
+      $Combine.string("\"\"\"")));
+      var singleString = A2($Combine$Infix._op["<$>"],
+      String,
+      A2($Combine$Infix._op["<*"],
+      A2($Combine$Infix._op["*>"],
+      $Combine.string("\""),
+      $Combine.regex("(\\\\\"|[^\"\n])*")),
+      $Combine.string("\"")));
+      return A2($Combine$Infix._op["<|>"],multiString,singleString);
+   }();
    var Character = function (a) {
       return {ctor: "Character",_0: a};
    };
@@ -9453,7 +9481,7 @@ Elm.Ast.Expression.make = function (_elm) {
          var _p11 = _p10;
          var next = A2($Combine.andThen,
          A2($Ast$Helpers.between$,
-         $Ast$Helpers.spaces,
+         $Ast$Helpers.whitespace,
          $Ast$Helpers.operator),
          function (op) {
             return A2($Combine.andThen,
@@ -9495,7 +9523,7 @@ Elm.Ast.Expression.make = function (_elm) {
          var _p14 = _p13;
          return A2($Combine.chainl,
          term(ops),
-         A2($Combine$Infix._op["<$"],Application,$Ast$Helpers.spaces));
+         A2($Combine$Infix._op["<$"],Application,$Ast$Helpers.spaces$));
       });
    };
    var term = function (ops) {
@@ -9503,8 +9531,8 @@ Elm.Ast.Expression.make = function (_elm) {
          var _p16 = _p15;
          return $Combine.choice(_U.list([character
                                         ,string
-                                        ,integer
                                         ,$float
+                                        ,integer
                                         ,access
                                         ,variable
                                         ,range(ops)
@@ -9531,7 +9559,9 @@ Elm.Ast.Expression.make = function (_elm) {
          F2(function (v0,v1) {
             return {ctor: "_Tuple2",_0: v0,_1: v1};
          }),
-         expression(ops)),
+         A2($Combine$Infix._op["*>"],
+         $Ast$Helpers.whitespace,
+         expression(ops))),
          A2($Combine$Infix._op["*>"],
          $Ast$Helpers.symbol("->"),
          expression(ops)));
@@ -9541,12 +9571,12 @@ Elm.Ast.Expression.make = function (_elm) {
          return A2($Combine$Infix._op["<*>"],
          A2($Combine$Infix._op["<$>"],
          Case,
-         A2($Combine$Infix._op["<*"],
          A2($Combine$Infix._op["*>"],
          $Ast$Helpers.symbol("case"),
-         expression(ops)),
-         $Ast$Helpers.symbol("of"))),
-         $Combine.many1(binding));
+         expression(ops))),
+         A2($Combine$Infix._op["*>"],
+         $Ast$Helpers.symbol("of"),
+         $Combine.many1(binding)));
       });
    };
    var ifExpression = function (ops) {
@@ -9573,15 +9603,13 @@ Elm.Ast.Expression.make = function (_elm) {
          return A2($Combine$Infix._op["<*>"],
          A2($Combine$Infix._op["<$>"],
          Lambda,
-         A2($Combine$Infix._op["<*"],
          A2($Combine$Infix._op["*>"],
          $Ast$Helpers.symbol("\\"),
          $Combine.many(A2($Ast$Helpers.between$,
          $Ast$Helpers.spaces,
-         $Ast$Helpers.loName))),
-         $Ast$Helpers.symbol("->"))),
+         $Ast$Helpers.loName)))),
          A2($Combine$Infix._op["*>"],
-         $Ast$Helpers.whitespace,
+         $Ast$Helpers.symbol("->"),
          expression(ops)));
       });
    };
@@ -9597,9 +9625,7 @@ Elm.Ast.Expression.make = function (_elm) {
          $Ast$Helpers.whitespace,
          $Ast$Helpers.loName)),
          A2($Combine$Infix._op["*>"],
-         A2($Combine$Infix._op["*>"],
          $Ast$Helpers.symbol("="),
-         $Ast$Helpers.whitespace),
          expression(ops)));
       });
       return $Combine.rec(function (_p29) {
@@ -9611,9 +9637,7 @@ Elm.Ast.Expression.make = function (_elm) {
          $Ast$Helpers.symbol("let"),
          $Combine.many1(binding))),
          A2($Combine$Infix._op["*>"],
-         A2($Combine$Infix._op["*>"],
          $Ast$Helpers.symbol("in"),
-         $Ast$Helpers.whitespace),
          expression(ops)));
       });
    };
@@ -9622,7 +9646,7 @@ Elm.Ast.Expression.make = function (_elm) {
          var _p32 = _p31;
          return A2($Combine$Infix._op["<$>"],
          List,
-         $Combine.brackets($Ast$Helpers.commaSeparated(expression(ops))));
+         $Combine.brackets($Ast$Helpers.commaSeparated$(expression(ops))));
       });
    };
    var range = function (ops) {
@@ -9699,9 +9723,11 @@ Elm.Ast.Statement.make = function (_elm) {
    };
    var singleLineComment = A2($Combine$Infix._op["<$>"],
    Comment,
+   A2($Combine$Infix._op["<*"],
    A2($Combine$Infix._op["*>"],
    $Combine.string("--"),
-   $Combine.regex(".*$")));
+   $Combine.regex(".*")),
+   $Ast$Helpers.whitespace));
    var multiLineComment = A2($Combine$Infix._op["<$>"],
    function (_p0) {
       return Comment($String.fromList(_p0));
@@ -9858,14 +9884,14 @@ Elm.Ast.Statement.make = function (_elm) {
    var typeConstant = A2($Combine$Infix._op["<*>"],
    A2($Combine$Infix._op["<$>"],
    TypeConstructor,
-   $Ast$Helpers.upName),
+   A2($Combine.sepBy1,$Combine.string("."),$Ast$Helpers.upName)),
    $Combine.succeed(_U.list([])));
    var typeConstructor = $Combine.rec(function (_p3) {
       var _p4 = _p3;
       return A2($Combine$Infix._op["<*>"],
       A2($Combine$Infix._op["<$>"],
       TypeConstructor,
-      $Ast$Helpers.upName),
+      A2($Combine.sepBy1,$Combine.string("."),$Ast$Helpers.upName)),
       $Combine.many(typeParameter));
    });
    var typeParameter = $Combine.rec(function (_p5) {
@@ -10050,11 +10076,13 @@ Elm.Ast.Statement.make = function (_elm) {
                                      ,comment]));
    };
    var statements = function (ops) {
-      return $Combine.many1(A2($Combine$Infix._op["<*"],
+      return A2($Combine.manyTill,
+      A2($Combine$Infix._op["<*"],
       A2($Combine$Infix._op["*>"],
       $Ast$Helpers.whitespace,
       statement(ops)),
-      $Ast$Helpers.whitespace));
+      $Ast$Helpers.whitespace),
+      $Combine.end);
    };
    return _elm.Ast.Statement.values = {_op: _op
                                       ,statement: statement
@@ -10101,9 +10129,7 @@ Elm.Ast.make = function (_elm) {
    $Signal = Elm.Signal.make(_elm);
    var _op = {};
    var parseModule = function (ops) {
-      return $Combine.parse(A2($Combine$Infix._op["<*"],
-      $Ast$Statement.statements(ops),
-      $Combine.end));
+      return $Combine.parse($Ast$Statement.statements(ops));
    };
    var parseOpTable = function (ops) {
       return $Combine.parse($Ast$Statement.opTable(ops));
