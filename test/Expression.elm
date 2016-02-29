@@ -74,7 +74,7 @@ stringLiterals =
         <| "\"hello\"" `is` String "hello"
 
     , test "escaped string"
-        <| "\"hello, \"world\"\"" `is` String "hello, \"world\""
+        <| "\"hello, \\\"world\\\"\"" `is` String "hello, \\\"world\\\""
 
     , test "triple-quoted string"
         <| "\"\"\"\"\"\"" `is` String ""

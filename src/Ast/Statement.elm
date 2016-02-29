@@ -244,7 +244,7 @@ infixDeclaration =
 -- --------
 singleLineComment : Parser Statement
 singleLineComment =
-  Comment <$> (string "--" *> regex ".*$")
+  Comment <$> (string "--" *> regex ".*" <* whitespace)
 
 multiLineComment : Parser Statement
 multiLineComment =
@@ -273,7 +273,7 @@ statement ops =
 {-| A parser for a series of Elm statements. -}
 statements : OpTable -> Parser (List Statement)
 statements ops =
-  many1 (whitespace *> statement ops <* whitespace)
+  manyTill (whitespace *> statement ops <* whitespace) end
 
 {-| A scanner for infix statements. This is useful for performing a
 first pass over a module to find all of the infix declarations in it.

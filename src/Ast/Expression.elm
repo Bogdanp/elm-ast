@@ -52,8 +52,8 @@ string : Parser Expression
 string =
   let
     singleString =
-      (String << String.dropLeft 1 << String.dropRight 1)
-        <$> regex "\"([^\"]|\\\")*\""
+      String
+        <$> (Combine.string "\"" *> regex "(\\\\\"|[^\"\n])*" <* Combine.string "\"")
 
     multiString  =
       (String << String.concat)
