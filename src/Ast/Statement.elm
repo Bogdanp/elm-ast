@@ -160,7 +160,7 @@ type' =
 typeAnnotation : Parser Type
 typeAnnotation =
   rec <| \() ->
-    type' `chainl` typeApplication
+    type' `chainr` typeApplication
 
 
 -- Modules

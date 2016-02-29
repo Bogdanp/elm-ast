@@ -64,6 +64,40 @@ importStatements =
                                              ])
     ]
 
+typeAnnotations : Test
+typeAnnotations =
+  suite "Type annotations"
+    [ test "constant"
+        <| "x : Int"
+             `is` (FunctionTypeDeclaration "x" (TypeConstructor "Int" []))
+
+    , test "variables"
+        <| "x : a"
+             `is` (FunctionTypeDeclaration "x" (TypeVariable "a"))
+
+    , test "application"
+        <| "x : a -> b"
+             `is` (FunctionTypeDeclaration "x" (TypeApplication
+                                                  (TypeVariable "a")
+                                                  (TypeVariable "b")))
+
+    , test "application associativity"
+        <| "x : a -> b -> c"
+             `is` (FunctionTypeDeclaration "x" (TypeApplication
+                                                  (TypeVariable "a")
+                                                  (TypeApplication
+                                                     (TypeVariable "b")
+                                                     (TypeVariable "c"))))
+
+    , test "application parens"
+        <| "x : (a -> b) -> c"
+             `is` (FunctionTypeDeclaration "x" (TypeApplication
+                                                  (TypeApplication
+                                                     (TypeVariable "a")
+                                                     (TypeVariable "b"))
+                                                  (TypeVariable "c")))
+    ]
+
 infixDeclarations : Test
 infixDeclarations =
   suite "Infix declarations"
@@ -172,6 +206,7 @@ all : Test
 all =
   suite "Statement suite"
     [ importStatements
+    , typeAnnotations
     , infixDeclarations
     , singleDeclaration
     , multipleDeclarations
