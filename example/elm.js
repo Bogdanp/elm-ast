@@ -13801,6 +13801,7 @@ Elm.Main.make = function (_elm) {
             return _p0._0;
          }
    });
+   var init = "module Main where\n\nf : Int -> Int\nf x = x + 1\n\ng : Int -> Int\ng x = x * 2\n\nh = f << g\n";
    var Update = function (a) {    return {ctor: "Update",_0: a};};
    var view = F2(function (address,model) {
       return A2($Html.div,
@@ -13821,10 +13822,11 @@ Elm.Main.make = function (_elm) {
    var mailbox = $Signal.mailbox(NoOp);
    var main = A2($Signal.map,
    view(mailbox.address),
-   A3($Signal.foldp,update,"",mailbox.signal));
+   A3($Signal.foldp,update,init,mailbox.signal));
    return _elm.Main.values = {_op: _op
                              ,NoOp: NoOp
                              ,Update: Update
+                             ,init: init
                              ,update: update
                              ,view: view
                              ,mailbox: mailbox
