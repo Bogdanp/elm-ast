@@ -13810,6 +13810,8 @@ Elm.Main.make = function (_elm) {
    if (_elm.Main.values) return _elm.Main.values;
    var _U = Elm.Native.Utils.make(_elm),
    $Ast = Elm.Ast.make(_elm),
+   $Ast$Expression = Elm.Ast.Expression.make(_elm),
+   $Ast$Statement = Elm.Ast.Statement.make(_elm),
    $Basics = Elm.Basics.make(_elm),
    $Debug = Elm.Debug.make(_elm),
    $Html = Elm.Html.make(_elm),
@@ -13819,12 +13821,62 @@ Elm.Main.make = function (_elm) {
    $Result = Elm.Result.make(_elm),
    $Signal = Elm.Signal.make(_elm);
    var _op = {};
+   var withChild = F2(function (title,children) {
+      return A2($Html.li,
+      _U.list([]),
+      _U.list([A2($Html.pre,
+              _U.list([]),
+              _U.list([$Html.text($Basics.toString(title))]))
+              ,A2($Html.ul,_U.list([]),children)]));
+   });
+   var expression = function (e) {
+      var _p0 = e;
+      switch (_p0.ctor)
+      {case "Range": return A2(withChild,
+           e,
+           _U.list([expression(_p0._0),expression(_p0._1)]));
+         case "List": return A2(withChild,
+           e,
+           A2($List.map,expression,_p0._0));
+         case "Application": return A2(withChild,
+           e,
+           _U.list([expression(_p0._0),expression(_p0._1)]));
+         default: return A2($Html.li,
+           _U.list([]),
+           _U.list([A2($Html.pre,
+           _U.list([]),
+           _U.list([$Html.text($Basics.toString(_p0))]))]));}
+   };
+   var statement = function (s) {
+      var _p1 = s;
+      if (_p1.ctor === "FunctionDeclaration") {
+            return A2(withChild,s,_U.list([expression(_p1._2)]));
+         } else {
+            return A2($Html.li,
+            _U.list([]),
+            _U.list([A2($Html.pre,
+            _U.list([]),
+            _U.list([$Html.text($Basics.toString(_p1))]))]));
+         }
+   };
+   var tree = function (m) {
+      var _p2 = $Ast.parse(m);
+      if (_p2.ctor === "_Tuple2" && _p2._0.ctor === "Ok") {
+            return A2($Html.ul,
+            _U.list([]),
+            A2($List.map,statement,_p2._0._0));
+         } else {
+            return A2($Html.div,
+            _U.list([]),
+            _U.list([$Html.text($Basics.toString(_p2))]));
+         }
+   };
    var update = F2(function (action,model) {
-      var _p0 = action;
-      if (_p0.ctor === "NoOp") {
+      var _p3 = action;
+      if (_p3.ctor === "NoOp") {
             return model;
          } else {
-            return _p0._0;
+            return _p3._0;
          }
    });
    var init = "module Main where\n\nf : Int -> Int\nf x = x + 1\n\ng : Int -> Int\ng x = x * 2\n\nh = f << g\n";
@@ -13836,13 +13888,11 @@ Elm.Main.make = function (_elm) {
               _U.list([A3($Html$Events.on,
               "input",
               $Html$Events.targetValue,
-              function (_p1) {
-                 return A2($Signal.message,address,Update(_p1));
+              function (_p4) {
+                 return A2($Signal.message,address,Update(_p4));
               })]),
               _U.list([$Html.text(model)]))
-              ,A2($Html.pre,
-              _U.list([]),
-              _U.list([$Html.text($Basics.toString($Ast.parse(model)))]))]));
+              ,tree(model)]));
    });
    var NoOp = {ctor: "NoOp"};
    var mailbox = $Signal.mailbox(NoOp);
@@ -13854,6 +13904,10 @@ Elm.Main.make = function (_elm) {
                              ,Update: Update
                              ,init: init
                              ,update: update
+                             ,withChild: withChild
+                             ,expression: expression
+                             ,statement: statement
+                             ,tree: tree
                              ,view: view
                              ,mailbox: mailbox
                              ,main: main};
