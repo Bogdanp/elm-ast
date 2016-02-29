@@ -9,6 +9,18 @@ type Action
   = NoOp
   | Update String
 
+init : String
+init = """module Main where
+
+f : Int -> Int
+f x = x + 1
+
+g : Int -> Int
+g x = x * 2
+
+h = f << g
+"""
+
 update : Action -> String -> String
 update action model =
   case action of
@@ -29,5 +41,5 @@ mailbox = Signal.mailbox NoOp
 
 main : Signal Html
 main =
-  Signal.foldp update "" mailbox.signal
+  Signal.foldp update init mailbox.signal
     |> Signal.map (view mailbox.address)
