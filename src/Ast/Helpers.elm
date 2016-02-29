@@ -16,16 +16,6 @@ type alias Alias = String
 type alias OpTable
   = Dict Name (Assoc, Int)
 
-lookAhead : Parser res -> Parser res
-lookAhead p =
-  primitive <| \cx ->
-    case app p cx of
-      (Ok res, _) ->
-        (Ok res, cx)
-
-      (Err ms, cx') ->
-        (Err ms, cx')
-
 sequence : List (Parser res) -> Parser (List res)
 sequence ps =
   let
