@@ -137,11 +137,6 @@ application ops =
   rec <| \() ->
     term ops `chainl` (Application <$ spaces)
 
-binop : Expression -> Parser (Expression -> Expression -> Expression)
-binop e =
-  rec <| \() ->
-    BinOp e <$ spaces
-
 binary : OpTable -> Parser Expression
 binary ops =
   rec <| \() ->
@@ -153,8 +148,7 @@ binary ops =
               Cont t -> ((::) (op, t)) <$> collect
               Stop e -> succeed [(op, e)]
 
-      collect =
-        choice [ next, succeed [] ]
+      collect = next <|> succeed []
     in
       application ops `andThen` \e ->
         collect `andThen` \eops ->
@@ -178,7 +172,6 @@ expression ops =
            , lambda ops
            , binary ops
            ]
-
 
 op : OpTable -> String -> (Assoc, Int)
 op ops n =
@@ -229,7 +222,7 @@ joinL es ops =
       joinL ((BinOp (Variable [op]) a b) :: remE) remO
 
     _ ->
-      fail ["I don't even"]
+      fail []
 
 joinR : List Expression -> List String -> Parser Expression
 joinR es ops =
@@ -242,13 +235,16 @@ joinR es ops =
         succeed (BinOp (Variable [op]) a e)
 
     _ ->
-      fail ["impossible"]  -- FIXME
+      fail []
 
 findAssoc : OpTable -> Int -> List (String, Expression) -> Parser Assoc
 findAssoc ops l eops =
   let
     lops = List.filter (hasLevel ops l) eops
     assocs = List.map (assoc ops << fst) lops
+    error issue =
+      let operators = List.map fst lops |> String.join " and " in
+      "conflicting " ++ issue ++ " for operators " ++ operators
   in
     if List.all ((==) L) assocs then
       succeed L
@@ -257,6 +253,6 @@ findAssoc ops l eops =
     else if List.all ((==) N) assocs then
       case assocs of
         [_] -> succeed N
-        _   -> fail ["bad precedence"]  -- FIXME
+        _   -> fail [ error "precedence" ]
     else
-      fail ["bad associativity"]  -- FIXME
+      fail [ error "associativity" ]
