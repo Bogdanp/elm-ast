@@ -18,6 +18,7 @@ import Dict exposing (Dict)
 import List.Extra exposing (break, singleton)
 import String
 
+import Ast.BinOp exposing (..)
 import Ast.Helpers exposing (..)
 
 type Collect a
@@ -95,12 +96,12 @@ letExpression ops =
       rec <| \() ->
         (,)
           <$> (between' whitespace loName)
-          <*> (symbol "=" *> expression ops)
+          <*> (symbol "=" *> whitespace *> expression ops)
   in
     rec <| \() ->
       Let
         <$> (symbol "let" *> many1 binding)
-        <*> (symbol "in" *> expression ops)
+        <*> (symbol "in" *> whitespace *> expression ops)
 
 ifExpression : OpTable -> Parser Expression
 ifExpression ops =
@@ -129,7 +130,7 @@ lambda ops =
   rec <| \() ->
     Lambda
       <$> (symbol "\\" *> many (between' spaces loName) <* symbol "->")
-      <*> expression ops
+      <*> (whitespace *> expression ops)
 
 application : OpTable -> Parser Expression
 application ops =

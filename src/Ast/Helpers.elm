@@ -6,15 +6,9 @@ import Combine.Infix exposing (..)
 import Dict exposing (Dict)
 import String
 
-type Assoc
-  = N | L | R
-
 type alias Name = String
 type alias ModuleName = List String
 type alias Alias = String
-
-type alias OpTable
-  = Dict Name (Assoc, Int)
 
 sequence : List (Parser res) -> Parser (List res)
 sequence ps =
@@ -42,6 +36,7 @@ reserved = [ "module", "where"
            , "if", "then", "else"
            , "let", "in", "case", "of"
            ]
+
 reservedOperators : List Name
 reservedOperators =  [ "=", "..", "->", "--", "|", ":" ]
 

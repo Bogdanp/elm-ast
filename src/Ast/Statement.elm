@@ -1,8 +1,6 @@
 module Ast.Statement ( ExportSet(..), Type(..), Statement(..)
-                     , statement, exports
+                     , statement, statements, infixStatements, opTable
                      ) where
-
--- TODO: Fixity declarations
 
 {-| This module exposes parsers for Elm statements.
 
@@ -10,7 +8,7 @@ module Ast.Statement ( ExportSet(..), Type(..), Statement(..)
 @docs ExportSet, Type, Statement
 
 # Parsers
-@docs statement, exports
+@docs statement, statements, infixStatements, opTable
 
 -}
 
@@ -18,8 +16,10 @@ import Combine exposing (..)
 import Combine.Char exposing (..)
 import Combine.Infix exposing (..)
 import Combine.Num
+import Dict
 import String
 
+import Ast.BinOp exposing (Assoc(..), OpTable)
 import Ast.Expression exposing (Expression, expression)
 import Ast.Helpers exposing (..)
 
@@ -49,9 +49,12 @@ type Statement
   | PortDeclaration Name (List Name) Expression
   | FunctionTypeDeclaration Name Type
   | FunctionDeclaration Name (List Name) Expression
+  | InfixDeclaration Assoc Int Name
   | Comment String
 
 
+-- Exports
+-- -------
 allExport : Parser ExportSet
 allExport =
   AllExport <$ symbol ".."
@@ -79,11 +82,13 @@ subsetExport =
   SubsetExport
     <$> commaSeparated (functionExport `or` typeExport)
 
-{-| -}
 exports : Parser ExportSet
 exports =
   parens <| choice [ allExport, subsetExport ]
 
+
+-- Types
+-- -----
 typeVariable : Parser Type
 typeVariable =
   TypeVariable <$> regex "[a-z]+"
@@ -157,17 +162,28 @@ typeAnnotation =
   rec <| \() ->
     type' `chainl` typeApplication
 
-moduleAlias : Parser Alias
-moduleAlias = symbol "as" *> upName
 
+-- Modules
+-- -------
+moduleDeclaration : Parser Statement
+moduleDeclaration =
+  ModuleDeclaration
+    <$> (initialSymbol "module" *> moduleName)
+    <*> (optional AllExport exports <* symbol "where" <* whitespace)
+
+
+-- Imports
+-- -------
 importStatement : Parser Statement
 importStatement =
   ImportStatement
     <$> (initialSymbol "import" *> moduleName)
-    <*> maybe moduleAlias
+    <*> maybe (symbol "as" *> upName)
     <*> maybe (symbol "exposing" *> exports)
 
 
+-- Type declarations
+-- -----------------
 typeAliasDeclaration : Parser Statement
 typeAliasDeclaration =
   TypeAliasDeclaration
@@ -180,6 +196,9 @@ typeDeclaration =
     <$> (initialSymbol "type" *> type')
     <*> (whitespace *> symbol "=" *> (sepBy1 (symbol "|") (between' whitespace typeConstructor)))
 
+
+-- Ports
+-- -----
 portTypeDeclaration : Parser Statement
 portTypeDeclaration =
   PortTypeDeclaration
@@ -193,6 +212,9 @@ portDeclaration ops =
     <*> (many <| between' spaces loName)
     <*> (symbol "=" *> expression ops)
 
+
+-- Functions
+-- ---------
 functionTypeDeclaration : Parser Statement
 functionTypeDeclaration =
   FunctionTypeDeclaration <$> (loName <* symbol ":") <*> typeAnnotation
@@ -204,6 +226,22 @@ functionDeclaration ops =
     <*> (many (between' whitespace loName))
     <*> (symbol "=" *> whitespace *> expression ops)
 
+
+-- Infix declarations
+-- ------------------
+infixDeclaration : Parser Statement
+infixDeclaration =
+  InfixDeclaration
+    <$> choice [ L <$ initialSymbol "infixl"
+               , R <$ initialSymbol "infixr"
+               , N <$ initialSymbol "infix"
+               ]
+    <*> (spaces *> Combine.Num.int)
+    <*> (spaces *> (loName <|> operator))
+
+
+-- Comments
+-- --------
 singleLineComment : Parser Statement
 singleLineComment =
   Comment <$> (string "--" *> regex ".*$")
@@ -214,17 +252,55 @@ multiLineComment =
 
 comment : Parser Statement
 comment =
-  choice [ singleLineComment, multiLineComment ]
+  singleLineComment <|> multiLineComment
 
-{-| A parser for Elm statements. -}
+
+{-| A parser for stand-alone Elm statements. -}
 statement : OpTable -> Parser Statement
 statement ops =
-  choice [ importStatement
+  choice [ moduleDeclaration
+         , importStatement
          , typeAliasDeclaration
          , typeDeclaration
          , portTypeDeclaration
          , portDeclaration ops
          , functionTypeDeclaration
          , functionDeclaration ops
+         , infixDeclaration
          , comment
          ]
+
+{-| A parser for a series of Elm statements. -}
+statements : OpTable -> Parser (List Statement)
+statements ops =
+  many1 (whitespace *> statement ops <* whitespace)
+
+{-| A scanner for infix statements. This is useful for performing a
+first pass over a module to find all of the infix declarations in it.
+-}
+infixStatements : Parser (List Statement)
+infixStatements =
+  let
+    statements =
+      many ( choice [ Just    <$> infixDeclaration
+                    , Nothing <$  regex ".*"
+                    ] <* whitespace ) <* end
+  in
+    statements `andThen` \xs ->
+      succeed <| List.filterMap identity xs
+
+{-| A scanner that returns an updated OpTable based on the infix
+declarations in the input. -}
+opTable : OpTable -> Parser OpTable
+opTable ops =
+  let
+    collect s d =
+      case s of
+        InfixDeclaration a l n ->
+          Dict.insert n (a, l) d
+
+        _ ->
+          Debug.crash "impossible"
+  in
+    infixStatements `andThen` \xs ->
+      succeed <| List.foldr collect ops xs
