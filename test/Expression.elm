@@ -11,7 +11,7 @@ is : String -> Expression -> Assertion
 is s e =
   case parseExpression operators s of
     (Ok r, _) ->
-      assertEqual r e
+      assertEqual e r
 
     _ ->
       assert False
@@ -55,7 +55,7 @@ floatLiterals : Test
 floatLiterals =
   suite "Float literals"
     [ test "float literal"
-        <| "0." `is` Float 0.0
+        <| "0.5" `is` Float 0.5
 
     , test "positive literal"
         <| "+12.5" `is` Float 12.5
@@ -64,12 +64,32 @@ floatLiterals =
         <| "-12.5" `is` Float -12.5
     ]
 
+stringLiterals : Test
+stringLiterals =
+  suite "String literals"
+    [ test "empty string"
+        <| "\"\"" `is` String ""
+
+    , test "simple string"
+        <| "\"hello\"" `is` String "hello"
+
+    , test "escaped string"
+        <| "\"hello, \"world\"\"" `is` String "hello, \"world\""
+
+    , test "triple-quoted string"
+        <| "\"\"\"\"\"\"" `is` String ""
+
+    , test "multi-line strings"
+        <| "\"\"\"hello\nworld\"\"\"" `is` String "hello\nworld"
+    ]
+
 literals : Test
 literals =
   suite "Literals"
     [ characterLiterals
     , intLiterals
-    --, floatLiterals
+    , floatLiterals
+    , stringLiterals
     ]
 
 letExpressions : Test

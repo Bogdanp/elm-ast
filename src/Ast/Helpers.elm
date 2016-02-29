@@ -38,7 +38,7 @@ reserved = [ "module", "where"
            ]
 
 reservedOperators : List Name
-reservedOperators =  [ "=", "..", "->", "--", "|", ":" ]
+reservedOperators =  [ "=", ".", "..", "->", "--", "|", ":" ]
 
 between' : Parser a -> Parser res -> Parser res
 between' p = between p p
@@ -48,6 +48,9 @@ whitespace = regex "[ \r\t\n]*"
 
 spaces : Parser String
 spaces = regex "[ \t]*"
+
+spaces' : Parser String
+spaces' = regex "[ \t]+"
 
 symbol : String -> Parser String
 symbol k =
