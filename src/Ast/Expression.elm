@@ -34,7 +34,7 @@ type Expression
   | Variable (List Name)
   | Range Expression Expression
   | List (List Expression)
-  | Access (List Name)
+  | Access Expression (List Name)
   | Record (List (Name, Expression))
   | RecordUpdate Name (List (Name, Expression))
   | If Expression Expression Expression
@@ -50,8 +50,16 @@ character =
 
 string : Parser Expression
 string =
-  (String << String.dropLeft 1 << String.dropRight 1)
-    <$> regex "\"([^\"]|\\\")*\""
+  let
+    singleString =
+      String
+        <$> (Combine.string "\"" *> regex "(\\\\\"|[^\"\n])*" <* Combine.string "\"")
+
+    multiString  =
+      (String << String.concat)
+        <$> (Combine.string "\"\"\"" *> many (regex "[^\"]*") <* Combine.string "\"\"\"")
+  in
+    multiString <|> singleString
 
 integer : Parser Expression
 integer =
@@ -63,7 +71,7 @@ float =
 
 access : Parser Expression
 access =
-  Access <$> many1 (Combine.string "." *> loName)
+  Access <$> variable <*> many1 (Combine.string "." *> loName)
 
 variable : Parser Expression
 variable =
@@ -82,7 +90,7 @@ range ops =
 list : OpTable -> Parser Expression
 list ops =
   rec <| \() ->
-    List <$> brackets (commaSeparated (expression ops))
+    List <$> brackets (commaSeparated' (expression ops))
 
 record : OpTable -> Parser Expression
 record ops =
@@ -96,12 +104,12 @@ letExpression ops =
       rec <| \() ->
         (,)
           <$> (between' whitespace loName)
-          <*> (symbol "=" *> whitespace *> expression ops)
+          <*> (symbol "=" *> expression ops)
   in
     rec <| \() ->
       Let
         <$> (symbol "let" *> many1 binding)
-        <*> (symbol "in" *> whitespace *> expression ops)
+        <*> (symbol "in" *> expression ops)
 
 ifExpression : OpTable -> Parser Expression
 ifExpression ops =
@@ -117,32 +125,32 @@ caseExpression ops =
     binding =
       rec <| \() ->
         (,)
-          <$> expression ops
+          <$> (whitespace *> expression ops)
           <*> (symbol "->" *> expression ops)
   in
     rec <| \() ->
       Case
-        <$> (symbol "case" *> expression ops <* symbol "of")
-        <*> many1 binding
+        <$> (symbol "case" *> expression ops)
+        <*> (symbol "of" *> many1 binding)
 
 lambda : OpTable -> Parser Expression
 lambda ops =
   rec <| \() ->
     Lambda
-      <$> (symbol "\\" *> many (between' spaces loName) <* symbol "->")
-      <*> (whitespace *> expression ops)
+      <$> (symbol "\\" *> many (between' spaces loName))
+      <*> (symbol "->" *> expression ops)
 
 application : OpTable -> Parser Expression
 application ops =
   rec <| \() ->
-    term ops `chainl` (Application <$ spaces)
+    term ops `chainl` (Application <$ spaces')
 
 binary : OpTable -> Parser Expression
 binary ops =
   rec <| \() ->
     let
       next =
-        between' spaces operator `andThen` \op ->
+        between' whitespace operator `andThen` \op ->
           choice [ Cont <$> application ops, Stop <$> expression ops ] `andThen` \e ->
             case e of
               Cont t -> ((::) (op, t)) <$> collect
@@ -157,7 +165,7 @@ binary ops =
 term : OpTable -> Parser Expression
 term ops =
   rec <| \() ->
-    choice [ character, string, integer, float, access, variable
+    choice [ character, string, float, integer, access, variable
            , range ops, list ops, record ops
            , parens (expression ops)
            ]

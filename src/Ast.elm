@@ -32,7 +32,7 @@ parseOpTable ops = Combine.parse (opTable ops)
 
 {-| Parse an Elm module. -}
 parseModule : OpTable -> String -> (Result (List String) (List Statement), Context)
-parseModule ops = Combine.parse (statements ops <* end)
+parseModule ops = Combine.parse (statements ops)
 
 
 {-| Parse an Elm module, scanning for infix declarations first. -}

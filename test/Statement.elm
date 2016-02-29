@@ -69,7 +69,7 @@ typeAnnotations =
   suite "Type annotations"
     [ test "constant"
         <| "x : Int"
-             `is` (FunctionTypeDeclaration "x" (TypeConstructor "Int" []))
+             `is` (FunctionTypeDeclaration "x" (TypeConstructor ["Int"] []))
 
     , test "variables"
         <| "x : a"
@@ -96,6 +96,12 @@ typeAnnotations =
                                                      (TypeVariable "a")
                                                      (TypeVariable "b"))
                                                   (TypeVariable "c")))
+
+    , test "qualified types"
+        <| "m : Signal.Mailbox Action"
+             `is` (FunctionTypeDeclaration "m" (TypeConstructor
+                                                  ["Signal", "Mailbox"]
+                                                  [(TypeConstructor ["Action"] [])]))
     ]
 
 infixDeclarations : Test
@@ -126,8 +132,8 @@ singleDeclaration =
   test "simple function"
     <| singleDeclarationInput `are`
          [ FunctionTypeDeclaration "f" (TypeApplication
-                                          (TypeConstructor "Int" [])
-                                          (TypeConstructor "Int" []))
+                                          (TypeConstructor ["Int"] [])
+                                          (TypeConstructor ["Int"] []))
          , FunctionDeclaration "f" ["x"] (BinOp
                                             (Variable ["+"])
                                             (Variable ["x"])
@@ -150,15 +156,15 @@ multipleDeclarations =
   test "multiple functions"
     <| multipleDeclarationsInput `are`
          [ FunctionTypeDeclaration "f" (TypeApplication
-                                          (TypeConstructor "Int" [])
-                                          (TypeConstructor "Int" []))
+                                          (TypeConstructor ["Int"] [])
+                                          (TypeConstructor ["Int"] []))
          , FunctionDeclaration "f" ["x"] (BinOp
                                             (Variable ["+"])
                                             (Variable ["x"])
                                             (Integer 1))
          , FunctionTypeDeclaration "g" (TypeApplication
-                                          (TypeConstructor "Int" [])
-                                          (TypeConstructor "Int" []))
+                                          (TypeConstructor ["Int"] [])
+                                          (TypeConstructor ["Int"] []))
          , FunctionDeclaration "g" ["x"] (BinOp
                                             (Variable ["+"])
                                             (Application

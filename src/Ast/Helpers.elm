@@ -6,6 +6,7 @@ import Combine.Infix exposing (..)
 import String
 
 type alias Name = String
+type alias QualifiedType = List Name
 type alias ModuleName = List String
 type alias Alias = String
 
@@ -37,7 +38,7 @@ reserved = [ "module", "where"
            ]
 
 reservedOperators : List Name
-reservedOperators =  [ "=", "..", "->", "--", "|", ":" ]
+reservedOperators =  [ "=", ".", "..", "->", "--", "|", ":" ]
 
 between' : Parser a -> Parser res -> Parser res
 between' p = between p p
@@ -48,9 +49,12 @@ whitespace = regex "[ \r\t\n]*"
 spaces : Parser String
 spaces = regex "[ \t]*"
 
+spaces' : Parser String
+spaces' = regex "[ \t]+"
+
 symbol : String -> Parser String
 symbol k =
-  between' spaces (string k)
+  between' whitespace (string k)
 
 initialSymbol : String -> Parser String
 initialSymbol k =
@@ -59,6 +63,10 @@ initialSymbol k =
 commaSeparated : Parser res -> Parser (List res)
 commaSeparated p =
   sepBy1 (string ",") (between' whitespace p)
+
+commaSeparated' : Parser res -> Parser (List res)
+commaSeparated' p =
+  sepBy (string ",") (between' whitespace p)
 
 name : Parser Char -> Parser String
 name p =

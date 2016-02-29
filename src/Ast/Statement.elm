@@ -32,7 +32,7 @@ type ExportSet
 
 {-| Representations for Elm's type syntax. -}
 type Type
-  = TypeConstructor Name (List Type)
+  = TypeConstructor QualifiedType (List Type)
   | TypeVariable Name
   | TypeRecordConstructor Type (List (Name, Type))
   | TypeRecord (List (Name, Type))
@@ -95,7 +95,7 @@ typeVariable =
 
 typeConstant : Parser Type
 typeConstant =
-  TypeConstructor <$> upName <*> succeed []
+  TypeConstructor <$> sepBy1 (string ".") upName <*> succeed []
 
 typeApplication : Parser (Type -> Type -> Type)
 typeApplication =
@@ -144,7 +144,7 @@ typeParameter =
 typeConstructor : Parser Type
 typeConstructor =
   rec <| \() ->
-    TypeConstructor <$> upName <*> many typeParameter
+    TypeConstructor <$> sepBy1 (string ".") upName <*> many typeParameter
 
 type' : Parser Type
 type' =
@@ -244,7 +244,7 @@ infixDeclaration =
 -- --------
 singleLineComment : Parser Statement
 singleLineComment =
-  Comment <$> (string "--" *> regex ".*$")
+  Comment <$> (string "--" *> regex ".*" <* whitespace)
 
 multiLineComment : Parser Statement
 multiLineComment =
@@ -273,7 +273,7 @@ statement ops =
 {-| A parser for a series of Elm statements. -}
 statements : OpTable -> Parser (List Statement)
 statements ops =
-  many1 (whitespace *> statement ops <* whitespace)
+  manyTill (whitespace *> statement ops <* whitespace) end
 
 {-| A scanner for infix statements. This is useful for performing a
 first pass over a module to find all of the infix declarations in it.
