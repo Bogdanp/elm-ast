@@ -1,6 +1,6 @@
-module Statement where
+module Statement exposing (..)
 
-import ElmTest exposing (..)
+import Test exposing (..)
 
 import Ast exposing (parseStatement, parse)
 import Ast.BinOp exposing (Assoc(..), operators)

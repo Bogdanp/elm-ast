@@ -1,11 +1,10 @@
-module Tests where
+module Tests exposing (..)
 
-import ElmTest exposing (..)
+import Test exposing (..)
 import String
 
 import Expression
 import Statement
-
 
 all : Test
 all =

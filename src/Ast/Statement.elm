@@ -1,6 +1,11 @@
-module Ast.Statement ( ExportSet(..), Type(..), Statement(..)
-                     , statement, statements, infixStatements, opTable
-                     ) where
+module Ast.Statement exposing
+    ( ExportSet(..)
+    , Type(..)
+    , Statement(..)
+    , statement
+    , statements
+    , infixStatements
+    , opTable )
 
 {-| This module exposes parsers for Elm statements.
 

@@ -1,6 +1,6 @@
-module Expression where
+module Expression exposing (..)
 
-import ElmTest exposing (..)
+import Test exposing (..)
 
 import Ast exposing (parseExpression)
 import Ast.BinOp exposing (operators)

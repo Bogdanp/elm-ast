@@ -1,4 +1,6 @@
-module Ast.Expression ( Expression(..), expression ) where
+module Ast.Expression exposing
+    ( Expression(..)
+    , expression )
 
 {-| This module exposes parsers for Elm expressions.
 
