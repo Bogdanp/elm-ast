@@ -1,33 +1,36 @@
 module Expression exposing (..)
 
-import Test exposing (..)
+import Test exposing (describe, test, Test)
+import Expect exposing (..)
 
 import Ast exposing (parseExpression)
 import Ast.BinOp exposing (operators)
 import Ast.Expression exposing (..)
 import Combine exposing (Context)
 
-is : String -> Expression -> Assertion
+type alias Expectation = Expect.Expectation
+
+is : String -> Expression -> Expectation
 is s e =
   case parseExpression operators s of
     (Ok r, _) ->
-      assertEqual e r
+      Expect.equal e r
 
     _ ->
-      assert False
+      Expect.fail ("not" ++ s)
 
-fails : String -> Assertion
+fails : String -> Expectation
 fails s =
   case parseExpression operators s of
     (Err _, _) ->
-      assert True
+      Expect.pass
 
     _ ->
-      assert False
+      Expect.fail "expected to fail"
 
 characterLiterals : Test
 characterLiterals =
-  suite "Character literals"
+  describe "Character literals"
     [ test "character literal"
         <| "'a'" `is` Character 'a'
 
@@ -40,7 +43,7 @@ characterLiterals =
 
 intLiterals : Test
 intLiterals =
-  suite "Integer literals"
+  describe "Integer literals"
     [ test "integer literal"
         <| "0" `is` Integer 0
 
@@ -53,7 +56,7 @@ intLiterals =
 
 floatLiterals : Test
 floatLiterals =
-  suite "Float literals"
+  describe "Float literals"
     [ test "float literal"
         <| "0.5" `is` Float 0.5
 
@@ -66,7 +69,7 @@ floatLiterals =
 
 stringLiterals : Test
 stringLiterals =
-  suite "String literals"
+  describe "String literals"
     [ test "empty string"
         <| "\"\"" `is` String ""
 
@@ -85,7 +88,7 @@ stringLiterals =
 
 literals : Test
 literals =
-  suite "Literals"
+  describe "Literals"
     [ characterLiterals
     , intLiterals
     , floatLiterals
@@ -94,7 +97,7 @@ literals =
 
 letExpressions : Test
 letExpressions =
-  suite "Let"
+  describe "Let"
     [ test "single binding"
         <| "let a = 42 in a" `is` (Let
                                      [("a", Integer 42)]
@@ -117,7 +120,7 @@ letExpressions =
 
 application : Test
 application =
-  suite "Application"
+  describe "Application"
     [ test "simple application"
         <| "f a" `is` (Application
                          (Variable ["f"])
@@ -141,7 +144,7 @@ application =
 
 all : Test
 all =
-  suite "Expression suite"
+  describe "Expression suite"
     [ literals
     , application
     ]
