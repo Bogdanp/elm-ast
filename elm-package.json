@@ -14,8 +14,8 @@
     ],
     "dependencies": {
         "Bogdanp/elm-combine": "2.1.0 <= v < 3.0.0",
-        "circuithub/elm-list-extra": "3.9.0 <= v < 4.0.0",
-        "elm-lang/core": "3.0.0 <= v < 4.0.0"
+        "elm-community/list-extra": "3.1.0 <= v < 4.0.0",
+        "elm-lang/core": "4.0.0 <= v < 5.0.0"
     },
-    "elm-version": "0.16.0 <= v < 0.17.0"
+    "elm-version": "0.16.0 <= v <= 0.18.0"
 }
