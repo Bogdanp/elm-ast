@@ -1,4 +1,4 @@
-module Tests exposing (..)
+module Main exposing (..)
 
 import Test exposing (..)
 import String
