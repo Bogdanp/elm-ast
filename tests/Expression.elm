@@ -1,4 +1,4 @@
-module Expression exposing (..)
+module Expression exposing (all)
 
 import Test exposing (describe, test, Test)
 import Expect exposing (..)
@@ -6,7 +6,6 @@ import Expect exposing (..)
 import Ast exposing (parseExpression)
 import Ast.BinOp exposing (operators)
 import Ast.Expression exposing (..)
-import Combine exposing (Context)
 
 type alias Expectation = Expect.Expectation
 
@@ -26,64 +25,64 @@ fails s =
       Expect.pass
 
     _ ->
-      Expect.fail "expected to fail"
+      Expect.fail (s ++ " expected to fail")
 
 characterLiterals : Test
 characterLiterals =
   describe "Character literals"
-    [ test "character literal"
-        <| "'a'" `is` Character 'a'
+    [ test "character literal" <|
+        \() -> "'a'" `is` Character 'a'
 
-    , test "newline literal"
-        <| "'\n'" `is` Character '\n'
+    , test "newline literal" <|
+        \() -> "'\n'" `is` Character '\n'
 
-    , test "character literals must contain one character"
-        <| fails "''"
+    , test "character literals must contain one character" <|
+        \() -> fails "''"
     ]
 
 intLiterals : Test
 intLiterals =
   describe "Integer literals"
-    [ test "integer literal"
-        <| "0" `is` Integer 0
+    [ test "integer literal" <|
+        \() -> "0" `is` Integer 0
 
-    , test "positive literal"
-        <| "+12" `is` Integer 12
+    , test "positive literal" <|
+        \() -> "+12" `is` Integer 12
 
-    , test "negative literal"
-        <| "-12" `is` Integer -12
+    , test "negative literal" <|
+        \() -> "-12" `is` Integer -12
     ]
 
 floatLiterals : Test
 floatLiterals =
   describe "Float literals"
-    [ test "float literal"
-        <| "0.5" `is` Float 0.5
+    [ test "float literal" <|
+        \() -> "0.5" `is` Float 0.5
 
-    , test "positive literal"
-        <| "+12.5" `is` Float 12.5
+    , test "positive literal" <|
+        \() -> "+12.5" `is` Float 12.5
 
-    , test "negative literal"
-        <| "-12.5" `is` Float -12.5
+    , test "negative literal" <|
+        \() -> "-12.5" `is` Float -12.5
     ]
 
 stringLiterals : Test
 stringLiterals =
   describe "String literals"
-    [ test "empty string"
-        <| "\"\"" `is` String ""
+    [ test "empty string" <|
+        \() -> "\"\"" `is` String ""
 
-    , test "simple string"
-        <| "\"hello\"" `is` String "hello"
+    , test "simple string" <|
+        \() -> "\"hello\"" `is` String "hello"
 
-    , test "escaped string"
-        <| "\"hello, \\\"world\\\"\"" `is` String "hello, \\\"world\\\""
+    , test "escaped string" <|
+        \() -> "\"hello, \\\"world\\\"\"" `is` String "hello, \\\"world\\\""
 
-    , test "triple-quoted string"
-        <| "\"\"\"\"\"\"" `is` String ""
+    , test "triple-quoted string" <|
+        \() -> "\"\"\"\"\"\"" `is` String ""
 
-    , test "multi-line strings"
-        <| "\"\"\"hello\nworld\"\"\"" `is` String "hello\nworld"
+    , test "multi-line strings" <|
+        \() -> "\"\"\"hello\nworld\"\"\"" `is` String "hello\nworld"
     ]
 
 literals : Test
@@ -98,13 +97,13 @@ literals =
 letExpressions : Test
 letExpressions =
   describe "Let"
-    [ test "single binding"
-        <| "let a = 42 in a" `is` (Let
-                                     [("a", Integer 42)]
-                                     (Variable ["a"]))
+    [ test "single binding" <|
+        \() -> "let a = 42 in a" `is` (Let
+                                         [("a", Integer 42)]
+                                         (Variable ["a"]))
 
-    , test "multiple bindings"
-        <| """
+    , test "multiple bindings" <|
+        \() -> """
             let
               a = 42
 
@@ -121,24 +120,24 @@ letExpressions =
 application : Test
 application =
   describe "Application"
-    [ test "simple application"
-        <| "f a" `is` (Application
-                         (Variable ["f"])
-                         (Variable ["a"]))
-
-    , test "curried application"
-        <| "f a b" `is` (Application
-                           (Application
+    [ test "simple application" <|
+        \() -> "f a" `is` (Application
                               (Variable ["f"])
                               (Variable ["a"]))
-                           (Variable ["b"]))
 
-    , test "constructor application"
-        <| "Cons a Nil" `is` (Application
-                                (Application
-                                   (Variable ["Cons"])
-                                   (Variable ["a"]))
-                                (Variable ["Nil"]))
+    , test "curried application" <|
+        \() -> "f a b" `is` (Application
+                               (Application
+                                  (Variable ["f"])
+                                  (Variable ["a"]))
+                               (Variable ["b"]))
+
+    , test "constructor application" <|
+        \() -> "Cons a Nil" `is` (Application
+                                    (Application
+                                       (Variable ["Cons"])
+                                       (Variable ["a"]))
+                                    (Variable ["Nil"]))
     ]
 
 

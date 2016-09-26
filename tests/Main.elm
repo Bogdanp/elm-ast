@@ -1,13 +1,12 @@
-module Main exposing (..)
+module Main exposing (all)
 
 import Test exposing (..)
-import String
 
 import Expression
 import Statement
 
-suite : Test
-suite =
-  describe "Ast suite" [ Expression.suite
-                       , Statement.suite
+all : Test
+all =
+  describe "Ast suite" [ Expression.all
+                       , Statement.all
                        ]
