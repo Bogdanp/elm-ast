@@ -1,18 +1,21 @@
-module Main where
-
-import Html exposing (..)
-import Html.Events exposing (..)
+module Main exposing (main)
 
 import Ast
 import Ast.Expression exposing (..)
 import Ast.Statement exposing (..)
+import Html exposing (..)
+import Html.App as App
+import Html.Events exposing (..)
+import Json.Decode as JD
 
-type Action
-  = NoOp
-  | Update String
+
+type Msg
+    = Replace String
+
 
 init : String
-init = """module Main where
+init =
+    """module Main where
 
 f : Int -> Int
 f x = x + 1
@@ -23,68 +26,76 @@ g x = x * 2
 h = f << g
 """
 
-update : Action -> String -> String
+
+update : Msg -> String -> String
 update action model =
-  case action of
-    NoOp ->
-      model
+    case action of
+        Replace m ->
+            m
 
-    Update m ->
-      m
 
-withChild : a -> List Html -> Html
+withChild : a -> List (Html Msg) -> Html Msg
 withChild title children =
-  li [] [ pre [] [ text <| toString title ]
+    li []
+        [ pre [] [ text <| toString title ]
         , ul [] children
         ]
 
-expression : Expression -> Html
+
+expression : Expression -> Html Msg
 expression e =
-  case e of
-    Range e1 e2 ->
-      withChild e [ expression e1
-                  , expression e2
-                  ]
+    case e of
+        Range e1 e2 ->
+            withChild e
+                [ expression e1
+                , expression e2
+                ]
 
-    List es ->
-      withChild e (List.map expression es)
+        List es ->
+            withChild e (List.map expression es)
 
-    Application e1 e2 ->
-      withChild e [ expression e1
-                  , expression e2
-                  ]
+        Application e1 e2 ->
+            withChild e
+                [ expression e1
+                , expression e2
+                ]
 
-    e ->
-      li [] [ pre [] [ text <| toString e ] ]
+        e ->
+            li [] [ pre [] [ text <| toString e ] ]
 
-statement : Statement -> Html
+
+statement : Statement -> Html Msg
 statement s =
-  case s of
-    FunctionDeclaration _ _ e ->
-      withChild s [ expression e ]
+    case s of
+        FunctionDeclaration _ _ e ->
+            withChild s [ expression e ]
 
-    s ->
-      li [] [ pre [] [ text <| toString s ] ]
+        s ->
+            li [] [ pre [] [ text <| toString s ] ]
 
-tree : String -> Html
+
+tree : String -> Html Msg
 tree m =
-  case Ast.parse m of
-    (Ok statements, _) ->
-      ul [] (List.map statement statements)
+    case Ast.parse m of
+        ( Ok statements, _ ) ->
+            ul [] (List.map statement statements)
 
-    err ->
-      div [] [ text <| toString err ]
+        err ->
+            div [] [ text <| toString err ]
 
-view : Signal.Address Action -> String -> Html
-view address model =
-  div [] [ textarea [ on "input" targetValue (Signal.message address << Update) ] [ text model ]
-         , tree model
-         ]
 
-mailbox : Signal.Mailbox Action
-mailbox = Signal.mailbox NoOp
+view : String -> Html Msg
+view model =
+    div []
+        [ textarea [ on "input" (JD.map Replace targetValue) ] [ text model ]
+        , tree model
+        ]
 
-main : Signal Html
+
+main : Program Never
 main =
-  Signal.foldp update init mailbox.signal
-    |> Signal.map (view mailbox.address)
+    App.beginnerProgram
+        { model = init
+        , update = update
+        , view = view
+        }
