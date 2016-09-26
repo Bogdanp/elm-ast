@@ -1,4 +1,6 @@
-module Ast.Expression ( Expression(..), expression ) where
+module Ast.Expression exposing
+    ( Expression(..)
+    , expression )
 
 {-| This module exposes parsers for Elm expressions.
 
@@ -203,7 +205,7 @@ split ops l e eops =
 
     _ ->
       findAssoc ops l eops `andThen` \assoc ->
-        sequence (splitLevel ops l e eops) `andThen` \es ->
+        Ast.Helpers.sequence (splitLevel ops l e eops) `andThen` \es ->
           let ops' = List.filterMap (\x -> if hasLevel ops l x
                                            then Just (fst x)
                                            else Nothing) eops in

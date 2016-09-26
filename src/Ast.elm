@@ -1,4 +1,9 @@
-module Ast ( parseExpression, parseStatement, parseOpTable, parseModule, parse ) where
+module Ast exposing
+    ( parseExpression
+    , parseStatement
+    , parseOpTable
+    , parseModule
+    , parse )
 
 {-| This module exposes functions for parsing Elm code.
 

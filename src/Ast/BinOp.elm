@@ -1,4 +1,7 @@
-module Ast.BinOp ( Assoc(..), OpTable, operators ) where
+module Ast.BinOp exposing
+    ( Assoc(..)
+    , OpTable
+    , operators )
 
 {-| This module exposes functions and types for working with operator
 precedence tables.
