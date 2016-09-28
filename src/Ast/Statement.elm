@@ -47,6 +47,7 @@ type Type
 {-| Representations for Elm's statements. -}
 type Statement
   = ModuleDeclaration ModuleName ExportSet
+  | PortModuleDeclaration ModuleName ExportSet
   | ImportStatement ModuleName (Maybe Alias) (Maybe ExportSet)
   | TypeAliasDeclaration Type Type
   | TypeDeclaration Type (List Type)
@@ -170,6 +171,12 @@ typeAnnotation =
 
 -- Modules
 -- -------
+portModuleDeclaration : Parser Statement
+portModuleDeclaration =
+  PortModuleDeclaration
+    <$> (initialSymbol "port" *> symbol "module" *> moduleName)
+    <*> (symbol "exposing" *> exports)
+
 moduleDeclaration : Parser Statement
 moduleDeclaration =
   ModuleDeclaration
@@ -204,6 +211,7 @@ typeDeclaration =
 
 -- Ports
 -- -----
+
 portTypeDeclaration : Parser Statement
 portTypeDeclaration =
   PortTypeDeclaration
@@ -263,7 +271,8 @@ comment =
 {-| A parser for stand-alone Elm statements. -}
 statement : OpTable -> Parser Statement
 statement ops =
-  choice [ moduleDeclaration
+  choice [ portModuleDeclaration
+         , moduleDeclaration
          , importStatement
          , typeAliasDeclaration
          , typeDeclaration

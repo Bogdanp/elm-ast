@@ -16,7 +16,7 @@ is s e =
       Expect.equal e r
 
     _ ->
-      Expect.fail ("not" ++ s)
+      Expect.fail ("failed to parse: " ++ s)
 
 fails : String -> Expectation
 fails s =

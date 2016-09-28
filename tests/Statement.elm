@@ -17,7 +17,7 @@ is i s =
       Expect.equal r s
 
     _ ->
-      Expect.fail ("not" ++ i)
+      Expect.fail ("failed to parse: \"" ++ i ++ "\" <vs> " ++ toString s)
 
 are : String -> List Statement -> Expectation
 are i s =
@@ -26,7 +26,7 @@ are i s =
       Expect.equal r s
 
     _ ->
-      Expect.fail ("not" ++ i)
+      Expect.fail ("failed to parse: \"" ++ i ++ "\" <vs> " ++ toString s)
 
 moduleDeclaration : Test
 moduleDeclaration =
@@ -58,6 +58,12 @@ moduleDeclaration =
                                      , TypeExport "B" Nothing
                                      , FunctionExport "c"
                                      ])
+
+    , test "declaration using a port" <|
+        \() -> "port module A exposing (A(..))"
+             `is` (PortModuleDeclaration ["A"]
+                    <| SubsetExport [ TypeExport "A" (Just AllExport) ])
+
     ]
 
 importStatements : Test
