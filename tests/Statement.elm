@@ -145,6 +145,32 @@ typeAnnotations =
                                                   [(TypeConstructor ["Msg"] [])]))
     ]
 
+portStatements : Test
+portStatements =
+    describe "port type declaration"
+      [ test "constant" <|
+          \() -> "port focus : String -> Cmd msg"
+               `is` (PortTypeDeclaration "focus" (TypeApplication
+                                                    (TypeConstructor ["String"] [])
+                                                    (TypeConstructor ["Cmd"]
+                                                        ([TypeVariable "msg"]))))
+
+      , test "another port type declaration" <|
+          \() -> "port users : (User -> msg) -> Sub msg"
+               `is` (PortTypeDeclaration "users" (TypeApplication
+                                                    (TypeApplication
+                                                        (TypeConstructor ["User"] [])
+                                                        (TypeVariable "msg"))
+                                                    (TypeConstructor ["Sub"]
+                                                        ([TypeVariable "msg"]))))
+
+      , test "port definition" <|
+          \() -> "port focus = Cmd.none"
+               `is` (PortDeclaration "focus" [] (Access
+                                                    (Variable ["Cmd"])
+                                                    ["none"]))
+      ]
+
 infixDeclarations : Test
 infixDeclarations =
   describe "Infix declarations"
@@ -255,6 +281,7 @@ all =
     [ moduleDeclaration
     , importStatements
     , typeAnnotations
+    , portStatements
     , infixDeclarations
     , singleDeclaration
     , multipleDeclarations
