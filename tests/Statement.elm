@@ -28,6 +28,38 @@ are i s =
     _ ->
       Expect.fail ("not" ++ i)
 
+moduleDeclaration : Test
+moduleDeclaration =
+  describe "Module declaration statements"
+    [ test "simple declaration exposing all" <|
+        \() -> "module A exposing (..)" `is` (ModuleDeclaration ["A"] AllExport)
+
+    , test "declaration exposing particular things" <|
+        \() -> "module A exposing (A, b)"
+            `is` (ModuleDeclaration ["A"]
+                <| SubsetExport [ TypeExport "A" Nothing
+                                , FunctionExport "b"
+                                ])
+
+    , test "declaration exposing union" <|
+        \() -> "module A exposing (A(..))"
+            `is` (ModuleDeclaration ["A"]
+                <| SubsetExport [ TypeExport "A" (Just AllExport) ])
+
+    , test "declaration exposing constructor subset" <|
+        \() -> "module A exposing (A(A))"
+            `is` (ModuleDeclaration ["A"]
+                <| SubsetExport [ TypeExport "A" (Just <| SubsetExport [ FunctionExport "A" ]) ])
+
+    , test "multiline declaration" <|
+        \() -> "module A exposing (A, B,\nc)"
+             `is` (ModuleDeclaration ["A"]
+                     <| SubsetExport [ TypeExport "A" Nothing
+                                     , TypeExport "B" Nothing
+                                     , FunctionExport "c"
+                                     ])
+    ]
+
 importStatements : Test
 importStatements =
   describe "Import statements"
@@ -101,10 +133,10 @@ typeAnnotations =
                                                   (TypeVariable "c")))
 
     , test "qualified types" <|
-        \() -> "m : Signal.Mailbox Action"
+        \() -> "m : Html.App Msg"
              `is` (FunctionTypeDeclaration "m" (TypeConstructor
-                                                  ["Signal", "Mailbox"]
-                                                  [(TypeConstructor ["Action"] [])]))
+                                                  ["Html", "App"]
+                                                  [(TypeConstructor ["Msg"] [])]))
     ]
 
 infixDeclarations : Test
@@ -214,7 +246,8 @@ moduleFixityDeclarations =
 all : Test
 all =
   describe "Statement suite"
-    [ importStatements
+    [ moduleDeclaration
+    , importStatements
     , typeAnnotations
     , infixDeclarations
     , singleDeclaration

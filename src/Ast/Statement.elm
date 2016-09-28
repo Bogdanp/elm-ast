@@ -174,7 +174,7 @@ moduleDeclaration : Parser Statement
 moduleDeclaration =
   ModuleDeclaration
     <$> (initialSymbol "module" *> moduleName)
-    <*> (optional AllExport exports <* symbol "where" <* whitespace)
+    <*> (symbol "exposing" *> exports)
 
 
 -- Imports
