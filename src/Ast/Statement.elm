@@ -263,9 +263,13 @@ multiLineComment : Parser Statement
 multiLineComment =
   (Comment << String.fromList) <$> (string "{-" *> manyTill anyChar (string "-}"))
 
+documentationComment : Parser Statement
+documentationComment =
+  (Comment << String.fromList) <$> (string "{-|" *> manyTill anyChar (string "-}"))
+
 comment : Parser Statement
 comment =
-  singleLineComment <|> multiLineComment
+  singleLineComment <|> documentationComment <|> multiLineComment
 
 
 {-| A parser for stand-alone Elm statements. -}
