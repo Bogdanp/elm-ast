@@ -15,7 +15,7 @@ type Msg
 
 init : String
 init =
-    """module Main where
+    """module Main exposing (..)
 
 f : Int -> Int
 f x = x + 1
