@@ -273,7 +273,29 @@ moduleFixityDeclarations =
          , InfixDeclaration R 1 "**"
          ]
 
+multiLineCommentInput : String
+multiLineCommentInput = """
+foo
+bar
 
+baz
+"""
+
+comments : Test
+comments =
+  describe "Comments"
+    [ test "single line" <|
+        \() -> "-- single line comment" `is` (Comment " single line comment")
+
+    , test "multi line comment with single line content" <|
+        \() -> "{- multi line comment -}" `is` (Comment " multi line comment ")
+
+    , test "multi line comment with multi line content" <|
+        \() -> ("{-" ++ multiLineCommentInput ++ "-}") `is` (Comment multiLineCommentInput)
+
+    , test "documentation comment" <|
+        \() -> ("{-|" ++ multiLineCommentInput ++ "-}") `is` (Comment multiLineCommentInput)
+    ]
 
 all : Test
 all =
@@ -286,4 +308,5 @@ all =
     , singleDeclaration
     , multipleDeclarations
     , moduleFixityDeclarations
+    , comments
     ]
