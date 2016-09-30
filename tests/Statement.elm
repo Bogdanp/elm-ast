@@ -273,7 +273,6 @@ moduleFixityDeclarations =
          , InfixDeclaration R 1 "**"
          ]
 
-
 multiLineCommentInput : String
 multiLineCommentInput = """
 foo
@@ -281,7 +280,6 @@ bar
 
 baz
 """
-
 
 comments : Test
 comments =
