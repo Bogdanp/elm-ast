@@ -110,7 +110,7 @@ typeApplication =
 typeTuple : Parser Type
 typeTuple =
   rec <| \() ->
-    TypeTuple <$> parens (commaSeparated type')
+    TypeTuple <$> parens (commaSeparated' type')
 
 typeRecordPair : Parser (Name, Type)
 typeRecordPair =
@@ -120,7 +120,7 @@ typeRecordPair =
 typeRecordPairs : Parser (List (Name, Type))
 typeRecordPairs =
   rec <| \() ->
-    commaSeparated typeRecordPair
+    commaSeparated' typeRecordPair
 
 typeRecordConstructor : Parser Type
 typeRecordConstructor =

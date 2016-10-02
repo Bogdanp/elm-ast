@@ -97,7 +97,7 @@ list ops =
 record : OpTable -> Parser Expression
 record ops =
   rec <| \() ->
-    Record <$> braces (commaSeparated ((,) <$> loName <*> (symbol "=" *> expression ops)))
+    Record <$> braces (commaSeparated' ((,) <$> loName <*> (symbol "=" *> expression ops)))
 
 letExpression : OpTable -> Parser Expression
 letExpression ops =

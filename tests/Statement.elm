@@ -271,6 +271,28 @@ moduleFixityDeclarations =
          ]
 
 
+emptyRecordAliasInput : String
+emptyRecordAliasInput = """
+type alias A = {}
+"""
+
+emptyTupleAliasInput : String
+emptyTupleAliasInput = """
+type alias A = ()
+"""
+
+typeDeclarations : Test
+typeDeclarations =
+  describe "type declarations"
+    [ test "can parse empty record aliases" <|
+        \() ->
+          emptyRecordAliasInput `are` [TypeAliasDeclaration (TypeConstructor ["A"] []) (TypeRecord [])]
+
+    , test "can parse aliases of unit" <|
+        \() ->
+          emptyTupleAliasInput `are` [TypeAliasDeclaration (TypeConstructor ["A"] []) (TypeTuple [])]
+    ]
+
 
 all : Test
 all =
@@ -283,4 +305,5 @@ all =
     , singleDeclaration
     , multipleDeclarations
     , moduleFixityDeclarations
+    , typeDeclarations
     ]
