@@ -1,22 +1,21 @@
 module Expression exposing (all)
 
-import Test exposing (describe, test, Test)
-import Expect exposing (..)
-
 import Ast exposing (parseExpression)
 import Ast.BinOp exposing (operators)
 import Ast.Expression exposing (..)
+import Expect exposing (..)
+import String
+import Test exposing (describe, test, Test)
 
-type alias Expectation = Expect.Expectation
 
 is : String -> Expression -> Expectation
 is s e =
-  case parseExpression operators s of
+  case parseExpression operators (String.trim s) of
     (Ok r, _) ->
       Expect.equal e r
 
-    _ ->
-      Expect.fail ("failed to parse: " ++ s)
+    (Err es, {position}) ->
+      Expect.fail ("failed to parse: " ++ s ++ " at position " ++ toString position ++ " with errors: " ++ toString es)
 
 fails : String -> Expectation
 fails s =
@@ -102,19 +101,53 @@ letExpressions =
                                          [("a", Integer 42)]
                                          (Variable ["a"]))
 
+    , test "bind to _" <|
+        \() -> "let _ = 42 in 24" `is` (Let
+                                          [("_", Integer 42)]
+                                          (Integer 24))
+
     , test "multiple bindings" <|
         \() -> """
-            let
-              a = 42
+let
+  a = 42
 
-              b = a + 1
-            in
-              b
+  b = a + 1
+in
+  b
             """ `is` (Let
                         [ ("a", Integer 42)
-                        , ("b", (Application (Variable ["+"]) (Integer 1)))
+                        , ("b", (BinOp (Variable ["+"]) (Variable ["a"]) (Integer 1)))
                         ]
                         (Variable ["b"]))
+    ]
+
+caseExpressions : Test
+caseExpressions =
+  describe "Case"
+    [ test "simple statement" <|
+        \() ->
+          """
+case x of
+  Nothing ->
+    0
+
+  Just y ->
+    y
+          """ `is` (Case
+                      (Variable ["x"])
+                      [ (Variable ["Nothing"], Integer 0)
+                      , (Application (Variable ["Just"]) (Variable ["y"]), (Variable ["y"]))
+                      ])
+
+    , test "binding to underscore" <|
+        \() ->
+          """
+case x of
+  _ ->
+    42
+          """ `is` (Case
+                     (Variable ["x"])
+                     [(Variable ["_"], Integer 42)])
     ]
 
 application : Test
@@ -145,5 +178,7 @@ all : Test
 all =
   describe "Expression suite"
     [ literals
+    , letExpressions
+    , caseExpressions
     , application
     ]

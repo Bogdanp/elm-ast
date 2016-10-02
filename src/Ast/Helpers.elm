@@ -74,11 +74,15 @@ name p =
 
 loName : Parser String
 loName =
-  name lower
-    `andThen` \n ->
-      if List.member n reserved
-      then fail [ "name '" ++ n ++ "' is reserved" ]
-      else succeed n
+  let
+    loName' =
+      name lower
+        `andThen` \n ->
+          if List.member n reserved
+          then fail [ "name '" ++ n ++ "' is reserved" ]
+          else succeed n
+  in
+    string "_" <|> loName'
 
 upName : Parser String
 upName = name upper
