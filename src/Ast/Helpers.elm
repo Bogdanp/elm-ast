@@ -47,7 +47,7 @@ commaSeparated_ p =
 
 name : Parser s Char -> Parser s String
 name p =
-  String.cons <$> p <*> regex "[a-zA-Z0-9-_']*"
+  String.cons <$> p <*> regex "[a-zA-Z0-9-_]*"
 
 loName : Parser s String
 loName =
@@ -66,10 +66,6 @@ upName = name upper
 
 operator : Parser s String
 operator =
-  between_ (string "`") loName <|> symbolicOperator
-
-symbolicOperator : Parser s String
-symbolicOperator =
   regex "[+-/*=.$<>:&|^?%#@~!]+" |>
     andThen (\n ->
       if List.member n reservedOperators

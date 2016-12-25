@@ -33,7 +33,6 @@ type Expression
   | Integer Int
   | Float Float
   | Variable (List Name)
-  | Range Expression Expression
   | List (List Expression)
   | Access Expression (List Name)
   | Record (List (Name, Expression))
@@ -79,14 +78,6 @@ variable =
   Variable <$> choice [ singleton <$> loName
                       , sepBy1 (Combine.string "." ) upName
                       ]
-
-range : OpTable -> Parser s Expression
-range ops =
-  lazy <| \() ->
-    brackets
-      <| Range
-           <$> (expression ops)
-           <*> (symbol ".." *> expression ops)
 
 list : OpTable -> Parser s Expression
 list ops =
@@ -167,7 +158,7 @@ term : OpTable -> Parser s Expression
 term ops =
   lazy <| \() ->
     choice [ character, string, float, integer, access, variable
-           , range ops, list ops, record ops
+           , list ops, record ops
            , parens (expression ops)
            ]
 
