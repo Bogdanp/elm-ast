@@ -45,12 +45,6 @@ withChild title children =
 expression : Expression -> Html Msg
 expression e =
     case e of
-        Range e1 e2 ->
-            withChild e
-                [ expression e1
-                , expression e2
-                ]
-
         List es ->
             withChild e (List.map expression es)
 
