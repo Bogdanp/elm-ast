@@ -2,32 +2,12 @@ module Ast.Helpers exposing (..)
 
 import Combine exposing (..)
 import Combine.Char exposing (..)
-import Combine.Infix exposing (..)
 import String
 
 type alias Name = String
 type alias QualifiedType = List Name
 type alias ModuleName = List String
 type alias Alias = String
-
-sequence : List (Parser res) -> Parser (List res)
-sequence ps =
-  let
-    accumulate acc ps cx =
-      case ps of
-        [] ->
-          (Ok (List.reverse acc), cx)
-
-        p::ps ->
-          case app p cx of
-            (Ok res, rcx) ->
-              accumulate (res :: acc) ps rcx
-
-            (Err ms, ecx) ->
-              (Err ms, ecx)
-  in
-    primitive <| \cx ->
-      accumulate [] ps cx
 
 reserved : List Name
 reserved = [ "module", "where"
@@ -40,68 +20,61 @@ reserved = [ "module", "where"
 reservedOperators : List Name
 reservedOperators =  [ "=", ".", "..", "->", "--", "|", ":" ]
 
-between' : Parser a -> Parser res -> Parser res
-between' p = between p p
+between_ : Parser s a -> Parser s res -> Parser s res
+between_ p = between p p
 
-whitespace : Parser String
-whitespace = regex "[ \r\t\n]*"
-
-spaces : Parser String
+spaces : Parser s String
 spaces = regex "[ \t]*"
 
-spaces' : Parser String
-spaces' = regex "[ \t]+"
+spaces_ : Parser s String
+spaces_ = regex "[ \t]+"
 
-symbol : String -> Parser String
+symbol : String -> Parser s String
 symbol k =
-  between' whitespace (string k)
+  between_ whitespace (string k)
 
-initialSymbol : String -> Parser String
+initialSymbol : String -> Parser s String
 initialSymbol k =
   string k <* spaces
 
-commaSeparated : Parser res -> Parser (List res)
+commaSeparated : Parser s res -> Parser s (List res)
 commaSeparated p =
-  sepBy1 (string ",") (between' whitespace p)
+  sepBy1 (string ",") (between_ whitespace p)
 
-commaSeparated' : Parser res -> Parser (List res)
-commaSeparated' p =
-  sepBy (string ",") (between' whitespace p)
+commaSeparated_ : Parser s res -> Parser s (List res)
+commaSeparated_ p =
+  sepBy (string ",") (between_ whitespace p)
 
-name : Parser Char -> Parser String
+name : Parser s Char -> Parser s String
 name p =
-  String.cons <$> p <*> regex "[a-zA-Z0-9-_']*"
+  String.cons <$> p <*> regex "[a-zA-Z0-9-_]*"
 
-loName : Parser String
+loName : Parser s String
 loName =
   let
-    loName' =
-      name lower
-        `andThen` \n ->
+    loName_ =
+      name lower |>
+        andThen (\n ->
           if List.member n reserved
-          then fail [ "name '" ++ n ++ "' is reserved" ]
-          else succeed n
+          then fail <| "name '" ++ n ++ "' is reserved"
+          else succeed n)
   in
-    string "_" <|> loName'
+    string "_" <|> loName_
 
-upName : Parser String
+upName : Parser s String
 upName = name upper
 
-operator : Parser String
+operator : Parser s String
 operator =
-  between' (string "`") loName <|> symbolicOperator
-
-symbolicOperator : Parser String
-symbolicOperator =
-  regex "[+-/*=.$<>:&|^?%#@~!]+"
-    `andThen` \n ->
+  regex "[+-/*=.$<>:&|^?%#@~!]+" |>
+    andThen (\n ->
       if List.member n reservedOperators
-      then fail [ "operator '" ++ n ++ "' is reserved" ]
-      else succeed n
+      then fail <| "operator '" ++ n ++ "' is reserved"
+      else succeed n)
 
-functionName : Parser String
+functionName : Parser s String
 functionName = loName
 
-moduleName : Parser ModuleName
+moduleName : Parser s ModuleName
 moduleName =
-  between' spaces <| sepBy1 (string ".") upName
+  between_ spaces <| sepBy1 (string ".") upName
