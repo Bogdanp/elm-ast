@@ -211,10 +211,12 @@ record =
                                            ]
                                      )
         , test "Simple record with updated field" <|
-            \() -> "{a | b = 2}" |> is (RecordUpdate
-                                            "a"
-                                            [("b" , (Integer 2))]
-                                     )
+            \() -> "{a | b = 2, c = 3}" |> is (RecordUpdate
+                                                   "a"
+                                                   [ ("b" , (Integer 2))
+                                                   , ("c" , (Integer 3))
+                                                   ]
+                                              )
 
 
         ]
