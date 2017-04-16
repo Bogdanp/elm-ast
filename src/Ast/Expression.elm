@@ -36,6 +36,7 @@ type Expression
   | List (List Expression)
   | Access Expression (List Name)
   | Record (List (Name, Expression))
+  | Tuple (List (Expression))
   | RecordUpdate Name (List (Name, Expression))
   | If Expression Expression Expression
   | Let (List (Name, Expression)) Expression
@@ -88,6 +89,12 @@ record : OpTable -> Parser s Expression
 record ops =
   lazy <| \() ->
     Record <$> braces (commaSeparated_ ((,) <$> loName <*> (symbol "=" *> expression ops)))
+
+tuple : OpTable -> Parser s Expression
+tuple ops =
+  lazy <| \() ->
+      Tuple <$> parens (commaSeparated (expression ops))
+
 
 letExpression : OpTable -> Parser s Expression
 letExpression ops =
@@ -159,7 +166,7 @@ term ops =
   lazy <| \() ->
     choice [ character, string, float, integer, access, variable
            , list ops, record ops
-           , parens (expression ops)
+           , parens ( between_ whitespace (expression ops))
            ]
 
 {-| A parser for Elm expressions. -}

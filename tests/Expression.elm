@@ -165,6 +165,13 @@ application =
                                   (Variable ["a"]))
                                (Variable ["b"])))
 
+    , test "curried application with parens" <|
+        \() -> "(f a) b" |> is ((Application
+                                   (Application
+                                        (Variable ["f"])
+                                        (Variable ["a"]))
+                                   (Variable ["b"])))
+
     , test "constructor application" <|
         \() -> "Cons a Nil" |> is ((Application
                                     (Application
@@ -172,6 +179,24 @@ application =
                                        (Variable ["a"]))
                                     (Variable ["Nil"])))
     ]
+
+tuple : Test
+tuple =
+    describe "Tuples"
+        [ test "Simple tuple" <|
+              \() -> "(a, b)" |> is (BinOp
+                                          (Variable [","])
+                                          (Variable ["a"])
+                                          (Variable ["b"])
+                                     )
+        , test "Simple tuple with format" <|
+            \() -> "( a, b )" |> is (BinOp
+                                          (Variable [","])
+                                          (Variable ["a"])
+                                          (Variable ["b"])
+                                     )
+
+        ]
 
 
 all : Test
@@ -181,4 +206,5 @@ all =
     , letExpressions
     , caseExpressions
     , application
+    , tuple
     ]
