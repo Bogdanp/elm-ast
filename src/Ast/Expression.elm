@@ -87,7 +87,17 @@ list ops =
 record : OpTable -> Parser s Expression
 record ops =
   lazy <| \() ->
-    Record <$> braces (commaSeparated_ ((,) <$> loName <*> (symbol "=" *> expression ops)))
+    Record <$> braces (commaSeparated_ ((,) <$> loName <*> (symbol "=" *> term ops)))
+
+recordUpdate : OpTable -> Parser s Expression
+recordUpdate ops =
+  lazy <| \() ->
+    RecordUpdate
+        <$> (symbol "{" *> loName)
+        <*> (symbol "|" *> (commaSeparated_ ((,) <$> loName <*> (symbol "=" *> term ops)))
+            <* symbol "}")
+
+
 
 letExpression : OpTable -> Parser s Expression
 letExpression ops =
@@ -158,7 +168,7 @@ term : OpTable -> Parser s Expression
 term ops =
   lazy <| \() ->
     choice [ character, string, float, integer, access, variable
-           , list ops, record ops
+           , list ops, recordUpdate ops, record ops
            , parens ( between_ whitespace (expression ops))
            ]
 

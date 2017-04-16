@@ -195,6 +195,27 @@ tuple =
                                           (Variable ["a"])
                                           (Variable ["b"])
                                      )
+        ]
+record : Test
+record =
+    describe "Tuples"
+        [ test "Simple record" <|
+              \() -> "{a = b}" |> is (Record [
+                                           ("a" , (Variable ["b"]))
+                                           ]
+                                     )
+        , test "Simple record with many fields" <|
+              \() -> "{a = b, b = 2}" |> is (Record
+                                                 [("a" , (Variable ["b"]))
+                                                 , ("b" , (Integer 2))
+                                           ]
+                                     )
+        , test "Simple record with updated field" <|
+            \() -> "{a | b = 2}" |> is (RecordUpdate
+                                            "a"
+                                            [("b" , (Integer 2))]
+                                     )
+
 
         ]
 
@@ -207,4 +228,5 @@ all =
     , caseExpressions
     , application
     , tuple
+    , record
     ]
