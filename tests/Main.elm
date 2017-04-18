@@ -7,7 +7,7 @@ import Json.Encode exposing (Value)
 import Expression
 import Statement
 
-main : Program Value
+main : Test.Runner.Node.TestProgram
 main =
     run emit all
 

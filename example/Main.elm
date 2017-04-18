@@ -4,7 +4,7 @@ import Ast
 import Ast.Expression exposing (..)
 import Ast.Statement exposing (..)
 import Html exposing (..)
-import Html.App as App
+import Html
 import Html.Events exposing (..)
 import Json.Decode as JD
 
@@ -45,12 +45,6 @@ withChild title children =
 expression : Expression -> Html Msg
 expression e =
     case e of
-        Range e1 e2 ->
-            withChild e
-                [ expression e1
-                , expression e2
-                ]
-
         List es ->
             withChild e (List.map expression es)
 
@@ -77,7 +71,7 @@ statement s =
 tree : String -> Html Msg
 tree m =
     case Ast.parse m of
-        ( Ok statements, _ ) ->
+        ( Ok (_, _, statements)) ->
             ul [] (List.map statement statements)
 
         err ->
@@ -92,9 +86,9 @@ view model =
         ]
 
 
-main : Program Never
+main : Program Never String Msg
 main =
-    App.beginnerProgram
+    Html.beginnerProgram
         { model = init
         , update = update
         , view = view
