@@ -196,6 +196,7 @@ tuple =
                                           (Variable ["b"])
                                      )
         ]
+
 record : Test
 record =
     describe "Tuples"
@@ -221,6 +222,20 @@ record =
 
         ]
 
+expressions : Test
+expressions =
+    describe "Expressions"
+        [ test "Operator in parens" <|
+            \() -> "(+)" |> is (Variable ["+"])
+        , test "Operators passed to map" <|
+            \() -> "reduce (+) list" |> is (Application
+                                             (Application
+                                                  (Variable ["reduce"])
+                                                  (Variable ["+"]))
+                                             (Variable ["list"]))
+        , test "partial application" <|
+            \() -> "(+) 2" |> is (Application (Variable ["+"]) (Integer 2))
+        ]
 
 all : Test
 all =
@@ -231,4 +246,5 @@ all =
     , application
     , tuple
     , record
+    , expressions
     ]
