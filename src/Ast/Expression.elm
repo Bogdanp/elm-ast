@@ -43,6 +43,7 @@ type Expression
   | Lambda (List Name) Expression
   | Application Expression Expression
   | BinOp Expression Expression Expression
+  | NewLine String
 
 character : Parser s Expression
 character =
@@ -77,6 +78,7 @@ variable : Parser s Expression
 variable =
   Variable <$> choice [ singleton <$> loName
                       , sepBy1 (Combine.string "." ) upName
+                      , singleton <$> parens operator
                       ]
 
 list : OpTable -> Parser s Expression
@@ -96,8 +98,6 @@ recordUpdate ops =
         <$> (symbol "{" *> loName)
         <*> (symbol "|" *> (commaSeparated_ ((,) <$> loName <*> (symbol "=" *> term ops)))
             <* symbol "}")
-
-
 
 letExpression : OpTable -> Parser s Expression
 letExpression ops =
@@ -170,6 +170,7 @@ term ops =
     choice [ character, string, float, integer, access, variable
            , list ops, recordUpdate ops, record ops
            , parens ( between_ whitespace (expression ops))
+
            ]
 
 {-| A parser for Elm expressions. -}
