@@ -43,7 +43,6 @@ type Expression
   | Lambda (List Name) Expression
   | Application Expression Expression
   | BinOp Expression Expression Expression
-  | NewLine String
 
 character : Parser s Expression
 character =
@@ -73,7 +72,6 @@ float =
 access : Parser s Expression
 access =
   Access <$> variable <*> many1 (Combine.string "." *> loName)
-
 variable : Parser s Expression
 variable =
   Variable <$> choice [ singleton <$> loName
