@@ -213,6 +213,9 @@ f x =
 g : Int -> Int
 g x =
   f x + 1
+
+(+) a b =
+  1
 """
 
 multipleDeclarations : Test
@@ -235,6 +238,7 @@ multipleDeclarations =
                                                (Variable ["f"])
                                                (Variable ["x"]))
                                             (Integer 1))
+         , FunctionDeclaration "+" ["a", "b"] (Integer 1)
          ]
 
 moduleFixityInput : String

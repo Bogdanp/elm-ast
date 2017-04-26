@@ -1,12 +1,21 @@
 module Expression exposing (all)
 
-import Ast exposing (parseExpression)
+import Ast exposing (parseExpression, parseStatement)
 import Ast.BinOp exposing (operators)
 import Ast.Expression exposing (..)
+import Ast.Statement exposing (..)
 import Expect exposing (..)
 import String
 import Test exposing (describe, test, Test)
 
+isS : Statement -> String -> Expectation
+isS e i =
+  case parseStatement operators (String.trim i) of
+    (Ok (_, _, r)) ->
+      Expect.equal e r
+
+    (Err (_, { position }, es)) ->
+      Expect.fail ("failed to parse: " ++ i ++ " at position " ++ toString position ++ " with errors: " ++ toString es)
 
 is : Expression -> String -> Expectation
 is e i =

@@ -234,7 +234,7 @@ functionTypeDeclaration =
 functionDeclaration : OpTable -> Parser s Statement
 functionDeclaration ops =
   FunctionDeclaration
-    <$> loName
+    <$> (choice [loName, parens operator])
     <*> (many (between_ whitespace loName))
     <*> (symbol "=" *> whitespace *> expression ops)
 
