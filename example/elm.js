@@ -8058,7 +8058,19 @@ var _Bogdanp$elm_ast$Ast_Statement$functionDeclaration = function (ops) {
 		_Bogdanp$elm_combine$Combine_ops['<*>'],
 		A2(
 			_Bogdanp$elm_combine$Combine_ops['<*>'],
-			A2(_Bogdanp$elm_combine$Combine_ops['<$>'], _Bogdanp$elm_ast$Ast_Statement$FunctionDeclaration, _Bogdanp$elm_ast$Ast_Helpers$loName),
+			A2(
+				_Bogdanp$elm_combine$Combine_ops['<$>'],
+				_Bogdanp$elm_ast$Ast_Statement$FunctionDeclaration,
+				_Bogdanp$elm_combine$Combine$choice(
+					{
+						ctor: '::',
+						_0: _Bogdanp$elm_ast$Ast_Helpers$loName,
+						_1: {
+							ctor: '::',
+							_0: _Bogdanp$elm_combine$Combine$parens(_Bogdanp$elm_ast$Ast_Helpers$operator),
+							_1: {ctor: '[]'}
+						}
+					})),
 			_Bogdanp$elm_combine$Combine$many(
 				A2(_Bogdanp$elm_ast$Ast_Helpers$between_, _Bogdanp$elm_combine$Combine$whitespace, _Bogdanp$elm_ast$Ast_Helpers$loName))),
 		A2(
