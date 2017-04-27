@@ -214,6 +214,7 @@ g : Int -> Int
 g x =
   f x + 1
 
+(+) : Int -> Int
 (+) a b =
   1
 """
@@ -238,6 +239,11 @@ multipleDeclarations =
                                                (Variable ["f"])
                                                (Variable ["x"]))
                                             (Integer 1))
+
+         , FunctionTypeDeclaration "+" (TypeApplication
+                                            (TypeConstructor ["Int"] [])
+                                            (TypeConstructor ["Int"] []))
+
          , FunctionDeclaration "+" ["a", "b"] (Integer 1)
          ]
 

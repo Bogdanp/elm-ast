@@ -229,7 +229,7 @@ portDeclaration ops =
 -- ---------
 functionTypeDeclaration : Parser s Statement
 functionTypeDeclaration =
-  FunctionTypeDeclaration <$> (loName <* symbol ":") <*> typeAnnotation
+  FunctionTypeDeclaration <$> (choice [loName, parens operator] <* symbol ":") <*> typeAnnotation
 
 functionDeclaration : OpTable -> Parser s Statement
 functionDeclaration ops =
