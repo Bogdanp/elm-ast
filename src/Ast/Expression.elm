@@ -150,7 +150,7 @@ binary ops =
   lazy <| \() ->
     let
       next =
-        between_ whitespace operator |> andThen (\op ->
+        between_ whitespace (choice [operator, symbol "as"]) |> andThen (\op ->
           choice [ Cont <$> application ops, Stop <$> expression ops ] |> andThen (\e ->
             case e of
               Cont t -> ((::) (op, t)) <$> collect
