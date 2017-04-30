@@ -244,6 +244,16 @@ expressions =
                                              (Variable ["list"]))
         , test "partial application" <|
             \() -> "(+) 2" |> is (Application (Variable ["+"]) (Integer 2))
+
+        , test "Case with as" <|
+            \() -> "case a of \nT _ as x -> 1" |> is (
+                                                      Case
+                                                          (Variable ["a"])
+                                                          ([(BinOp (Variable ["as"])
+                                                                 (Application (Variable ["T"])
+                                                                      (Variable ["_"])) (Variable ["x"])
+                                                            , Integer 1)])
+                                                )
         ]
 
 all : Test
