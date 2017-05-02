@@ -38,6 +38,11 @@ moduleDeclaration =
                                 , FunctionExport "b"
                                 ])
 
+    , test "declaration exposing an infix operator" <|
+        \() -> "module A exposing ((?))"
+            |> is (ModuleDeclaration ["A"]
+                <| SubsetExport [FunctionExport "?"])
+
     , test "declaration exposing union" <|
         \() -> "module A exposing (A(..))"
             |> is (ModuleDeclaration ["A"]
