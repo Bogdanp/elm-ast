@@ -72,9 +72,11 @@ float =
 access : Parser s Expression
 access =
   Access <$> variable <*> many1 (Combine.string "." *> loName)
+
 variable : Parser s Expression
 variable =
-  Variable <$> choice [ singleton <$> loName
+  Variable <$> choice [ singleton <$> emptyTuple
+                      , singleton <$> loName
                       , sepBy1 (Combine.string "." ) upName
                       , singleton <$> parens operator
                       ]

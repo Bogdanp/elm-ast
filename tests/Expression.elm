@@ -192,7 +192,9 @@ application =
 tuple : Test
 tuple =
     describe "Tuples"
-        [ test "Simple tuple" <|
+        [ test "Empty tuple" <|
+              \() -> "()" |> is (Variable ["()"])
+         ,test "Simple tuple" <|
               \() -> "(a, b)" |> is (BinOp
                                           (Variable [","])
                                           (Variable ["a"])
