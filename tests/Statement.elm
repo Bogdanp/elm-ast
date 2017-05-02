@@ -198,7 +198,7 @@ singleDeclaration =
          [ FunctionTypeDeclaration "f" (TypeApplication
                                           (TypeConstructor ["Int"] [])
                                           (TypeConstructor ["Int"] []))
-         , FunctionDeclaration "f" ["x"] (BinOp
+         , FunctionDeclaration "f" [Variable ["x"]] (BinOp
                                             (Variable ["+"])
                                             (Variable ["x"])
                                             (Integer 1))
@@ -206,6 +206,8 @@ singleDeclaration =
 
 multipleDeclarationsInput : String
 multipleDeclarationsInput = """
+
+
 f : Int -> Int
 f x =
   x + 1
@@ -213,6 +215,9 @@ f x =
 g : Int -> Int
 g x =
   f x + 1
+
+h : (Int, Int) -> Int
+h (a, b) = a + b
 
 (+) : Int -> Int
 (+) a b =
@@ -226,25 +231,32 @@ multipleDeclarations =
          [ FunctionTypeDeclaration "f" (TypeApplication
                                           (TypeConstructor ["Int"] [])
                                           (TypeConstructor ["Int"] []))
-         , FunctionDeclaration "f" ["x"] (BinOp
+         , FunctionDeclaration "f" [Variable ["x"]] (BinOp
                                             (Variable ["+"])
                                             (Variable ["x"])
                                             (Integer 1))
          , FunctionTypeDeclaration "g" (TypeApplication
                                           (TypeConstructor ["Int"] [])
                                           (TypeConstructor ["Int"] []))
-         , FunctionDeclaration "g" ["x"] (BinOp
+         , FunctionDeclaration "g" [Variable ["x"]] (BinOp
                                             (Variable ["+"])
                                             (Application
                                                (Variable ["f"])
                                                (Variable ["x"]))
                                             (Integer 1))
+         , FunctionTypeDeclaration "h" (TypeApplication
+                                          ((TypeTuple ([TypeConstructor ["Int"] [],TypeConstructor ["Int"] []])))
+                                          (TypeConstructor ["Int"] []))
+         , FunctionDeclaration "h" [BinOp (Variable [","]) (Variable ["a"]) (Variable ["b"])] (BinOp
+                                            (Variable ["+"])
+                                            (Variable ["a"])
+                                            (Variable ["b"]))
 
          , FunctionTypeDeclaration "+" (TypeApplication
                                             (TypeConstructor ["Int"] [])
                                             (TypeConstructor ["Int"] []))
 
-         , FunctionDeclaration "+" ["a", "b"] (Integer 1)
+         , FunctionDeclaration "+" [Variable ["a"], Variable ["b"]] (Integer 1)
          ]
 
 moduleFixityInput : String
