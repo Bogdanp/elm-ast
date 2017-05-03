@@ -64,6 +64,10 @@ loName =
 upName : Parser s String
 upName = name upper
 
+emptyTuple : Parser s String
+emptyTuple =
+    string "()"
+
 operator : Parser s String
 operator =
   regex "[+-/*=.$<>:&|^?%#@~!]+" |>
