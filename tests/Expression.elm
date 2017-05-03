@@ -124,6 +124,17 @@ in
         """ |> is ((Let
                     [("f", ["x"], (BinOp (Variable ["+"]) (Variable ["x"]) (Integer 1)))]
                     (Application (Variable ["f"]) (Integer 4))))
+   , test "function" <|
+        \() -> """
+let
+  f x = x + 1
+  g x = x + 1
+in
+  f 4
+        """ |> is ((Let
+                    [("f", ["x"], (BinOp (Variable ["+"]) (Variable ["x"]) (Integer 1)))
+                    ,("g", ["x"], (BinOp (Variable ["+"]) (Variable ["x"]) (Integer 1)))]
+                    (Application (Variable ["f"]) (Integer 4))))
 
     , test "multiple bindings" <|
         \() -> """
