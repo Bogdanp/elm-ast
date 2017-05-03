@@ -1,6 +1,8 @@
 module Ast.Expression exposing
     ( Expression(..)
-    , expression )
+    , expression
+    , term
+    )
 
 {-| This module exposes parsers for Elm expressions.
 

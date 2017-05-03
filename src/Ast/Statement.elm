@@ -24,7 +24,7 @@ import Dict
 import String
 
 import Ast.BinOp exposing (Assoc(..), OpTable)
-import Ast.Expression exposing (Expression, expression)
+import Ast.Expression exposing (Expression, expression, term)
 import Ast.Helpers exposing (..)
 
 {-| Representations for modules' exports. -}
@@ -53,7 +53,7 @@ type Statement
   | PortTypeDeclaration Name Type
   | PortDeclaration Name (List Name) Expression
   | FunctionTypeDeclaration Name Type
-  | FunctionDeclaration Name (List Name) Expression
+  | FunctionDeclaration Name (List Expression) Expression
   | InfixDeclaration Assoc Int Name
   | Comment String
 
@@ -235,7 +235,7 @@ functionDeclaration : OpTable -> Parser s Statement
 functionDeclaration ops =
   FunctionDeclaration
     <$> (choice [loName, parens operator])
-    <*> (many (between_ whitespace loName))
+    <*> (many (between_ whitespace <| term ops))
     <*> (symbol "=" *> whitespace *> expression ops)
 
 
