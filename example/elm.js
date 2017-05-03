@@ -5315,6 +5315,7 @@ var _Bogdanp$elm_combine$Combine_Char$hexDigit = A2(
 	_Bogdanp$elm_combine$Combine_Char$satisfy(_elm_lang$core$Char$isHexDigit),
 	'expected a hexadecimal digit');
 
+var _Bogdanp$elm_ast$Ast_Helpers$emptyTuple = _Bogdanp$elm_combine$Combine$string('()');
 var _Bogdanp$elm_ast$Ast_Helpers$name = function (p) {
 	return A2(
 		_Bogdanp$elm_combine$Combine_ops['<*>'],
@@ -7132,20 +7133,24 @@ var _Bogdanp$elm_ast$Ast_Expression$variable = A2(
 	_Bogdanp$elm_combine$Combine$choice(
 		{
 			ctor: '::',
-			_0: A2(_Bogdanp$elm_combine$Combine_ops['<$>'], _elm_community$list_extra$List_Extra$singleton, _Bogdanp$elm_ast$Ast_Helpers$loName),
+			_0: A2(_Bogdanp$elm_combine$Combine_ops['<$>'], _elm_community$list_extra$List_Extra$singleton, _Bogdanp$elm_ast$Ast_Helpers$emptyTuple),
 			_1: {
 				ctor: '::',
-				_0: A2(
-					_Bogdanp$elm_combine$Combine$sepBy1,
-					_Bogdanp$elm_combine$Combine$string('.'),
-					_Bogdanp$elm_ast$Ast_Helpers$upName),
+				_0: A2(_Bogdanp$elm_combine$Combine_ops['<$>'], _elm_community$list_extra$List_Extra$singleton, _Bogdanp$elm_ast$Ast_Helpers$loName),
 				_1: {
 					ctor: '::',
 					_0: A2(
-						_Bogdanp$elm_combine$Combine_ops['<$>'],
-						_elm_community$list_extra$List_Extra$singleton,
-						_Bogdanp$elm_combine$Combine$parens(_Bogdanp$elm_ast$Ast_Helpers$operator)),
-					_1: {ctor: '[]'}
+						_Bogdanp$elm_combine$Combine$sepBy1,
+						_Bogdanp$elm_combine$Combine$string('.'),
+						_Bogdanp$elm_ast$Ast_Helpers$upName),
+					_1: {
+						ctor: '::',
+						_0: A2(
+							_Bogdanp$elm_combine$Combine_ops['<$>'],
+							_elm_community$list_extra$List_Extra$singleton,
+							_Bogdanp$elm_combine$Combine$parens(_Bogdanp$elm_ast$Ast_Helpers$operator)),
+						_1: {ctor: '[]'}
+					}
 				}
 			}
 		}));
@@ -7472,7 +7477,19 @@ var _Bogdanp$elm_ast$Ast_Expression$binary = function (ops) {
 								}
 							}));
 				},
-				A2(_Bogdanp$elm_ast$Ast_Helpers$between_, _Bogdanp$elm_combine$Combine$whitespace, _Bogdanp$elm_ast$Ast_Helpers$operator));
+				A2(
+					_Bogdanp$elm_ast$Ast_Helpers$between_,
+					_Bogdanp$elm_combine$Combine$whitespace,
+					_Bogdanp$elm_combine$Combine$choice(
+						{
+							ctor: '::',
+							_0: _Bogdanp$elm_ast$Ast_Helpers$operator,
+							_1: {
+								ctor: '::',
+								_0: _Bogdanp$elm_ast$Ast_Helpers$symbol('as'),
+								_1: {ctor: '[]'}
+							}
+						})));
 			var collect = A2(
 				_Bogdanp$elm_combine$Combine_ops['<|>'],
 				next,
@@ -7592,12 +7609,16 @@ var _Bogdanp$elm_ast$Ast_Expression$letExpression = function (ops) {
 			return A2(
 				_Bogdanp$elm_combine$Combine_ops['<*>'],
 				A2(
-					_Bogdanp$elm_combine$Combine_ops['<$>'],
-					F2(
-						function (v0, v1) {
-							return {ctor: '_Tuple2', _0: v0, _1: v1};
-						}),
-					A2(_Bogdanp$elm_ast$Ast_Helpers$between_, _Bogdanp$elm_combine$Combine$whitespace, _Bogdanp$elm_ast$Ast_Helpers$loName)),
+					_Bogdanp$elm_combine$Combine_ops['<*>'],
+					A2(
+						_Bogdanp$elm_combine$Combine_ops['<$>'],
+						F3(
+							function (v0, v1, v2) {
+								return {ctor: '_Tuple3', _0: v0, _1: v1, _2: v2};
+							}),
+						A2(_Bogdanp$elm_ast$Ast_Helpers$between_, _Bogdanp$elm_combine$Combine$whitespace, _Bogdanp$elm_ast$Ast_Helpers$loName)),
+					_Bogdanp$elm_combine$Combine$many(
+						A2(_Bogdanp$elm_ast$Ast_Helpers$between_, _Bogdanp$elm_combine$Combine$whitespace, _Bogdanp$elm_ast$Ast_Helpers$loName))),
 				A2(
 					_Bogdanp$elm_combine$Combine_ops['*>'],
 					_Bogdanp$elm_ast$Ast_Helpers$symbol('='),
@@ -7700,7 +7721,19 @@ var _Bogdanp$elm_ast$Ast_Statement$TypeExport = F2(
 var _Bogdanp$elm_ast$Ast_Statement$FunctionExport = function (a) {
 	return {ctor: 'FunctionExport', _0: a};
 };
-var _Bogdanp$elm_ast$Ast_Statement$functionExport = A2(_Bogdanp$elm_combine$Combine_ops['<$>'], _Bogdanp$elm_ast$Ast_Statement$FunctionExport, _Bogdanp$elm_ast$Ast_Helpers$functionName);
+var _Bogdanp$elm_ast$Ast_Statement$functionExport = A2(
+	_Bogdanp$elm_combine$Combine_ops['<$>'],
+	_Bogdanp$elm_ast$Ast_Statement$FunctionExport,
+	_Bogdanp$elm_combine$Combine$choice(
+		{
+			ctor: '::',
+			_0: _Bogdanp$elm_ast$Ast_Helpers$functionName,
+			_1: {
+				ctor: '::',
+				_0: _Bogdanp$elm_combine$Combine$parens(_Bogdanp$elm_ast$Ast_Helpers$operator),
+				_1: {ctor: '[]'}
+			}
+		}));
 var _Bogdanp$elm_ast$Ast_Statement$SubsetExport = function (a) {
 	return {ctor: 'SubsetExport', _0: a};
 };
@@ -7773,7 +7806,7 @@ var _Bogdanp$elm_ast$Ast_Statement$TypeVariable = function (a) {
 var _Bogdanp$elm_ast$Ast_Statement$typeVariable = A2(
 	_Bogdanp$elm_combine$Combine_ops['<$>'],
 	_Bogdanp$elm_ast$Ast_Statement$TypeVariable,
-	_Bogdanp$elm_combine$Combine$regex('[a-z]+'));
+	_Bogdanp$elm_combine$Combine$regex('[a-z]+[0-9]*'));
 var _Bogdanp$elm_ast$Ast_Statement$TypeConstructor = F2(
 	function (a, b) {
 		return {ctor: 'TypeConstructor', _0: a, _1: b};
@@ -8072,7 +8105,10 @@ var _Bogdanp$elm_ast$Ast_Statement$functionDeclaration = function (ops) {
 						}
 					})),
 			_Bogdanp$elm_combine$Combine$many(
-				A2(_Bogdanp$elm_ast$Ast_Helpers$between_, _Bogdanp$elm_combine$Combine$whitespace, _Bogdanp$elm_ast$Ast_Helpers$loName))),
+				A2(
+					_Bogdanp$elm_ast$Ast_Helpers$between_,
+					_Bogdanp$elm_combine$Combine$whitespace,
+					_Bogdanp$elm_ast$Ast_Expression$term(ops)))),
 		A2(
 			_Bogdanp$elm_combine$Combine_ops['*>'],
 			A2(
@@ -8092,7 +8128,16 @@ var _Bogdanp$elm_ast$Ast_Statement$functionTypeDeclaration = A2(
 		_Bogdanp$elm_ast$Ast_Statement$FunctionTypeDeclaration,
 		A2(
 			_Bogdanp$elm_combine$Combine_ops['<*'],
-			_Bogdanp$elm_ast$Ast_Helpers$loName,
+			_Bogdanp$elm_combine$Combine$choice(
+				{
+					ctor: '::',
+					_0: _Bogdanp$elm_ast$Ast_Helpers$loName,
+					_1: {
+						ctor: '::',
+						_0: _Bogdanp$elm_combine$Combine$parens(_Bogdanp$elm_ast$Ast_Helpers$operator),
+						_1: {ctor: '[]'}
+					}
+				}),
 			_Bogdanp$elm_ast$Ast_Helpers$symbol(':'))),
 	_Bogdanp$elm_ast$Ast_Statement$typeAnnotation);
 var _Bogdanp$elm_ast$Ast_Statement$PortDeclaration = F3(
