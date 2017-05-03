@@ -7806,7 +7806,7 @@ var _Bogdanp$elm_ast$Ast_Statement$TypeVariable = function (a) {
 var _Bogdanp$elm_ast$Ast_Statement$typeVariable = A2(
 	_Bogdanp$elm_combine$Combine_ops['<$>'],
 	_Bogdanp$elm_ast$Ast_Statement$TypeVariable,
-	_Bogdanp$elm_combine$Combine$regex('[a-z]+[0-9]*'));
+	_Bogdanp$elm_combine$Combine$regex('[a-z]+(\\w|_)*'));
 var _Bogdanp$elm_ast$Ast_Statement$TypeConstructor = F2(
 	function (a, b) {
 		return {ctor: 'TypeConstructor', _0: a, _1: b};
