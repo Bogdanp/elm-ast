@@ -1,7 +1,7 @@
 {
-    "version": "2.0.4",
+    "version": "1.0.3",
     "summary": "A parser for Elm code",
-    "repository": "https://github.com/Bogdanp/elm-ast.git",
+    "repository": "https://github.com/joonazan/elm-ast.git",
     "license": "BSD3",
     "source-directories": [
         "src",

@@ -66,7 +66,7 @@ allExport =
 
 functionExport : Parser s ExportSet
 functionExport =
-  FunctionExport <$> functionName
+  FunctionExport <$> choice [ functionName, parens operator ]
 
 constructorSubsetExports : Parser s ExportSet
 constructorSubsetExports =

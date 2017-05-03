@@ -107,13 +107,23 @@ letExpressions =
   describe "Let"
     [ test "single binding" <|
         \() -> "let a = 42 in a" |> is ((Let
-                                         [("a", Integer 42)]
+                                         [("a", [], Integer 42)]
                                          (Variable ["a"])))
 
     , test "bind to _" <|
         \() -> "let _ = 42 in 24" |> is ((Let
-                                          [("_", Integer 42)]
+                                          [("_", [], Integer 42)]
                                           (Integer 24)))
+
+    , test "function" <|
+        \() -> """
+let
+  f x = x + 1
+in
+  f 4
+        """ |> is ((Let
+                    [("f", ["x"], (BinOp (Variable ["+"]) (Variable ["x"]) (Integer 1)))]
+                    (Application (Variable ["f"]) (Integer 4))))
 
     , test "multiple bindings" <|
         \() -> """
@@ -124,8 +134,8 @@ let
 in
   b
             """ |> is ((Let
-                        [ ("a", Integer 42)
-                        , ("b", (BinOp (Variable ["+"]) (Variable ["a"]) (Integer 1)))
+                        [ ("a", [], Integer 42)
+                        , ("b", [], (BinOp (Variable ["+"]) (Variable ["a"]) (Integer 1)))
                         ]
                         (Variable ["b"])))
     ]

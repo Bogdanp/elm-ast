@@ -40,7 +40,7 @@ type Expression
   | Record (List (Name, Expression))
   | RecordUpdate Name (List (Name, Expression))
   | If Expression Expression Expression
-  | Let (List (Name, Expression)) Expression
+  | Let (List (Name, List Name, Expression)) Expression
   | Case Expression (List (Expression, Expression))
   | Lambda (List Name) Expression
   | Application Expression Expression
@@ -106,8 +106,9 @@ letExpression ops =
   let
     binding =
       lazy <| \() ->
-        (,)
+        (,,)
           <$> (between_ whitespace loName)
+          <*> (many <| between_ whitespace loName)
           <*> (symbol "=" *> expression ops)
   in
     lazy <| \() ->
