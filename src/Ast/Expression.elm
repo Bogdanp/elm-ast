@@ -12,6 +12,9 @@ module Ast.Expression exposing
 # Parsers
 @docs expression
 
+# Expression
+@docs term
+
 -}
 
 import Combine exposing (..)
@@ -166,6 +169,7 @@ binary ops =
         collect |> andThen (\eops ->
           split ops 0 e eops))
 
+{-|  A parses for term -}
 term : OpTable -> Parser s Expression
 term ops =
   lazy <| \() ->
