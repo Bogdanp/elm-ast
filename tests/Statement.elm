@@ -118,6 +118,10 @@ typeAnnotations =
         \() -> "x : a"
              |> is (FunctionTypeDeclaration "x" (TypeVariable "a"))
 
+    , test "variables with numbers" <|
+        \() -> "x : a1"
+             |> is (FunctionTypeDeclaration "x" (TypeVariable "a1"))
+
     , test "application" <|
         \() -> "x : a -> b"
              |> is (FunctionTypeDeclaration "x" (TypeApplication
