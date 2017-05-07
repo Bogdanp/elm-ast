@@ -1,5 +1,5 @@
 {
-    "version": "4.0.4",
+    "version": "4.0.5",
     "summary": "A parser for Elm code",
     "repository": "https://github.com/Bogdanp/elm-ast.git",
     "license": "BSD3",
