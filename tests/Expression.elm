@@ -298,7 +298,15 @@ expressions =
                                                                       (Variable ["_"])) (Variable ["x"])
                                                             , Integer 1)])
                                                 )
+        , test "cons has right assoc" <|
+                \() -> "a :: b :: c" |> is (
+                                            BinOp (var "::") (var "a")
+                                                (BinOp (var "::") (var "b") (var "c"))
+                                           )
         ]
+
+var a =
+    Variable [a]
 
 all : Test
 all =
