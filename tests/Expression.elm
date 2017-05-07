@@ -303,6 +303,14 @@ expressions =
                                             BinOp (var "::") (var "a")
                                                 (BinOp (var "::") (var "b") (var "c"))
                                            )
+        , test "cons has right assoc with tuple" <|
+            \() -> "(a, a :: b :: c)" |> is
+                   (
+                    BinOp (var ",")
+                        (var "a")
+                        ((BinOp (var "::") (var "a"))
+                             (BinOp (var "::") (var "b") (var "c")))
+                   )
         ]
 
 var a =
