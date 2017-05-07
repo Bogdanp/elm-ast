@@ -54,4 +54,4 @@ operators =
     |> Dict.insert ">>"  (L, 9)
     |> Dict.insert "<|"  (R, 1)
     |> Dict.insert "|>"  (R, 1)
-    |> Dict.insert ","   (R, 0)
+    |> Dict.insert ","   (L, 0)
