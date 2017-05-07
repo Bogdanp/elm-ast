@@ -205,7 +205,7 @@ tuple =
     describe "Tuples"
         [ test "Empty tuple" <|
               \() -> "()" |> is (Variable ["()"])
-         ,test "Simple tuple" <|
+         , test "Simple tuple" <|
               \() -> "(a, b)" |> is (BinOp
                                           (Variable [","])
                                           (Variable ["a"])
@@ -219,20 +219,51 @@ tuple =
                                      )
         ]
 
+list : Test
+list =
+    describe "Lists"
+        [ test "Empty list" <| \() -> "[]" |> is (List [])
+        , test "Simple list" <|
+            \() -> "[1, 2]" |> is (List [Integer 1, Integer 2])
+        , test "Simple list" <|
+            \() -> "[(a, b), (a, b)]" |> is (List [ (BinOp
+                                                         (Variable [","])
+                                                         (Variable ["a"])
+                                                         (Variable ["b"])
+                                                    )
+                                                  , (BinOp
+                                                         (Variable [","])
+                                                         (Variable ["a"])
+                                                         (Variable ["b"])
+                                                    )
+                                                  ])
+        ]
+
 record : Test
 record =
     describe "Tuples"
         [ test "Simple record" <|
-              \() -> "{a = b}" |> is (Record [
-                                           ("a" , (Variable ["b"]))
-                                           ]
+              \() -> "{a = b}" |> is (Record [("a" , (Variable ["b"]))]
                                      )
         , test "Simple record with many fields" <|
               \() -> "{a = b, b = 2}" |> is (Record
-                                                 [("a" , (Variable ["b"]))
+                                                 [ ("a" , (Variable ["b"]))
                                                  , ("b" , (Integer 2))
                                            ]
                                      )
+        , test "Simple record with many tuple fields" <|
+              \() -> "{a = (a, b), b = (a, b)}" |> is (Record
+                                                 [ ("a", (BinOp
+                                                             (Variable [","])
+                                                             (Variable ["a"])
+                                                             (Variable ["b"])
+                                                        ))
+                                                 , ("b", (BinOp
+                                                         (Variable [","])
+                                                         (Variable ["a"])
+                                                         (Variable ["b"])
+                                                    ))
+                                                 ])
         , test "Simple record with updated field" <|
             \() -> "{a | b = 2, c = 3}" |> is (RecordUpdate
                                                    "a"
@@ -277,6 +308,7 @@ all =
     , caseExpressions
     , application
     , tuple
+    , list
     , record
     , expressions
     ]
