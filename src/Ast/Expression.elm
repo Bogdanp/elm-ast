@@ -89,7 +89,7 @@ variable =
 list : OpTable -> Parser s Expression
 list ops =
   lazy <| \() ->
-    List <$> brackets (commaSeparated_ (expression ops))
+    List <$> brackets (commaSeparated_ (term ops))
 
 record : OpTable -> Parser s Expression
 record ops =
