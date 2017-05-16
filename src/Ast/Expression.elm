@@ -39,6 +39,7 @@ type Expression
   | Float Float
   | Variable (List Name)
   | List (List Expression)
+  | Tuple (List Expression)
   | Access Expression (List Name)
   | Record (List (Name, Expression))
   | RecordUpdate Name (List (Name, Expression))
@@ -89,19 +90,29 @@ variable =
 list : OpTable -> Parser s Expression
 list ops =
   lazy <| \() ->
-    List <$> brackets (commaSeparated_ (term ops))
+    List <$> brackets (commaSeparated_ (expression ops))
+
+tuple : OpTable -> Parser s Expression
+tuple ops =
+    lazy <| \() ->
+        Tuple <$>
+            (parens (commaSeparated_ (expression ops)) >>= \a -> case a of
+                 [ _ ] -> fail "No single tuples"
+                 anyOther -> succeed anyOther
+            )
+
 
 record : OpTable -> Parser s Expression
 record ops =
   lazy <| \() ->
-    Record <$> braces (commaSeparated_ ((,) <$> loName <*> (symbol "=" *> term ops)))
+    Record <$> braces (commaSeparated ((,) <$> loName <*> (symbol "=" *> expression ops)))
 
 recordUpdate : OpTable -> Parser s Expression
 recordUpdate ops =
   lazy <| \() ->
     RecordUpdate
         <$> (symbol "{" *> loName)
-        <*> (symbol "|" *> (commaSeparated_ ((,) <$> loName <*> (symbol "=" *> term ops)))
+        <*> (symbol "|" *> (commaSeparated ((,) <$> loName <*> (symbol "=" *> expression ops)))
             <* symbol "}")
 
 letExpression : OpTable -> Parser s Expression
@@ -175,7 +186,7 @@ term : OpTable -> Parser s Expression
 term ops =
   lazy <| \() ->
     choice [ character, string, float, integer, access, variable
-           , list ops, recordUpdate ops, record ops
+           , list ops, tuple ops, recordUpdate ops, record ops
            , parens ( between_ whitespace (expression ops))
 
            ]
