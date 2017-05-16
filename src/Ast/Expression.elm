@@ -44,9 +44,9 @@ type Expression
   | Record (List (Name, Expression))
   | RecordUpdate Name (List (Name, Expression))
   | If Expression Expression Expression
-  | Let (List (Name, List Name, Expression)) Expression
+  | Let (List (Expression, Expression)) Expression
   | Case Expression (List (Expression, Expression))
-  | Lambda (List Name) Expression
+  | Lambda (List Expression) Expression
   | Application Expression Expression
   | BinOp Expression Expression Expression
 
@@ -120,9 +120,8 @@ letExpression ops =
   let
     binding =
       lazy <| \() ->
-        (,,)
-          <$> (between_ whitespace loName)
-          <*> (many <| between_ whitespace loName)
+        (,)
+          <$> (between_ whitespace (expression ops))
           <*> (symbol "=" *> expression ops)
   in
     lazy <| \() ->
@@ -156,7 +155,7 @@ lambda : OpTable -> Parser s Expression
 lambda ops =
   lazy <| \() ->
     Lambda
-      <$> (symbol "\\" *> many (between_ spaces loName))
+      <$> (symbol "\\" *> many (between_ spaces (term ops)))
       <*> (symbol "->" *> expression ops)
 
 application : OpTable -> Parser s Expression
