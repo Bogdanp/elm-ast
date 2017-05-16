@@ -5404,7 +5404,7 @@ var _Bogdanp$elm_ast$Ast_Helpers$operator = A2(
 				'operator \'',
 				A2(_elm_lang$core$Basics_ops['++'], n, '\' is reserved'))) : _elm_community$parser_combinators$Combine$succeed(n);
 	},
-	_elm_community$parser_combinators$Combine$regex('[+-/*=.$<>:&|^?%#@~!]+'));
+	_elm_community$parser_combinators$Combine$regex('[+\\-\\/*=.$<>:&|^?%#@~!]+'));
 var _Bogdanp$elm_ast$Ast_Helpers$reserved = {
 	ctor: '::',
 	_0: 'module',
@@ -5488,93 +5488,97 @@ var _Bogdanp$elm_ast$Ast_BinOp$R = {ctor: 'R'};
 var _Bogdanp$elm_ast$Ast_BinOp$L = {ctor: 'L'};
 var _Bogdanp$elm_ast$Ast_BinOp$operators = A3(
 	_elm_lang$core$Dict$insert,
-	'|>',
+	'=',
 	{ctor: '_Tuple2', _0: _Bogdanp$elm_ast$Ast_BinOp$R, _1: 0},
 	A3(
 		_elm_lang$core$Dict$insert,
-		'<|',
-		{ctor: '_Tuple2', _0: _Bogdanp$elm_ast$Ast_BinOp$R, _1: 0},
+		'|>',
+		{ctor: '_Tuple2', _0: _Bogdanp$elm_ast$Ast_BinOp$R, _1: 1},
 		A3(
 			_elm_lang$core$Dict$insert,
-			'>>',
-			{ctor: '_Tuple2', _0: _Bogdanp$elm_ast$Ast_BinOp$L, _1: 9},
+			'<|',
+			{ctor: '_Tuple2', _0: _Bogdanp$elm_ast$Ast_BinOp$R, _1: 1},
 			A3(
 				_elm_lang$core$Dict$insert,
-				'<<',
+				'>>',
 				{ctor: '_Tuple2', _0: _Bogdanp$elm_ast$Ast_BinOp$L, _1: 9},
 				A3(
 					_elm_lang$core$Dict$insert,
-					'^',
-					{ctor: '_Tuple2', _0: _Bogdanp$elm_ast$Ast_BinOp$L, _1: 8},
+					'<<',
+					{ctor: '_Tuple2', _0: _Bogdanp$elm_ast$Ast_BinOp$L, _1: 9},
 					A3(
 						_elm_lang$core$Dict$insert,
-						'rem',
-						{ctor: '_Tuple2', _0: _Bogdanp$elm_ast$Ast_BinOp$L, _1: 7},
+						'^',
+						{ctor: '_Tuple2', _0: _Bogdanp$elm_ast$Ast_BinOp$L, _1: 8},
 						A3(
 							_elm_lang$core$Dict$insert,
-							'//',
+							'rem',
 							{ctor: '_Tuple2', _0: _Bogdanp$elm_ast$Ast_BinOp$L, _1: 7},
 							A3(
 								_elm_lang$core$Dict$insert,
-								'%',
+								'//',
 								{ctor: '_Tuple2', _0: _Bogdanp$elm_ast$Ast_BinOp$L, _1: 7},
 								A3(
 									_elm_lang$core$Dict$insert,
-									'/',
+									'%',
 									{ctor: '_Tuple2', _0: _Bogdanp$elm_ast$Ast_BinOp$L, _1: 7},
 									A3(
 										_elm_lang$core$Dict$insert,
-										'*',
+										'/',
 										{ctor: '_Tuple2', _0: _Bogdanp$elm_ast$Ast_BinOp$L, _1: 7},
 										A3(
 											_elm_lang$core$Dict$insert,
-											'-',
-											{ctor: '_Tuple2', _0: _Bogdanp$elm_ast$Ast_BinOp$L, _1: 6},
+											'*',
+											{ctor: '_Tuple2', _0: _Bogdanp$elm_ast$Ast_BinOp$L, _1: 7},
 											A3(
 												_elm_lang$core$Dict$insert,
-												'+',
+												'-',
 												{ctor: '_Tuple2', _0: _Bogdanp$elm_ast$Ast_BinOp$L, _1: 6},
 												A3(
 													_elm_lang$core$Dict$insert,
-													'::',
-													{ctor: '_Tuple2', _0: _Bogdanp$elm_ast$Ast_BinOp$R, _1: 5},
+													'+',
+													{ctor: '_Tuple2', _0: _Bogdanp$elm_ast$Ast_BinOp$L, _1: 6},
 													A3(
 														_elm_lang$core$Dict$insert,
-														'++',
-														{ctor: '_Tuple2', _0: _Bogdanp$elm_ast$Ast_BinOp$L, _1: 5},
+														'::',
+														{ctor: '_Tuple2', _0: _Bogdanp$elm_ast$Ast_BinOp$R, _1: 5},
 														A3(
 															_elm_lang$core$Dict$insert,
-															'<=',
-															{ctor: '_Tuple2', _0: _Bogdanp$elm_ast$Ast_BinOp$L, _1: 4},
+															'++',
+															{ctor: '_Tuple2', _0: _Bogdanp$elm_ast$Ast_BinOp$L, _1: 5},
 															A3(
 																_elm_lang$core$Dict$insert,
-																'>=',
+																'<=',
 																{ctor: '_Tuple2', _0: _Bogdanp$elm_ast$Ast_BinOp$L, _1: 4},
 																A3(
 																	_elm_lang$core$Dict$insert,
-																	'>',
+																	'>=',
 																	{ctor: '_Tuple2', _0: _Bogdanp$elm_ast$Ast_BinOp$L, _1: 4},
 																	A3(
 																		_elm_lang$core$Dict$insert,
-																		'<',
+																		'>',
 																		{ctor: '_Tuple2', _0: _Bogdanp$elm_ast$Ast_BinOp$L, _1: 4},
 																		A3(
 																			_elm_lang$core$Dict$insert,
-																			'/=',
+																			'<',
 																			{ctor: '_Tuple2', _0: _Bogdanp$elm_ast$Ast_BinOp$L, _1: 4},
 																			A3(
 																				_elm_lang$core$Dict$insert,
-																				'==',
+																				'/=',
 																				{ctor: '_Tuple2', _0: _Bogdanp$elm_ast$Ast_BinOp$L, _1: 4},
 																				A3(
 																					_elm_lang$core$Dict$insert,
-																					'&&',
-																					{ctor: '_Tuple2', _0: _Bogdanp$elm_ast$Ast_BinOp$L, _1: 3},
+																					'==',
+																					{ctor: '_Tuple2', _0: _Bogdanp$elm_ast$Ast_BinOp$L, _1: 4},
 																					A3(
 																						_elm_lang$core$Dict$insert,
-																						'||',
-																						{ctor: '_Tuple2', _0: _Bogdanp$elm_ast$Ast_BinOp$L, _1: 2},
-																						_elm_lang$core$Dict$empty))))))))))))))))))))));
+																						'&&',
+																						{ctor: '_Tuple2', _0: _Bogdanp$elm_ast$Ast_BinOp$L, _1: 3},
+																						A3(
+																							_elm_lang$core$Dict$insert,
+																							'||',
+																							{ctor: '_Tuple2', _0: _Bogdanp$elm_ast$Ast_BinOp$L, _1: 2},
+																							_elm_lang$core$Dict$empty)))))))))))))))))))))));
 var _Bogdanp$elm_ast$Ast_BinOp$N = {ctor: 'N'};
 
 var _elm_community$parser_combinators$Combine_Num$digit = function () {
@@ -7132,6 +7136,9 @@ var _Bogdanp$elm_ast$Ast_Expression$Access = F2(
 	function (a, b) {
 		return {ctor: 'Access', _0: a, _1: b};
 	});
+var _Bogdanp$elm_ast$Ast_Expression$Tuple = function (a) {
+	return {ctor: 'Tuple', _0: a};
+};
 var _Bogdanp$elm_ast$Ast_Expression$List = function (a) {
 	return {ctor: 'List', _0: a};
 };
@@ -7390,18 +7397,22 @@ var _Bogdanp$elm_ast$Ast_Expression$term = function (ops) {
 											_0: _Bogdanp$elm_ast$Ast_Expression$list(ops),
 											_1: {
 												ctor: '::',
-												_0: _Bogdanp$elm_ast$Ast_Expression$recordUpdate(ops),
+												_0: _Bogdanp$elm_ast$Ast_Expression$tuple(ops),
 												_1: {
 													ctor: '::',
-													_0: _Bogdanp$elm_ast$Ast_Expression$record(ops),
+													_0: _Bogdanp$elm_ast$Ast_Expression$recordUpdate(ops),
 													_1: {
 														ctor: '::',
-														_0: _elm_community$parser_combinators$Combine$parens(
-															A2(
-																_Bogdanp$elm_ast$Ast_Helpers$between_,
-																_elm_community$parser_combinators$Combine$whitespace,
-																_Bogdanp$elm_ast$Ast_Expression$expression(ops))),
-														_1: {ctor: '[]'}
+														_0: _Bogdanp$elm_ast$Ast_Expression$record(ops),
+														_1: {
+															ctor: '::',
+															_0: _elm_community$parser_combinators$Combine$parens(
+																A2(
+																	_Bogdanp$elm_ast$Ast_Helpers$between_,
+																	_elm_community$parser_combinators$Combine$whitespace,
+																	_Bogdanp$elm_ast$Ast_Expression$expression(ops))),
+															_1: {ctor: '[]'}
+														}
 													}
 												}
 											}
@@ -7662,7 +7673,7 @@ var _Bogdanp$elm_ast$Ast_Expression$list = function (ops) {
 				_Bogdanp$elm_ast$Ast_Expression$List,
 				_elm_community$parser_combinators$Combine$brackets(
 					_Bogdanp$elm_ast$Ast_Helpers$commaSeparated_(
-						_Bogdanp$elm_ast$Ast_Expression$term(ops))));
+						_Bogdanp$elm_ast$Ast_Expression$expression(ops))));
 		});
 };
 var _Bogdanp$elm_ast$Ast_Expression$record = function (ops) {
@@ -7673,7 +7684,7 @@ var _Bogdanp$elm_ast$Ast_Expression$record = function (ops) {
 				_elm_community$parser_combinators$Combine_ops['<$>'],
 				_Bogdanp$elm_ast$Ast_Expression$Record,
 				_elm_community$parser_combinators$Combine$braces(
-					_Bogdanp$elm_ast$Ast_Helpers$commaSeparated_(
+					_Bogdanp$elm_ast$Ast_Helpers$commaSeparated(
 						A2(
 							_elm_community$parser_combinators$Combine_ops['<*>'],
 							A2(
@@ -7686,7 +7697,7 @@ var _Bogdanp$elm_ast$Ast_Expression$record = function (ops) {
 							A2(
 								_elm_community$parser_combinators$Combine_ops['*>'],
 								_Bogdanp$elm_ast$Ast_Helpers$symbol('='),
-								_Bogdanp$elm_ast$Ast_Expression$term(ops))))));
+								_Bogdanp$elm_ast$Ast_Expression$expression(ops))))));
 		});
 };
 var _Bogdanp$elm_ast$Ast_Expression$recordUpdate = function (ops) {
@@ -7707,7 +7718,7 @@ var _Bogdanp$elm_ast$Ast_Expression$recordUpdate = function (ops) {
 					A2(
 						_elm_community$parser_combinators$Combine_ops['*>'],
 						_Bogdanp$elm_ast$Ast_Helpers$symbol('|'),
-						_Bogdanp$elm_ast$Ast_Helpers$commaSeparated_(
+						_Bogdanp$elm_ast$Ast_Helpers$commaSeparated(
 							A2(
 								_elm_community$parser_combinators$Combine_ops['<*>'],
 								A2(
@@ -7720,8 +7731,30 @@ var _Bogdanp$elm_ast$Ast_Expression$recordUpdate = function (ops) {
 								A2(
 									_elm_community$parser_combinators$Combine_ops['*>'],
 									_Bogdanp$elm_ast$Ast_Helpers$symbol('='),
-									_Bogdanp$elm_ast$Ast_Expression$term(ops))))),
+									_Bogdanp$elm_ast$Ast_Expression$expression(ops))))),
 					_Bogdanp$elm_ast$Ast_Helpers$symbol('}')));
+		});
+};
+var _Bogdanp$elm_ast$Ast_Expression$tuple = function (ops) {
+	return _elm_community$parser_combinators$Combine$lazy(
+		function (_p37) {
+			var _p38 = _p37;
+			return A2(
+				_elm_community$parser_combinators$Combine_ops['<$>'],
+				_Bogdanp$elm_ast$Ast_Expression$Tuple,
+				A2(
+					_elm_community$parser_combinators$Combine_ops['>>='],
+					_elm_community$parser_combinators$Combine$parens(
+						_Bogdanp$elm_ast$Ast_Helpers$commaSeparated_(
+							_Bogdanp$elm_ast$Ast_Expression$expression(ops))),
+					function (a) {
+						var _p39 = a;
+						if ((_p39.ctor === '::') && (_p39._1.ctor === '[]')) {
+							return _elm_community$parser_combinators$Combine$fail('No single tuples');
+						} else {
+							return _elm_community$parser_combinators$Combine$succeed(_p39);
+						}
+					}));
 		});
 };
 
