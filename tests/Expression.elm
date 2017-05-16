@@ -97,12 +97,12 @@ letExpressions =
   describe "Let"
     [ test "single binding" <|
         \() -> "let a = 42 in a" |> is ((Let
-                                         [("a", [], Integer 42)]
+                                         [(Variable ["a"], Integer 42)]
                                          (Variable ["a"])))
 
     , test "bind to _" <|
         \() -> "let _ = 42 in 24" |> is ((Let
-                                          [("_", [], Integer 42)]
+                                          [(Variable ["_"], Integer 42)]
                                           (Integer 24)))
 
     , test "function" <|
@@ -112,7 +112,7 @@ let
 in
   f 4
         """ |> is ((Let
-                    [("f", ["x"], (BinOp (Variable ["+"]) (Variable ["x"]) (Integer 1)))]
+                    [(Application (Variable ["f"]) (Variable ["x"]), (BinOp (Variable ["+"]) (Variable ["x"]) (Integer 1)))]
                     (Application (Variable ["f"]) (Integer 4))))
    , test "function" <|
         \() -> """
@@ -122,9 +122,14 @@ let
 in
   f 4
         """ |> is ((Let
-                    [("f", ["x"], (BinOp (Variable ["+"]) (Variable ["x"]) (Integer 1)))
-                    ,("g", ["x"], (BinOp (Variable ["+"]) (Variable ["x"]) (Integer 1)))]
-                    (Application (Variable ["f"]) (Integer 4))))
+           [
+           ( (Application (Variable ["f"]) (Variable ["x"]))
+           , (BinOp (Variable ["+"]) (Variable ["x"]) (Integer 1)))
+
+           , (Application (Variable ["g"]) (Variable ["x"])
+           , (BinOp (Variable ["+"]) (Variable ["x"]) (Integer 1)))
+           ]
+           (Application (Variable ["f"]) (Integer 4))))
 
     , test "multiple bindings" <|
         \() -> """
@@ -135,8 +140,8 @@ let
 in
   b
             """ |> is ((Let
-                        [ ("a", [], Integer 42)
-                        , ("b", [], (BinOp (Variable ["+"]) (Variable ["a"]) (Integer 1)))
+                        [ (Variable ["a"], Integer 42)
+                        , (Variable ["b"], (BinOp (Variable ["+"]) (Variable ["a"]) (Integer 1)))
                         ]
                         (Variable ["b"])))
     ]
