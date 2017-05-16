@@ -97,12 +97,12 @@ letExpressions =
   describe "Let"
     [ test "single binding" <|
         \() -> "let a = 42 in a" |> is ((Let
-                                         [(Variable ["a"], Integer 42)]
-                                         (Variable ["a"])))
+                                         [(var "a", Integer 42)]
+                                         (var "a")))
 
     , test "bind to _" <|
         \() -> "let _ = 42 in 24" |> is ((Let
-                                          [(Variable ["_"], Integer 42)]
+                                          [(var "_", Integer 42)]
                                           (Integer 24)))
 
     , test "function" <|
@@ -112,8 +112,8 @@ let
 in
   f 4
         """ |> is ((Let
-                    [(Application (Variable ["f"]) (Variable ["x"]), (BinOp (Variable ["+"]) (Variable ["x"]) (Integer 1)))]
-                    (Application (Variable ["f"]) (Integer 4))))
+                    [(Application (var "f") (var "x"), (BinOp (var "+") (var "x") (Integer 1)))]
+                    (Application (var "f") (Integer 4))))
    , test "function" <|
         \() -> """
 let
@@ -123,13 +123,13 @@ in
   f 4
         """ |> is ((Let
            [
-           ( (Application (Variable ["f"]) (Variable ["x"]))
-           , (BinOp (Variable ["+"]) (Variable ["x"]) (Integer 1)))
+           ( (Application (var "f") (var "x"))
+           , (BinOp (var "+") (var "x") (Integer 1)))
 
-           , (Application (Variable ["g"]) (Variable ["x"])
-           , (BinOp (Variable ["+"]) (Variable ["x"]) (Integer 1)))
+           , (Application (var "g") (var "x")
+           , (BinOp (var "+") (var "x") (Integer 1)))
            ]
-           (Application (Variable ["f"]) (Integer 4))))
+           (Application (var "f") (Integer 4))))
 
     , test "multiple bindings" <|
         \() -> """
@@ -140,10 +140,10 @@ let
 in
   b
             """ |> is ((Let
-                        [ (Variable ["a"], Integer 42)
-                        , (Variable ["b"], (BinOp (Variable ["+"]) (Variable ["a"]) (Integer 1)))
+                        [ (var "a", Integer 42)
+                        , (var "b", (BinOp (var "+") (var "a") (Integer 1)))
                         ]
-                        (Variable ["b"])))
+                        (var "b")))
     ]
 
 caseExpressions : Test
@@ -159,9 +159,9 @@ case x of
   Just y ->
     y
           """ |> is ((Case
-                      (Variable ["x"])
-                      [ (Variable ["Nothing"], Integer 0)
-                      , (Application (Variable ["Just"]) (Variable ["y"]), (Variable ["y"]))
+                      (var "x")
+                      [ (var "Nothing", Integer 0)
+                      , (Application (var "Just") (var "y"), (var "y"))
                       ]))
 
     , test "binding to underscore" <|
@@ -171,8 +171,8 @@ case x of
   _ ->
     42
           """ |> is ((Case
-                     (Variable ["x"])
-                     [(Variable ["_"], Integer 42)]))
+                     (var "x")
+                     [(var "_", Integer 42)]))
     ]
 
 application : Test
@@ -180,45 +180,45 @@ application =
   describe "Application"
     [ test "simple application" <|
         \() -> "f a" |> is ((Application
-                              (Variable ["f"])
-                              (Variable ["a"])))
+                              (var "f")
+                              (var "a")))
 
     , test "curried application" <|
         \() -> "f a b" |> is ((Application
                                (Application
-                                  (Variable ["f"])
-                                  (Variable ["a"]))
-                               (Variable ["b"])))
+                                  (var "f")
+                                  (var "a"))
+                               (var "b")))
 
     , test "curried application with parens" <|
         \() -> "(f a) b" |> is ((Application
                                    (Application
-                                        (Variable ["f"])
-                                        (Variable ["a"]))
-                                   (Variable ["b"])))
+                                        (var "f")
+                                        (var "a"))
+                                   (var "b")))
 
     , test "constructor application" <|
         \() -> "Cons a Nil" |> is ((Application
                                     (Application
-                                       (Variable ["Cons"])
-                                       (Variable ["a"]))
-                                    (Variable ["Nil"])))
+                                       (var "Cons")
+                                       (var "a"))
+                                    (var "Nil")))
     ]
 
 tuple : Test
 tuple =
     describe "Tuples"
         [ test "Empty tuple" <|
-              \() -> "()" |> is (Variable ["()"])
+              \() -> "()" |> is (var "()")
          , test "Simple tuple" <|
               \() -> "(a, b)" |> is (Tuple
-                                          [ (Variable ["a"])
-                                          , (Variable ["b"])]
+                                          [ (var "a")
+                                          , (var "b")]
                                      )
         , test "Simple tuple with format" <|
             \() -> "( a, b )" |> is (Tuple
-                                          [ (Variable ["a"])
-                                          , (Variable ["b"])]
+                                          [ (var "a")
+                                          , (var "b")]
                                      )
        ]
 
@@ -230,12 +230,12 @@ list =
             \() -> "[1, 2]" |> is (List [Integer 1, Integer 2])
         , test "Simple list" <|
             \() -> "[(a, b), (a, b)]" |> is (List [ (Tuple
-                                                         [ (Variable ["a"])
-                                                         , (Variable ["b"])]
+                                                         [ (var "a")
+                                                         , (var "b")]
                                                     )
                                                   , (Tuple
-                                                         [ (Variable ["a"])
-                                                         , (Variable ["b"])]
+                                                         [ (var "a")
+                                                         , (var "b")]
                                                     )
                                                   ])
         ]
@@ -244,23 +244,23 @@ record : Test
 record =
     describe "Tuples"
         [ test "Simple record" <|
-              \() -> "{a = b}" |> is (Record [("a" , (Variable ["b"]))]
+              \() -> "{a = b}" |> is (Record [("a" , (var "b"))]
                                      )
         , test "Simple record with many fields" <|
               \() -> "{a = b, b = 2}" |> is (Record
-                                                 [ ("a" , (Variable ["b"]))
+                                                 [ ("a" , (var "b"))
                                                  , ("b" , (Integer 2))
                                            ]
                                      )
         , test "Simple record with many tuple fields" <|
               \() -> "{a = (a, b), b = (a, b)}" |> is (Record
                                                  [ ("a", (Tuple
-                                                             [ (Variable ["a"])
-                                                             , (Variable ["b"])]
+                                                             [ (var "a")
+                                                             , (var "b")]
                                                         ))
                                                  , ("b", (Tuple
-                                                              [ (Variable ["a"])
-                                                              , (Variable ["b"])]
+                                                              [ (var "a")
+                                                              , (var "b")]
                                                          ))
                                                  ])
         , test "Simple record with updated field" <|
@@ -273,14 +273,14 @@ record =
         , test "Simple record with advanced field" <|
             \() -> "{a = Just 2}" |> is (Record
                                             [ ("a" , (Application
-                                                          (Variable ["Just"])
+                                                          (var "Just")
                                                           (Integer 2)))
                                             ])
         , test "Simple update record with advanced field" <|
             \() -> "{a | a = Just 2}" |> is (RecordUpdate
                                                  "a"
                                                  [ ("a" , (Application
-                                                               (Variable ["Just"])
+                                                               (var "Just")
                                                                (Integer 2)))
 
                                                  ])
@@ -292,23 +292,23 @@ expressions : Test
 expressions =
     describe "Expressions"
         [ test "Operator in parens" <|
-            \() -> "(+)" |> is (Variable ["+"])
+            \() -> "(+)" |> is (var "+")
         , test "Operators passed to map" <|
             \() -> "reduce (+) list" |> is (Application
                                              (Application
-                                                  (Variable ["reduce"])
-                                                  (Variable ["+"]))
-                                             (Variable ["list"]))
+                                                  (var "reduce")
+                                                  (var "+"))
+                                             (var "list"))
         , test "partial application" <|
-            \() -> "(+) 2" |> is (Application (Variable ["+"]) (Integer 2))
+            \() -> "(+) 2" |> is (Application (var "+") (Integer 2))
 
         , test "Case with as" <|
             \() -> "case a of \nT _ as x -> 1" |> is (
                                                       Case
-                                                          (Variable ["a"])
-                                                          ([(BinOp (Variable ["as"])
-                                                                 (Application (Variable ["T"])
-                                                                      (Variable ["_"])) (Variable ["x"])
+                                                          (var "a")
+                                                          ([(BinOp (var "as")
+                                                                 (Application (var "T")
+                                                                      (var "_")) (var "x")
                                                             , Integer 1)])
                                                 )
         , test "cons has right assoc" <|
@@ -324,6 +324,20 @@ expressions =
                         , ((BinOp (var "::") (var "a"))
                              (BinOp (var "::") (var "b") (var "c")))]
                    )
+        , test "Destructuring lambda" <|
+            \() -> "\\(a,b) acc -> 1" |> is
+                   (
+                    Lambda [(Tuple [ (var "a") , (var "b")]), (var "acc")] (Integer 1)
+                   )
+        , test "Destructuring Let" <|
+            \() -> "let (a,b) = (1,2) in a" |> is
+                   (
+                    Let [
+                         ((Tuple [ (var "a") , (var "b")])
+                         , (Tuple [Integer 1, Integer 2]))
+                        ] (var "a")
+                   )
+
         ]
 
 var a =

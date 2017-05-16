@@ -155,7 +155,7 @@ lambda : OpTable -> Parser s Expression
 lambda ops =
   lazy <| \() ->
     Lambda
-      <$> (symbol "\\" *> many (between_ spaces (expression ops)))
+      <$> (symbol "\\" *> many (between_ spaces (term ops)))
       <*> (symbol "->" *> expression ops)
 
 application : OpTable -> Parser s Expression
