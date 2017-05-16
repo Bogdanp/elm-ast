@@ -256,7 +256,7 @@ multipleDeclarations =
          , FunctionTypeDeclaration "h" (TypeApplication
                                           ((TypeTuple ([TypeConstructor ["Int"] [],TypeConstructor ["Int"] []])))
                                           (TypeConstructor ["Int"] []))
-         , FunctionDeclaration "h" [BinOp (Variable [","]) (Variable ["a"]) (Variable ["b"])] (BinOp
+         , FunctionDeclaration "h" [Tuple [(Variable ["a"]), (Variable ["b"])]] (BinOp
                                             (Variable ["+"])
                                             (Variable ["a"])
                                             (Variable ["b"]))

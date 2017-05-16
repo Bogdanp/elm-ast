@@ -70,7 +70,7 @@ emptyTuple =
 
 operator : Parser s String
 operator =
-  regex "[+-/*=.$<>:&|^?%#@~!]+" |>
+  regex "[+\\-\\/*=.$<>:&|^?%#@~!]+" |>
     andThen (\n ->
       if List.member n reservedOperators
       then fail <| "operator '" ++ n ++ "' is reserved"
