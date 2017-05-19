@@ -97,19 +97,17 @@ letExpressions =
             \() ->
                 "let a = 42 in a"
                     |> is
-                        ((Let
+                        (Let
                             [ ( var "a", Integer 42 ) ]
                             (var "a")
-                         )
                         )
         , test "bind to _" <|
             \() ->
                 "let _ = 42 in 24"
                     |> is
-                        ((Let
+                        (Let
                             [ ( var "_", Integer 42 ) ]
                             (Integer 24)
-                         )
                         )
         , test "function" <|
             \() ->
@@ -120,10 +118,9 @@ in
   f 4
         """
                     |> is
-                        ((Let
+                        (Let
                             [ ( Application (var "f") (var "x"), (BinOp (var "+") (var "x") (Integer 1)) ) ]
                             (Application (var "f") (Integer 4))
-                         )
                         )
         , test "function" <|
             \() ->
@@ -135,7 +132,7 @@ in
   f 4
         """
                     |> is
-                        ((Let
+                        (Let
                             [ ( (Application (var "f") (var "x"))
                               , (BinOp (var "+") (var "x") (Integer 1))
                               )
@@ -144,7 +141,6 @@ in
                               )
                             ]
                             (Application (var "f") (Integer 4))
-                         )
                         )
         , test "multiple bindings" <|
             \() ->
@@ -157,12 +153,11 @@ in
   b
             """
                     |> is
-                        ((Let
+                        (Let
                             [ ( var "a", Integer 42 )
                             , ( var "b", (BinOp (var "+") (var "a") (Integer 1)) )
                             ]
                             (var "b")
-                         )
                         )
         ]
 
@@ -181,12 +176,11 @@ case x of
     y
           """
                     |> is
-                        ((Case
+                        (Case
                             (var "x")
                             [ ( var "Nothing", Integer 0 )
                             , ( Application (var "Just") (var "y"), (var "y") )
                             ]
-                         )
                         )
         , test "binding to underscore" <|
             \() ->
@@ -196,10 +190,9 @@ case x of
     42
           """
                     |> is
-                        ((Case
+                        (Case
                             (var "x")
                             [ ( var "_", Integer 42 ) ]
-                         )
                         )
         ]
 
@@ -211,46 +204,42 @@ application =
             \() ->
                 "f a"
                     |> is
-                        ((Application
+                        (Application
                             (var "f")
                             (var "a")
-                         )
                         )
         , test "curried application" <|
             \() ->
                 "f a b"
                     |> is
-                        ((Application
+                        (Application
                             (Application
                                 (var "f")
                                 (var "a")
                             )
                             (var "b")
-                         )
                         )
         , test "curried application with parens" <|
             \() ->
                 "(f a) b"
                     |> is
-                        ((Application
+                        (Application
                             (Application
                                 (var "f")
                                 (var "a")
                             )
                             (var "b")
-                         )
                         )
         , test "constructor application" <|
             \() ->
                 "Cons a Nil"
                     |> is
-                        ((Application
+                        (Application
                             (Application
                                 (var "Cons")
                                 (var "a")
                             )
                             (var "Nil")
-                         )
                         )
         ]
 
