@@ -70,7 +70,7 @@ string =
     let
         singleString =
             String
-                <$> (Combine.string "\"" *> regex "(\\\\\"|[^\"\n])*" <* Combine.string "\"")
+                <$> (Combine.string "\"" *> regex "(\\\\\\\\|\\\\\"|[^\"\n])*" <* Combine.string "\"")
 
         multiString =
             (String << String.concat)
