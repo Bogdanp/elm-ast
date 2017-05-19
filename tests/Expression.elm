@@ -77,6 +77,8 @@ stringLiterals =
             \() -> "\"\"\"\"\"\"" |> is (String "")
         , test "multi-line strings" <|
             \() -> "\"\"\"hello\nworld\"\"\"" |> is (String "hello\nworld")
+        , test "double escaped string" <|
+            \() -> "\"\\\\\"" |> is (String "\\\\")
         ]
 
 
