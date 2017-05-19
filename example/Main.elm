@@ -71,7 +71,7 @@ statement s =
 tree : String -> Html Msg
 tree m =
     case Ast.parse m of
-        ( Ok (_, _, statements)) ->
+        Ok ( _, _, statements ) ->
             ul [] (List.map statement statements)
 
         err ->
