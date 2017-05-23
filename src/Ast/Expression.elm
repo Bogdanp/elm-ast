@@ -50,6 +50,7 @@ type Expression
     | List (List Expression)
     | Tuple (List Expression)
     | Access Expression (List Name)
+    | AccessFunction Name
     | Record (List ( Name, Expression ))
     | RecordUpdate Name (List ( Name, Expression ))
     | If Expression Expression Expression
@@ -92,6 +93,11 @@ float =
 access : Parser s Expression
 access =
     Access <$> variable <*> many1 (Combine.string "." *> loName)
+
+
+accessFunction : Parser s Expression
+accessFunction =
+    AccessFunction <$> (Combine.string "." *> loName)
 
 
 variable : Parser s Expression
@@ -281,6 +287,7 @@ term ops =
                 , float
                 , integer
                 , access
+                , accessFunction
                 , variable
                 , list ops
                 , tuple ops
