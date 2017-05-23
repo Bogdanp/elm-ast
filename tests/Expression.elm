@@ -230,6 +230,17 @@ application =
                             )
                             (var "b")
                         )
+        , test "multiline application" <|
+            \() ->
+                "f\n a\n b"
+                    |> is
+                        (Application
+                            (Application
+                                (var "f")
+                                (var "a")
+                            )
+                            (var "b")
+                        )
         , test "constructor application" <|
             \() ->
                 "Cons a Nil"

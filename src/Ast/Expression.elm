@@ -30,6 +30,7 @@ import Combine.Num
 import Dict exposing (Dict)
 import List.Extra exposing (break, singleton)
 import String
+import Regex
 import Ast.BinOp exposing (..)
 import Ast.Helpers exposing (..)
 
@@ -204,7 +205,32 @@ application : OpTable -> Parser s Expression
 application ops =
     lazy <|
         \() ->
-            term ops |> chainl (Application <$ spaces_)
+            term ops |> chainl (Application <$ spacesOrIndentedNewline)
+
+
+spacesOrIndentedNewline : Parser s String
+spacesOrIndentedNewline =
+    let
+        tillLineEnd =
+            while ((/=) '\n')
+
+        startsThing =
+            Regex.contains (Regex.regex "->|=")
+
+        allowedNextLine =
+            startsThing
+                <$> tillLineEnd
+                |> andThen
+                    (\x ->
+                        if x then
+                            fail "next line starts a new case or let binding"
+                        else
+                            succeed ""
+                    )
+    in
+        or
+            (spaces *> newline *> spaces_ *> lookAhead allowedNextLine)
+            (spaces_)
 
 
 binary : OpTable -> Parser s Expression
