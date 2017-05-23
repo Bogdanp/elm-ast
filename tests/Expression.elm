@@ -472,6 +472,16 @@ expressions =
                             ]
                             (var "a")
                         )
+        , test "Access" <|
+            \() ->
+                "Module.a"
+                    |> is
+                        (Access (var "Module") [ "a" ])
+        , test "AccessFunction" <|
+            \() ->
+                "map .a list"
+                    |> is
+                        (Application (Application (var "map") (AccessFunction "a")) (var "list"))
         ]
 
 
