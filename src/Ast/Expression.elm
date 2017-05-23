@@ -149,19 +149,20 @@ recordUpdate ops =
 
 letExpression : OpTable -> Parser s Expression
 letExpression ops =
-    let
-        binding =
-            lazy <|
-                \() ->
-                    (,)
-                        <$> (between_ whitespace (expression ops))
-                        <*> (symbol "=" *> expression ops)
-    in
-        lazy <|
-            \() ->
-                Let
-                    <$> (symbol "let" *> many1 binding)
-                    <*> (symbol "in" *> expression ops)
+    lazy <|
+        \() ->
+            Let
+                <$> (symbol "let" *> many1 (letBinding ops))
+                <*> (symbol "in" *> expression ops)
+
+
+letBinding : OpTable -> Parser s ( Expression, Expression )
+letBinding ops =
+    lazy <|
+        \() ->
+            (,)
+                <$> (between_ whitespace (expression ops))
+                <*> (symbol "=" *> expression ops)
 
 
 ifExpression : OpTable -> Parser s Expression
@@ -176,19 +177,20 @@ ifExpression ops =
 
 caseExpression : OpTable -> Parser s Expression
 caseExpression ops =
-    let
-        binding =
-            lazy <|
-                \() ->
-                    (,)
-                        <$> (whitespace *> expression ops)
-                        <*> (symbol "->" *> expression ops)
-    in
-        lazy <|
-            \() ->
-                Case
-                    <$> (symbol "case" *> expression ops)
-                    <*> (symbol "of" *> many1 binding)
+    lazy <|
+        \() ->
+            Case
+                <$> (symbol "case" *> expression ops)
+                <*> (symbol "of" *> many1 (caseBinding ops))
+
+
+caseBinding : OpTable -> Parser s ( Expression, Expression )
+caseBinding ops =
+    lazy <|
+        \() ->
+            (,)
+                <$> (whitespace *> expression ops)
+                <*> (symbol "->" *> expression ops)
 
 
 lambda : OpTable -> Parser s Expression
@@ -204,7 +206,32 @@ application : OpTable -> Parser s Expression
 application ops =
     lazy <|
         \() ->
-            term ops |> chainl (Application <$ spaces_)
+            term ops |> chainl (Application <$ spacesOrIndentedNewline ops)
+
+
+spacesOrIndentedNewline : OpTable -> Parser s String
+spacesOrIndentedNewline ops =
+    let
+        startsBinding =
+            or
+                (letBinding ops)
+                (caseBinding ops)
+
+        failAtBinding =
+            maybe startsBinding
+                |> andThen
+                    (\x ->
+                        case x of
+                            Just _ ->
+                                fail "next line starts a new case or let binding"
+
+                            Nothing ->
+                                succeed ""
+                    )
+    in
+        or
+            (spaces *> newline *> spaces_ *> lookAhead failAtBinding)
+            (spaces_)
 
 
 binary : OpTable -> Parser s Expression
