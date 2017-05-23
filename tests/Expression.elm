@@ -241,6 +241,22 @@ application =
                             )
                             (var "b")
                         )
+        , test "multiline bug" <|
+            \() ->
+                "f\n (==)"
+                    |> is
+                        (Application
+                            (var "f")
+                            (var "==")
+                        )
+        , test "same multiline bug" <|
+            \() ->
+                "f\n \"I like the symbol =\""
+                    |> is
+                        (Application
+                            (var "f")
+                            (String "I like the symbol =")
+                        )
         , test "constructor application" <|
             \() ->
                 "Cons a Nil"
