@@ -135,6 +135,13 @@ record ops =
             Record <$> braces (commaSeparated ((,) <$> loName <*> (symbol "=" *> expression ops)))
 
 
+simplifiedRecord : Parser s Expression
+simplifiedRecord =
+    lazy <|
+        \() ->
+            Record <$> (braces (commaSeparated ((\a -> ( a, Variable [ a ] )) <$> loName)))
+
+
 recordUpdate : OpTable -> Parser s Expression
 recordUpdate ops =
     lazy <|
@@ -286,6 +293,7 @@ term ops =
                 , tuple ops
                 , recordUpdate ops
                 , record ops
+                , simplifiedRecord
                 , parens (between_ whitespace (expression ops))
                 ]
 

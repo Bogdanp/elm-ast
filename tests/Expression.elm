@@ -400,6 +400,19 @@ record =
                               )
                             ]
                         )
+        , test "Simplified record destructuring pattern" <|
+            \() ->
+                "{a, b}"
+                    |> is
+                        (Record
+                            [ ( "a"
+                              , var "a"
+                              )
+                            , ( "b"
+                              , var "b"
+                              )
+                            ]
+                        )
         ]
 
 
