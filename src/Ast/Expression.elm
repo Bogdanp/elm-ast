@@ -108,6 +108,7 @@ variable =
                 , singleton <$> loName
                 , sepBy1 (Combine.string ".") upName
                 , singleton <$> parens operator
+                , singleton <$> parens (Combine.regex ",+")
                 ]
 
 
