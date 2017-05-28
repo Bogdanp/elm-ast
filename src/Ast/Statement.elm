@@ -58,6 +58,7 @@ type Type
 type Statement
     = ModuleDeclaration ModuleName ExportSet
     | PortModuleDeclaration ModuleName ExportSet
+    | EffectModuleDeclaration ModuleName (List ( Name, Name )) ExportSet
     | ImportStatement ModuleName (Maybe Alias) (Maybe ExportSet)
     | TypeAliasDeclaration Type Type
     | TypeDeclaration Type (List Type)
@@ -231,6 +232,14 @@ portModuleDeclaration =
         <*> (symbol "exposing" *> exports)
 
 
+effectModuleDeclaration : Parser s Statement
+effectModuleDeclaration =
+    EffectModuleDeclaration
+        <$> (initialSymbol "effect" *> symbol "module" *> moduleName)
+        <*> (symbol "where" *> braces (commaSeparated ((,) <$> loName <*> (symbol "=" *> upName))))
+        <*> (symbol "exposing" *> exports)
+
+
 moduleDeclaration : Parser s Statement
 moduleDeclaration =
     ModuleDeclaration
@@ -351,6 +360,7 @@ statement : OpTable -> Parser s Statement
 statement ops =
     choice
         [ portModuleDeclaration
+        , effectModuleDeclaration
         , moduleDeclaration
         , importStatement
         , typeAliasDeclaration
