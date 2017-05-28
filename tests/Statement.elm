@@ -82,6 +82,16 @@ moduleDeclaration =
                         (PortModuleDeclaration [ "A" ] <|
                             SubsetExport [ TypeExport "A" (Just AllExport) ]
                         )
+        , test "simple effects" <|
+            \() ->
+                "effect module A where {subscription = MySub, command = MyCmd} exposing (..)"
+                    |> is
+                        (EffectModuleDeclaration [ "A" ]
+                            [ ( "subscription", "MySub" )
+                            , ( "command", "MyCmd" )
+                            ]
+                            AllExport
+                        )
         ]
 
 
