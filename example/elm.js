@@ -7408,13 +7408,43 @@ var _Bogdanp$elm_ast$Ast_Expression$character = A2(
 	_Bogdanp$elm_ast$Ast_Expression$Character,
 	A2(
 		_Bogdanp$elm_ast$Ast_Helpers$between_,
-		_elm_community$parser_combinators$Combine_Char$char(
-			_elm_lang$core$Native_Utils.chr('\'')),
-		_elm_community$parser_combinators$Combine_Char$anyChar));
+		_elm_community$parser_combinators$Combine$string('\''),
+		A2(
+			_elm_community$parser_combinators$Combine_ops['<|>'],
+			A2(
+				_elm_community$parser_combinators$Combine_ops['>>='],
+				A2(
+					_elm_community$parser_combinators$Combine_ops['*>'],
+					_elm_community$parser_combinators$Combine$string('\\'),
+					_elm_community$parser_combinators$Combine$regex('(n|t|r|\\\\|x..)')),
+				function (a) {
+					var _p12 = a;
+					switch (_p12) {
+						case 'n':
+							return _elm_community$parser_combinators$Combine$succeed(
+								_elm_lang$core$Native_Utils.chr('\n'));
+						case 't':
+							return _elm_community$parser_combinators$Combine$succeed(
+								_elm_lang$core$Native_Utils.chr('\t'));
+						case 'r':
+							return _elm_community$parser_combinators$Combine$succeed(
+								_elm_lang$core$Native_Utils.chr('\r'));
+						case '\\':
+							return _elm_community$parser_combinators$Combine$succeed(
+								_elm_lang$core$Native_Utils.chr('\\'));
+						case ' ':
+							return _elm_community$parser_combinators$Combine$succeed(
+								_elm_lang$core$Native_Utils.chr(' '));
+						default:
+							return _elm_community$parser_combinators$Combine$fail(
+								A2(_elm_lang$core$Basics_ops['++'], 'No such character as \\', _p12));
+					}
+				}),
+			_elm_community$parser_combinators$Combine_Char$anyChar)));
 var _Bogdanp$elm_ast$Ast_Expression$term = function (ops) {
 	return _elm_community$parser_combinators$Combine$lazy(
-		function (_p12) {
-			var _p13 = _p12;
+		function (_p13) {
+			var _p14 = _p13;
 			return _elm_community$parser_combinators$Combine$choice(
 				{
 					ctor: '::',
@@ -7477,8 +7507,8 @@ var _Bogdanp$elm_ast$Ast_Expression$term = function (ops) {
 };
 var _Bogdanp$elm_ast$Ast_Expression$expression = function (ops) {
 	return _elm_community$parser_combinators$Combine$lazy(
-		function (_p14) {
-			var _p15 = _p14;
+		function (_p15) {
+			var _p16 = _p15;
 			return _elm_community$parser_combinators$Combine$choice(
 				{
 					ctor: '::',
@@ -7505,29 +7535,29 @@ var _Bogdanp$elm_ast$Ast_Expression$expression = function (ops) {
 };
 var _Bogdanp$elm_ast$Ast_Expression$binary = function (ops) {
 	return _elm_community$parser_combinators$Combine$lazy(
-		function (_p16) {
-			var _p17 = _p16;
+		function (_p17) {
+			var _p18 = _p17;
 			var next = A2(
 				_elm_community$parser_combinators$Combine$andThen,
 				function (op) {
 					return A2(
 						_elm_community$parser_combinators$Combine$andThen,
 						function (e) {
-							var _p18 = e;
-							if (_p18.ctor === 'Cont') {
+							var _p19 = e;
+							if (_p19.ctor === 'Cont') {
 								return A2(
 									_elm_community$parser_combinators$Combine_ops['<$>'],
 									F2(
 										function (x, y) {
 											return {ctor: '::', _0: x, _1: y};
 										})(
-										{ctor: '_Tuple2', _0: op, _1: _p18._0}),
+										{ctor: '_Tuple2', _0: op, _1: _p19._0}),
 									collect);
 							} else {
 								return _elm_community$parser_combinators$Combine$succeed(
 									{
 										ctor: '::',
-										_0: {ctor: '_Tuple2', _0: op, _1: _p18._0},
+										_0: {ctor: '_Tuple2', _0: op, _1: _p19._0},
 										_1: {ctor: '[]'}
 									});
 							}
@@ -7582,8 +7612,8 @@ var _Bogdanp$elm_ast$Ast_Expression$binary = function (ops) {
 };
 var _Bogdanp$elm_ast$Ast_Expression$application = function (ops) {
 	return _elm_community$parser_combinators$Combine$lazy(
-		function (_p19) {
-			var _p20 = _p19;
+		function (_p20) {
+			var _p21 = _p20;
 			return A2(
 				_elm_community$parser_combinators$Combine$chainl,
 				A2(
@@ -7601,8 +7631,8 @@ var _Bogdanp$elm_ast$Ast_Expression$spacesOrIndentedNewline = function (ops) {
 	var failAtBinding = A2(
 		_elm_community$parser_combinators$Combine$andThen,
 		function (x) {
-			var _p21 = x;
-			if (_p21.ctor === 'Just') {
+			var _p22 = x;
+			if (_p22.ctor === 'Just') {
 				return _elm_community$parser_combinators$Combine$fail('next line starts a new case or let binding');
 			} else {
 				return _elm_community$parser_combinators$Combine$succeed('');
@@ -7622,8 +7652,8 @@ var _Bogdanp$elm_ast$Ast_Expression$spacesOrIndentedNewline = function (ops) {
 };
 var _Bogdanp$elm_ast$Ast_Expression$caseBinding = function (ops) {
 	return _elm_community$parser_combinators$Combine$lazy(
-		function (_p22) {
-			var _p23 = _p22;
+		function (_p23) {
+			var _p24 = _p23;
 			return A2(
 				_elm_community$parser_combinators$Combine_ops['<*>'],
 				A2(
@@ -7644,8 +7674,8 @@ var _Bogdanp$elm_ast$Ast_Expression$caseBinding = function (ops) {
 };
 var _Bogdanp$elm_ast$Ast_Expression$letBinding = function (ops) {
 	return _elm_community$parser_combinators$Combine$lazy(
-		function (_p24) {
-			var _p25 = _p24;
+		function (_p25) {
+			var _p26 = _p25;
 			return A2(
 				_elm_community$parser_combinators$Combine_ops['<*>'],
 				A2(
@@ -7666,8 +7696,8 @@ var _Bogdanp$elm_ast$Ast_Expression$letBinding = function (ops) {
 };
 var _Bogdanp$elm_ast$Ast_Expression$caseExpression = function (ops) {
 	return _elm_community$parser_combinators$Combine$lazy(
-		function (_p26) {
-			var _p27 = _p26;
+		function (_p27) {
+			var _p28 = _p27;
 			return A2(
 				_elm_community$parser_combinators$Combine_ops['<*>'],
 				A2(
@@ -7686,8 +7716,8 @@ var _Bogdanp$elm_ast$Ast_Expression$caseExpression = function (ops) {
 };
 var _Bogdanp$elm_ast$Ast_Expression$ifExpression = function (ops) {
 	return _elm_community$parser_combinators$Combine$lazy(
-		function (_p28) {
-			var _p29 = _p28;
+		function (_p29) {
+			var _p30 = _p29;
 			return A2(
 				_elm_community$parser_combinators$Combine_ops['<*>'],
 				A2(
@@ -7711,8 +7741,8 @@ var _Bogdanp$elm_ast$Ast_Expression$ifExpression = function (ops) {
 };
 var _Bogdanp$elm_ast$Ast_Expression$lambda = function (ops) {
 	return _elm_community$parser_combinators$Combine$lazy(
-		function (_p30) {
-			var _p31 = _p30;
+		function (_p31) {
+			var _p32 = _p31;
 			return A2(
 				_elm_community$parser_combinators$Combine_ops['<*>'],
 				A2(
@@ -7734,8 +7764,8 @@ var _Bogdanp$elm_ast$Ast_Expression$lambda = function (ops) {
 };
 var _Bogdanp$elm_ast$Ast_Expression$letExpression = function (ops) {
 	return _elm_community$parser_combinators$Combine$lazy(
-		function (_p32) {
-			var _p33 = _p32;
+		function (_p33) {
+			var _p34 = _p33;
 			return A2(
 				_elm_community$parser_combinators$Combine_ops['<*>'],
 				A2(
@@ -7754,8 +7784,8 @@ var _Bogdanp$elm_ast$Ast_Expression$letExpression = function (ops) {
 };
 var _Bogdanp$elm_ast$Ast_Expression$list = function (ops) {
 	return _elm_community$parser_combinators$Combine$lazy(
-		function (_p34) {
-			var _p35 = _p34;
+		function (_p35) {
+			var _p36 = _p35;
 			return A2(
 				_elm_community$parser_combinators$Combine_ops['<$>'],
 				_Bogdanp$elm_ast$Ast_Expression$List,
@@ -7766,8 +7796,8 @@ var _Bogdanp$elm_ast$Ast_Expression$list = function (ops) {
 };
 var _Bogdanp$elm_ast$Ast_Expression$record = function (ops) {
 	return _elm_community$parser_combinators$Combine$lazy(
-		function (_p36) {
-			var _p37 = _p36;
+		function (_p37) {
+			var _p38 = _p37;
 			return A2(
 				_elm_community$parser_combinators$Combine_ops['<$>'],
 				_Bogdanp$elm_ast$Ast_Expression$Record,
@@ -7790,8 +7820,8 @@ var _Bogdanp$elm_ast$Ast_Expression$record = function (ops) {
 };
 var _Bogdanp$elm_ast$Ast_Expression$recordUpdate = function (ops) {
 	return _elm_community$parser_combinators$Combine$lazy(
-		function (_p38) {
-			var _p39 = _p38;
+		function (_p39) {
+			var _p40 = _p39;
 			return A2(
 				_elm_community$parser_combinators$Combine_ops['<*>'],
 				A2(
@@ -7825,8 +7855,8 @@ var _Bogdanp$elm_ast$Ast_Expression$recordUpdate = function (ops) {
 };
 var _Bogdanp$elm_ast$Ast_Expression$tuple = function (ops) {
 	return _elm_community$parser_combinators$Combine$lazy(
-		function (_p40) {
-			var _p41 = _p40;
+		function (_p41) {
+			var _p42 = _p41;
 			return A2(
 				_elm_community$parser_combinators$Combine_ops['<$>'],
 				_Bogdanp$elm_ast$Ast_Expression$Tuple,
@@ -7836,11 +7866,11 @@ var _Bogdanp$elm_ast$Ast_Expression$tuple = function (ops) {
 						_Bogdanp$elm_ast$Ast_Helpers$commaSeparated_(
 							_Bogdanp$elm_ast$Ast_Expression$expression(ops))),
 					function (a) {
-						var _p42 = a;
-						if ((_p42.ctor === '::') && (_p42._1.ctor === '[]')) {
+						var _p43 = a;
+						if ((_p43.ctor === '::') && (_p43._1.ctor === '[]')) {
 							return _elm_community$parser_combinators$Combine$fail('No single tuples');
 						} else {
-							return _elm_community$parser_combinators$Combine$succeed(_p42);
+							return _elm_community$parser_combinators$Combine$succeed(_p43);
 						}
 					}));
 		});
@@ -8200,8 +8230,8 @@ var _Bogdanp$elm_ast$Ast_Statement$opTable = function (ops) {
 				return _elm_lang$core$Native_Utils.crashCase(
 					'Ast.Statement',
 					{
-						start: {line: 404, column: 13},
-						end: {line: 409, column: 45}
+						start: {line: 414, column: 13},
+						end: {line: 419, column: 45}
 					},
 					_p19)('impossible');
 			}
@@ -8383,6 +8413,46 @@ var _Bogdanp$elm_ast$Ast_Statement$importStatement = A2(
 			_elm_community$parser_combinators$Combine_ops['*>'],
 			_Bogdanp$elm_ast$Ast_Helpers$symbol('exposing'),
 			_Bogdanp$elm_ast$Ast_Statement$exports)));
+var _Bogdanp$elm_ast$Ast_Statement$EffectModuleDeclaration = F3(
+	function (a, b, c) {
+		return {ctor: 'EffectModuleDeclaration', _0: a, _1: b, _2: c};
+	});
+var _Bogdanp$elm_ast$Ast_Statement$effectModuleDeclaration = A2(
+	_elm_community$parser_combinators$Combine_ops['<*>'],
+	A2(
+		_elm_community$parser_combinators$Combine_ops['<*>'],
+		A2(
+			_elm_community$parser_combinators$Combine_ops['<$>'],
+			_Bogdanp$elm_ast$Ast_Statement$EffectModuleDeclaration,
+			A2(
+				_elm_community$parser_combinators$Combine_ops['*>'],
+				A2(
+					_elm_community$parser_combinators$Combine_ops['*>'],
+					_Bogdanp$elm_ast$Ast_Helpers$initialSymbol('effect'),
+					_Bogdanp$elm_ast$Ast_Helpers$symbol('module')),
+				_Bogdanp$elm_ast$Ast_Helpers$moduleName)),
+		A2(
+			_elm_community$parser_combinators$Combine_ops['*>'],
+			_Bogdanp$elm_ast$Ast_Helpers$symbol('where'),
+			_elm_community$parser_combinators$Combine$braces(
+				_Bogdanp$elm_ast$Ast_Helpers$commaSeparated(
+					A2(
+						_elm_community$parser_combinators$Combine_ops['<*>'],
+						A2(
+							_elm_community$parser_combinators$Combine_ops['<$>'],
+							F2(
+								function (v0, v1) {
+									return {ctor: '_Tuple2', _0: v0, _1: v1};
+								}),
+							_Bogdanp$elm_ast$Ast_Helpers$loName),
+						A2(
+							_elm_community$parser_combinators$Combine_ops['*>'],
+							_Bogdanp$elm_ast$Ast_Helpers$symbol('='),
+							_Bogdanp$elm_ast$Ast_Helpers$upName)))))),
+	A2(
+		_elm_community$parser_combinators$Combine_ops['*>'],
+		_Bogdanp$elm_ast$Ast_Helpers$symbol('exposing'),
+		_Bogdanp$elm_ast$Ast_Statement$exports));
 var _Bogdanp$elm_ast$Ast_Statement$PortModuleDeclaration = F2(
 	function (a, b) {
 		return {ctor: 'PortModuleDeclaration', _0: a, _1: b};
@@ -8427,35 +8497,39 @@ var _Bogdanp$elm_ast$Ast_Statement$statement = function (ops) {
 			_0: _Bogdanp$elm_ast$Ast_Statement$portModuleDeclaration,
 			_1: {
 				ctor: '::',
-				_0: _Bogdanp$elm_ast$Ast_Statement$moduleDeclaration,
+				_0: _Bogdanp$elm_ast$Ast_Statement$effectModuleDeclaration,
 				_1: {
 					ctor: '::',
-					_0: _Bogdanp$elm_ast$Ast_Statement$importStatement,
+					_0: _Bogdanp$elm_ast$Ast_Statement$moduleDeclaration,
 					_1: {
 						ctor: '::',
-						_0: _Bogdanp$elm_ast$Ast_Statement$typeAliasDeclaration,
+						_0: _Bogdanp$elm_ast$Ast_Statement$importStatement,
 						_1: {
 							ctor: '::',
-							_0: _Bogdanp$elm_ast$Ast_Statement$typeDeclaration,
+							_0: _Bogdanp$elm_ast$Ast_Statement$typeAliasDeclaration,
 							_1: {
 								ctor: '::',
-								_0: _Bogdanp$elm_ast$Ast_Statement$portTypeDeclaration,
+								_0: _Bogdanp$elm_ast$Ast_Statement$typeDeclaration,
 								_1: {
 									ctor: '::',
-									_0: _Bogdanp$elm_ast$Ast_Statement$portDeclaration(ops),
+									_0: _Bogdanp$elm_ast$Ast_Statement$portTypeDeclaration,
 									_1: {
 										ctor: '::',
-										_0: _Bogdanp$elm_ast$Ast_Statement$functionTypeDeclaration,
+										_0: _Bogdanp$elm_ast$Ast_Statement$portDeclaration(ops),
 										_1: {
 											ctor: '::',
-											_0: _Bogdanp$elm_ast$Ast_Statement$functionDeclaration(ops),
+											_0: _Bogdanp$elm_ast$Ast_Statement$functionTypeDeclaration,
 											_1: {
 												ctor: '::',
-												_0: _Bogdanp$elm_ast$Ast_Statement$infixDeclaration,
+												_0: _Bogdanp$elm_ast$Ast_Statement$functionDeclaration(ops),
 												_1: {
 													ctor: '::',
-													_0: _Bogdanp$elm_ast$Ast_Statement$comment,
-													_1: {ctor: '[]'}
+													_0: _Bogdanp$elm_ast$Ast_Statement$infixDeclaration,
+													_1: {
+														ctor: '::',
+														_0: _Bogdanp$elm_ast$Ast_Statement$comment,
+														_1: {ctor: '[]'}
+													}
 												}
 											}
 										}

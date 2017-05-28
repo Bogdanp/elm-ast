@@ -63,7 +63,35 @@ type Expression
 
 character : Parser s Expression
 character =
-    Character <$> between_ (char '\'') anyChar
+    Character
+        <$> between_ (Combine.string "'")
+                (((Combine.string "\\" *> regex "(n|t|r|\\\\|x..)")
+                    >>= (\a ->
+                            case a of
+                                "n" ->
+                                    succeed '\n'
+
+                                "t" ->
+                                    succeed '\t'
+
+                                "r" ->
+                                    succeed '\x0D'
+
+                                "\\" ->
+                                    succeed '\\'
+
+                                "0" ->
+                                    succeed '\x00'
+
+                                "x00" ->
+                                    succeed '\x00'
+
+                                a ->
+                                    fail ("No such character as \\" ++ a)
+                        )
+                 )
+                    <|> anyChar
+                )
 
 
 string : Parser s Expression
