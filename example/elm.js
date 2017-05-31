@@ -7432,7 +7432,10 @@ var _Bogdanp$elm_ast$Ast_Expression$character = A2(
 						case '\\':
 							return _elm_community$parser_combinators$Combine$succeed(
 								_elm_lang$core$Native_Utils.chr('\\'));
-						case ' ':
+						case '0':
+							return _elm_community$parser_combinators$Combine$succeed(
+								_elm_lang$core$Native_Utils.chr(' '));
+						case 'x00':
 							return _elm_community$parser_combinators$Combine$succeed(
 								_elm_lang$core$Native_Utils.chr(' '));
 						default:
