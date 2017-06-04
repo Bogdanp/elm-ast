@@ -7432,7 +7432,10 @@ var _Bogdanp$elm_ast$Ast_Expression$character = A2(
 						case '\\':
 							return _elm_community$parser_combinators$Combine$succeed(
 								_elm_lang$core$Native_Utils.chr('\\'));
-						case ' ':
+						case '0':
+							return _elm_community$parser_combinators$Combine$succeed(
+								_elm_lang$core$Native_Utils.chr(' '));
+						case 'x00':
 							return _elm_community$parser_combinators$Combine$succeed(
 								_elm_lang$core$Native_Utils.chr(' '));
 						default:
@@ -8003,7 +8006,13 @@ var _Bogdanp$elm_ast$Ast_Statement$typeParameter = _elm_community$parser_combina
 		var _p3 = _p2;
 		return A2(
 			_Bogdanp$elm_ast$Ast_Helpers$between_,
-			_Bogdanp$elm_ast$Ast_Helpers$spaces,
+			A2(
+				_elm_community$parser_combinators$Combine$or,
+				A2(
+					_elm_community$parser_combinators$Combine_ops['*>'],
+					A2(_elm_community$parser_combinators$Combine_ops['*>'], _Bogdanp$elm_ast$Ast_Helpers$spaces, _elm_community$parser_combinators$Combine_Char$newline),
+					_Bogdanp$elm_ast$Ast_Helpers$spaces_),
+				_Bogdanp$elm_ast$Ast_Helpers$spaces),
 			_elm_community$parser_combinators$Combine$choice(
 				{
 					ctor: '::',
