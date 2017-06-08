@@ -5404,7 +5404,7 @@ var _Bogdanp$elm_ast$Ast_Helpers$operator = A2(
 				'operator \'',
 				A2(_elm_lang$core$Basics_ops['++'], n, '\' is reserved'))) : _elm_community$parser_combinators$Combine$succeed(n);
 	},
-	_elm_community$parser_combinators$Combine$regex('[+\\-\\/*=.$<>:&|^?%#@~!]+'));
+	_elm_community$parser_combinators$Combine$regex('[+\\-\\/*=.$<>:&|^?%#@~!]+|s\b'));
 var _Bogdanp$elm_ast$Ast_Helpers$reserved = {
 	ctor: '::',
 	_0: 'module',
