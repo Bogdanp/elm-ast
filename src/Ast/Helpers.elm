@@ -114,7 +114,7 @@ emptyTuple =
 
 operator : Parser s String
 operator =
-    regex "[+\\-\\/*=.$<>:&|^?%#@~!]+"
+    regex "[+\\-\\/*=.$<>:&|^?%#@~!]+|\x08as\x08"
         |> andThen
             (\n ->
                 if List.member n reservedOperators then
