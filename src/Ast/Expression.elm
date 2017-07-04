@@ -32,6 +32,8 @@ import List.Extra exposing (break, singleton)
 import String
 import Ast.BinOp exposing (..)
 import Ast.Helpers exposing (..)
+import Hex
+import Char
 
 
 type Collect a
@@ -67,27 +69,35 @@ character =
         <$> between_ (Combine.string "'")
                 (((Combine.string "\\" *> regex "(n|t|r|\\\\|x..)")
                     >>= (\a ->
-                            case a of
-                                "n" ->
+                            case String.uncons a of
+                                Just ( 'n', "" ) ->
                                     succeed '\n'
 
-                                "t" ->
+                                Just ( 't', "" ) ->
                                     succeed '\t'
 
-                                "r" ->
+                                Just ( 'r', "" ) ->
                                     succeed '\x0D'
 
-                                "\\" ->
+                                Just ( '\\', "" ) ->
                                     succeed '\\'
 
-                                "0" ->
+                                Just ( '0', "" ) ->
                                     succeed '\x00'
 
-                                "x00" ->
-                                    succeed '\x00'
+                                Just ( 'x', hex ) ->
+                                    hex
+                                        |> String.toLower
+                                        |> Hex.fromString
+                                        |> Result.map Char.fromCode
+                                        |> Result.map succeed
+                                        |> Result.withDefault (fail "Invalid charcode")
 
-                                a ->
-                                    fail ("No such character as \\" ++ a)
+                                Just other ->
+                                    fail ("No such character as \\" ++ toString other)
+
+                                Nothing ->
+                                    fail "No character"
                         )
                  )
                     <|> anyChar
