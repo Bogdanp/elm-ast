@@ -35,6 +35,8 @@ characterLiterals =
             \() -> "'a'" |> is (Character 'a')
         , test "newline literal" <|
             \() -> "'\n'" |> is (Character '\n')
+        , test "Charcode literals" <|
+            \() -> "'\\x23'" |> is (Character '#')
         , test "character literals must contain one character" <|
             \() -> fails "''"
         ]
