@@ -87,6 +87,7 @@ character =
 
                                 Just ( 'x', hex ) ->
                                     hex
+                                        |> String.toLower
                                         |> Hex.fromString
                                         |> Result.map Char.fromCode
                                         |> Result.map succeed
