@@ -53,12 +53,17 @@ between_ p =
 
 spaces : Parser s String
 spaces =
-    regex "[ \t]*"
+    regex "[ \\t]*"
 
 
 spaces_ : Parser s String
 spaces_ =
-    regex "[ \t]+"
+    regex "[ \\t]+"
+
+
+symbol_ : String -> Parser s String
+symbol_ k =
+    (between_ whitespace (string k <* regex " |\\n|\\r"))
 
 
 symbol : String -> Parser s String
@@ -68,7 +73,7 @@ symbol k =
 
 initialSymbol : String -> Parser s String
 initialSymbol k =
-    string k <* spaces
+    string k <* spaces_
 
 
 commaSeparated : Parser s res -> Parser s (List res)
@@ -114,7 +119,7 @@ emptyTuple =
 
 operator : Parser s String
 operator =
-    regex "[+\\-\\/*=.$<>:&|^?%#@~!]+|\x08as\x08"
+    regex "[+\\-\\/*=.$<>:&|^?%#@~!]+|\x8As\x08"
         |> andThen
             (\n ->
                 if List.member n reservedOperators then
