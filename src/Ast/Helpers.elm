@@ -63,7 +63,7 @@ spaces_ =
 
 symbol_ : String -> Parser s String
 symbol_ k =
-    (between_ whitespace (string k <* regex " |\\n|\\r"))
+    between_ whitespace (string k <* regex "( |\\n)+")
 
 
 symbol : String -> Parser s String

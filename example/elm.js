@@ -5330,16 +5330,25 @@ var _Bogdanp$elm_ast$Ast_Helpers$name = function (p) {
 		_elm_community$parser_combinators$Combine$regex('[a-zA-Z0-9-_]*'));
 };
 var _Bogdanp$elm_ast$Ast_Helpers$upName = _Bogdanp$elm_ast$Ast_Helpers$name(_elm_community$parser_combinators$Combine_Char$upper);
-var _Bogdanp$elm_ast$Ast_Helpers$spaces_ = _elm_community$parser_combinators$Combine$regex('[ \t]+');
-var _Bogdanp$elm_ast$Ast_Helpers$spaces = _elm_community$parser_combinators$Combine$regex('[ \t]*');
+var _Bogdanp$elm_ast$Ast_Helpers$spaces_ = _elm_community$parser_combinators$Combine$regex('[ \\t]+');
 var _Bogdanp$elm_ast$Ast_Helpers$initialSymbol = function (k) {
 	return A2(
 		_elm_community$parser_combinators$Combine_ops['<*'],
 		_elm_community$parser_combinators$Combine$string(k),
-		_Bogdanp$elm_ast$Ast_Helpers$spaces);
+		_Bogdanp$elm_ast$Ast_Helpers$spaces_);
 };
+var _Bogdanp$elm_ast$Ast_Helpers$spaces = _elm_community$parser_combinators$Combine$regex('[ \\t]*');
 var _Bogdanp$elm_ast$Ast_Helpers$between_ = function (p) {
 	return A2(_elm_community$parser_combinators$Combine$between, p, p);
+};
+var _Bogdanp$elm_ast$Ast_Helpers$symbol_ = function (k) {
+	return A2(
+		_Bogdanp$elm_ast$Ast_Helpers$between_,
+		_elm_community$parser_combinators$Combine$whitespace,
+		A2(
+			_elm_community$parser_combinators$Combine_ops['<*'],
+			_elm_community$parser_combinators$Combine$string(k),
+			_elm_community$parser_combinators$Combine$regex('( |\\n)+')));
 };
 var _Bogdanp$elm_ast$Ast_Helpers$symbol = function (k) {
 	return A2(
@@ -7591,7 +7600,7 @@ var _Bogdanp$elm_ast$Ast_Expression$binary = function (ops) {
 							_0: _Bogdanp$elm_ast$Ast_Helpers$operator,
 							_1: {
 								ctor: '::',
-								_0: _Bogdanp$elm_ast$Ast_Helpers$symbol('as'),
+								_0: _Bogdanp$elm_ast$Ast_Helpers$symbol_('as'),
 								_1: {ctor: '[]'}
 							}
 						})));
@@ -7776,7 +7785,7 @@ var _Bogdanp$elm_ast$Ast_Expression$letExpression = function (ops) {
 					_Bogdanp$elm_ast$Ast_Expression$Let,
 					A2(
 						_elm_community$parser_combinators$Combine_ops['*>'],
-						_Bogdanp$elm_ast$Ast_Helpers$symbol('let'),
+						_Bogdanp$elm_ast$Ast_Helpers$symbol_('let'),
 						_elm_community$parser_combinators$Combine$many1(
 							_Bogdanp$elm_ast$Ast_Expression$letBinding(ops)))),
 				A2(

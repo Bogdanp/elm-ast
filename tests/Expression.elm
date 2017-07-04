@@ -113,7 +113,7 @@ letExpressions =
                         )
         , test "Can start with a tag name" <|
             \() ->
-                "let letter = 1 in letter"
+                "let letter = 1 \n in letter"
                     |> is
                         (Let
                             [ ( var "letter", Integer 1 ) ]
