@@ -180,7 +180,7 @@ typeParameter : Parser s Type
 typeParameter =
     lazy <|
         \() ->
-            between_ spaces <|
+            between_ (or (spaces *> newline *> spaces_) spaces) <|
                 choice
                     [ typeVariable
                     , typeConstant

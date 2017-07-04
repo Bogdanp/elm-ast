@@ -194,7 +194,7 @@ letExpression ops =
     lazy <|
         \() ->
             Let
-                <$> (symbol "let" *> many1 (letBinding ops))
+                <$> (symbol_ "let" *> many1 (letBinding ops))
                 <*> (symbol "in" *> expression ops)
 
 
@@ -282,7 +282,7 @@ binary ops =
         \() ->
             let
                 next =
-                    between_ whitespace (choice [ operator, symbol "as" ])
+                    between_ whitespace (choice [ operator, symbol_ "as" ])
                         |> andThen
                             (\op ->
                                 choice [ Cont <$> application ops, Stop <$> expression ops ]
