@@ -111,6 +111,14 @@ letExpressions =
                             [ ( var "_", Integer 42 ) ]
                             (Integer 24)
                         )
+        , test "Can start with a tag name" <|
+            \() ->
+                "let letter = 1 in letter"
+                    |> is
+                        (Let
+                            [ ( var "letter", Integer 1 ) ]
+                            (var "letter")
+                        )
         , test "function" <|
             \() ->
                 """
