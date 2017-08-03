@@ -51,7 +51,7 @@ operators =
         |> Dict.insert ">" ( L, 4 )
         |> Dict.insert ">=" ( L, 4 )
         |> Dict.insert "<=" ( L, 4 )
-        |> Dict.insert "++" ( L, 5 )
+        |> Dict.insert "++" ( R, 5 )
         |> Dict.insert "::" ( R, 5 )
         |> Dict.insert "+" ( L, 6 )
         |> Dict.insert "-" ( L, 6 )
