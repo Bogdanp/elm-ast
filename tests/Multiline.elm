@@ -24,7 +24,7 @@ is e i =
 
 all : Test
 all =
-    Test.only <|
+    Test.skip <|
         describe "Multiline performance"
             [ test "Application" <|
                 \() ->
