@@ -1,4 +1,15 @@
-module Statement exposing (all)
+module Statement
+    exposing
+        ( moduleDeclaration
+        , importStatements
+        , infixDeclarations
+        , moduleFixityDeclarations
+        , multipleDeclarations
+        , portStatements
+        , singleDeclaration
+        , typeAnnotations
+        , typeDeclarations
+        )
 
 import Ast exposing (parseStatement, parse)
 import Ast.BinOp exposing (Assoc(..), operators)
@@ -449,19 +460,4 @@ typeDeclarations =
         , test "can parse aliases of unit" <|
             \() ->
                 emptyTupleAliasInput |> are [ TypeAliasDeclaration (TypeConstructor [ "A" ] []) (TypeTuple []) ]
-        ]
-
-
-all : Test
-all =
-    describe "Statement suite"
-        [ moduleDeclaration
-        , importStatements
-        , typeAnnotations
-        , portStatements
-        , infixDeclarations
-        , singleDeclaration
-        , multipleDeclarations
-        , moduleFixityDeclarations
-        , typeDeclarations
         ]

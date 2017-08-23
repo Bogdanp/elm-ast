@@ -1,4 +1,18 @@
-module Expression exposing (all)
+module Expression
+    exposing
+        ( application
+        , caseExpressions
+        , characterLiterals
+        , expressions
+        , floatLiterals
+        , intLiterals
+        , letExpressions
+        , list
+        , literals
+        , record
+        , stringLiterals
+        , tuple
+        )
 
 import Ast exposing (parseExpression, parseStatement)
 import Ast.BinOp exposing (operators)
@@ -121,7 +135,7 @@ letExpressions =
                             [ ( var "letter", Integer 1 ) ]
                             (var "letter")
                         )
-        , test "function" <|
+        , test "function 1" <|
             \() ->
                 """
 let
@@ -134,7 +148,7 @@ in
                             [ ( Application (var "f") (var "x"), (BinOp (var "+") (var "x") (Integer 1)) ) ]
                             (Application (var "f") (Integer 4))
                         )
-        , test "function" <|
+        , test "function 2" <|
             \() ->
                 """
 let
@@ -315,7 +329,7 @@ list =
         [ test "Empty list" <| \() -> "[]" |> is (List [])
         , test "Simple list" <|
             \() -> "[1, 2]" |> is (List [ Integer 1, Integer 2 ])
-        , test "Simple list" <|
+        , test "Tuple list" <|
             \() ->
                 "[(a, b), (a, b)]"
                     |> is
@@ -337,7 +351,7 @@ list =
 
 record : Test
 record =
-    describe "Tuples"
+    describe "Record"
         [ test "Simple record" <|
             \() ->
                 "{a = b}"
@@ -510,17 +524,3 @@ expressions =
 
 var a =
     Variable [ a ]
-
-
-all : Test
-all =
-    describe "Expression suite"
-        [ literals
-        , letExpressions
-        , caseExpressions
-        , application
-        , tuple
-        , list
-        , record
-        , expressions
-        ]
