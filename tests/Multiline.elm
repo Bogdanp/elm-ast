@@ -24,12 +24,12 @@ is e i =
 
 all : Test
 all =
-    Test.only <|
-        describe "Multiline performance"
-            [ test "Application" <|
-                \() ->
-                    "fn\n a\n b\n c\n d\n e\n f\n g\n h\n i\n j\n k"
-                        |> is
+    describe "Multiline performance"
+        [ test "Application" <|
+            \() ->
+                "fn\n a\n b\n c\n d\n e\n f\n g\n h\n i\n j\n k"
+                    |> is
+                        (Application
                             (Application
                                 (Application
                                     (Application
@@ -40,28 +40,27 @@ all =
                                                         (Application
                                                             (Application
                                                                 (Application
-                                                                    (Application
-                                                                        (var "fn")
-                                                                        (var "a")
-                                                                    )
-                                                                    (var "b")
+                                                                    (var "fn")
+                                                                    (var "a")
                                                                 )
-                                                                (var "c")
+                                                                (var "b")
                                                             )
-                                                            (var "d")
+                                                            (var "c")
                                                         )
-                                                        (var "e")
+                                                        (var "d")
                                                     )
-                                                    (var "f")
+                                                    (var "e")
                                                 )
-                                                (var "g")
+                                                (var "f")
                                             )
-                                            (var "h")
+                                            (var "g")
                                         )
-                                        (var "i")
+                                        (var "h")
                                     )
-                                    (var "j")
+                                    (var "i")
                                 )
-                                (var "k")
+                                (var "j")
                             )
-            ]
+                            (var "k")
+                        )
+        ]

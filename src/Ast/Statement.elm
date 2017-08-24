@@ -358,20 +358,22 @@ comment =
 -}
 statement : OpTable -> Parser s Statement
 statement ops =
-    choice
-        [ portModuleDeclaration
-        , effectModuleDeclaration
-        , moduleDeclaration
-        , importStatement
-        , typeAliasDeclaration
-        , typeDeclaration
-        , portTypeDeclaration
-        , portDeclaration ops
-        , functionTypeDeclaration
-        , functionDeclaration ops
-        , infixDeclaration
-        , comment
-        ]
+    lazy <|
+        \() ->
+            choice
+                [ portModuleDeclaration
+                , effectModuleDeclaration
+                , moduleDeclaration
+                , importStatement
+                , typeAliasDeclaration
+                , typeDeclaration
+                , portTypeDeclaration
+                , portDeclaration ops
+                , functionTypeDeclaration
+                , functionDeclaration ops
+                , infixDeclaration
+                , comment
+                ]
 
 
 {-| A parser for a series of Elm statements.
@@ -398,10 +400,8 @@ infixStatements =
                 <* end
     in
         statements
-            |> andThen
-                (\xs ->
+            >>= \xs ->
                     succeed <| List.filterMap identity xs
-                )
 
 
 {-| A scanner that returns an updated OpTable based on the infix
@@ -419,7 +419,5 @@ opTable ops =
                     Debug.crash "impossible"
     in
         infixStatements
-            |> andThen
-                (\xs ->
+            >>= \xs ->
                     succeed <| List.foldr collect ops xs
-                )

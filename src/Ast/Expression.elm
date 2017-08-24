@@ -261,20 +261,15 @@ application ops =
             term ops |> chainl (Application <$ spacesOrIndentedNewline ops)
 
 
-emptyStr : String
-emptyStr =
-    ""
-
-
 negate : Maybe a -> Parser s String
 negate x =
     case x of
         Just _ ->
             -- next line starts a new case or let binding
-            fail emptyStr
+            fail ""
 
         Nothing ->
-            succeed emptyStr
+            succeed ""
 
 
 maybeBindingAhead : OpTable -> Parser s String
@@ -324,7 +319,7 @@ binary ops =
                     lazy <| \() -> choice [ next, succeed [] ]
             in
                 application ops
-                    >>= (\e -> collect >>= split ops 0 e)
+                    >>= (\e -> collect >>= \eops -> split ops 0 e eops)
 
 
 {-| A parses for term
@@ -334,7 +329,9 @@ term ops =
     lazy <|
         \() ->
             choice
-                [ variable
+                [ access
+                , variable
+                , accessFunction
                 , string
                 , float
                 , integer
@@ -345,8 +342,6 @@ term ops =
                 , recordUpdate ops
                 , record ops
                 , simplifiedRecord
-                , access
-                , accessFunction
                 ]
 
 
