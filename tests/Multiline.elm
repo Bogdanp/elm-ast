@@ -24,7 +24,7 @@ is e i =
 
 all : Test
 all =
-    Test.skip <|
+    Test.only <|
         describe "Multiline performance"
             [ test "Application" <|
                 \() ->
@@ -32,9 +32,36 @@ all =
                         |> is
                             (Application
                                 (Application
-                                    (var "f")
-                                    (var "a")
+                                    (Application
+                                        (Application
+                                            (Application
+                                                (Application
+                                                    (Application
+                                                        (Application
+                                                            (Application
+                                                                (Application
+                                                                    (Application
+                                                                        (var "fn")
+                                                                        (var "a")
+                                                                    )
+                                                                    (var "b")
+                                                                )
+                                                                (var "c")
+                                                            )
+                                                            (var "d")
+                                                        )
+                                                        (var "e")
+                                                    )
+                                                    (var "f")
+                                                )
+                                                (var "g")
+                                            )
+                                            (var "h")
+                                        )
+                                        (var "i")
+                                    )
+                                    (var "j")
                                 )
-                                (var "b")
+                                (var "k")
                             )
             ]

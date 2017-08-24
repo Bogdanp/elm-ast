@@ -261,29 +261,26 @@ application ops =
             term ops |> chainl (Application <$ spacesOrIndentedNewline ops)
 
 
+negate : Maybe a -> Parser s String
+negate x =
+    case x of
+        Just _ ->
+            fail "next line starts a new case or let binding"
+
+        Nothing ->
+            succeed ""
+
+
 spacesOrIndentedNewline : OpTable -> Parser s String
 spacesOrIndentedNewline ops =
-    let
-        startsBinding =
-            or
-                (letBinding ops)
-                (caseBinding ops)
-
-        failAtBinding =
-            maybe startsBinding
-                |> andThen
-                    (\x ->
-                        case x of
-                            Just _ ->
-                                fail "next line starts a new case or let binding"
-
-                            Nothing ->
-                                succeed ""
-                    )
-    in
-        or
-            (spaces *> newline *> spaces_ *> lookAhead failAtBinding)
-            (spaces_)
+    choice
+        [ regex "[ \\t]*\n[ \\t]+"
+            *> lookAhead
+                (maybe ((letBinding ops) <|> (caseBinding ops))
+                    >>= negate
+                )
+        , spaces_
+        ]
 
 
 binary : OpTable -> Parser s Expression
@@ -293,11 +290,9 @@ binary ops =
             let
                 next =
                     between_ whitespace (choice [ operator, symbol_ "as" ])
-                        |> andThen
-                            (\op ->
+                        >>= (\op ->
                                 choice [ Cont <$> application ops, Stop <$> expression ops ]
-                                    |> andThen
-                                        (\e ->
+                                    >>= (\e ->
                                             case e of
                                                 Cont t ->
                                                     ((::) ( op, t )) <$> collect
@@ -311,11 +306,9 @@ binary ops =
                     next <|> succeed []
             in
                 application ops
-                    |> andThen
-                        (\e ->
+                    >>= (\e ->
                             collect
-                                |> andThen
-                                    (\eops ->
+                                >>= (\eops ->
                                         split ops 0 e eops
                                     )
                         )
@@ -351,11 +344,11 @@ expression ops =
     lazy <|
         \() ->
             choice
-                [ letExpression ops
+                [ binary ops
+                , letExpression ops
                 , caseExpression ops
                 , ifExpression ops
                 , lambda ops
-                , binary ops
                 ]
 
 
@@ -388,11 +381,9 @@ split ops l e eops =
 
         _ ->
             findAssoc ops l eops
-                |> andThen
-                    (\assoc ->
+                >>= (\assoc ->
                         sequence (splitLevel ops l e eops)
-                            |> andThen
-                                (\es ->
+                            >>= (\es ->
                                     let
                                         ops_ =
                                             List.filterMap

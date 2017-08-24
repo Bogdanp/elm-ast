@@ -5554,7 +5554,7 @@ var _Bogdanp$elm_ast$Ast_BinOp$operators = A3(
 														A3(
 															_elm_lang$core$Dict$insert,
 															'++',
-															{ctor: '_Tuple2', _0: _Bogdanp$elm_ast$Ast_BinOp$L, _1: 5},
+															{ctor: '_Tuple2', _0: _Bogdanp$elm_ast$Ast_BinOp$R, _1: 5},
 															A3(
 																_elm_lang$core$Dict$insert,
 																'<=',
@@ -7013,6 +7013,201 @@ var _elm_community$list_extra$List_Extra$init = function () {
 var _elm_community$list_extra$List_Extra$last = _elm_community$list_extra$List_Extra$foldl1(
 	_elm_lang$core$Basics$flip(_elm_lang$core$Basics$always));
 
+var _rtfeldman$hex$Hex$toString = function (num) {
+	return _elm_lang$core$String$fromList(
+		(_elm_lang$core$Native_Utils.cmp(num, 0) < 0) ? {
+			ctor: '::',
+			_0: _elm_lang$core$Native_Utils.chr('-'),
+			_1: A2(
+				_rtfeldman$hex$Hex$unsafePositiveToDigits,
+				{ctor: '[]'},
+				_elm_lang$core$Basics$negate(num))
+		} : A2(
+			_rtfeldman$hex$Hex$unsafePositiveToDigits,
+			{ctor: '[]'},
+			num));
+};
+var _rtfeldman$hex$Hex$unsafePositiveToDigits = F2(
+	function (digits, num) {
+		unsafePositiveToDigits:
+		while (true) {
+			if (_elm_lang$core$Native_Utils.cmp(num, 16) < 0) {
+				return {
+					ctor: '::',
+					_0: _rtfeldman$hex$Hex$unsafeToDigit(num),
+					_1: digits
+				};
+			} else {
+				var _v0 = {
+					ctor: '::',
+					_0: _rtfeldman$hex$Hex$unsafeToDigit(
+						A2(_elm_lang$core$Basics_ops['%'], num, 16)),
+					_1: digits
+				},
+					_v1 = (num / 16) | 0;
+				digits = _v0;
+				num = _v1;
+				continue unsafePositiveToDigits;
+			}
+		}
+	});
+var _rtfeldman$hex$Hex$unsafeToDigit = function (num) {
+	var _p0 = num;
+	switch (_p0) {
+		case 0:
+			return _elm_lang$core$Native_Utils.chr('0');
+		case 1:
+			return _elm_lang$core$Native_Utils.chr('1');
+		case 2:
+			return _elm_lang$core$Native_Utils.chr('2');
+		case 3:
+			return _elm_lang$core$Native_Utils.chr('3');
+		case 4:
+			return _elm_lang$core$Native_Utils.chr('4');
+		case 5:
+			return _elm_lang$core$Native_Utils.chr('5');
+		case 6:
+			return _elm_lang$core$Native_Utils.chr('6');
+		case 7:
+			return _elm_lang$core$Native_Utils.chr('7');
+		case 8:
+			return _elm_lang$core$Native_Utils.chr('8');
+		case 9:
+			return _elm_lang$core$Native_Utils.chr('9');
+		case 10:
+			return _elm_lang$core$Native_Utils.chr('a');
+		case 11:
+			return _elm_lang$core$Native_Utils.chr('b');
+		case 12:
+			return _elm_lang$core$Native_Utils.chr('c');
+		case 13:
+			return _elm_lang$core$Native_Utils.chr('d');
+		case 14:
+			return _elm_lang$core$Native_Utils.chr('e');
+		case 15:
+			return _elm_lang$core$Native_Utils.chr('f');
+		default:
+			return _elm_lang$core$Native_Utils.crashCase(
+				'Hex',
+				{
+					start: {line: 138, column: 5},
+					end: {line: 188, column: 84}
+				},
+				_p0)(
+				A2(
+					_elm_lang$core$Basics_ops['++'],
+					'Tried to convert ',
+					A2(
+						_elm_lang$core$Basics_ops['++'],
+						_rtfeldman$hex$Hex$toString(num),
+						' to hexadecimal.')));
+	}
+};
+var _rtfeldman$hex$Hex$fromStringHelp = F3(
+	function (position, chars, accumulated) {
+		var _p2 = chars;
+		if (_p2.ctor === '[]') {
+			return _elm_lang$core$Result$Ok(accumulated);
+		} else {
+			var recurse = function (additional) {
+				return A3(
+					_rtfeldman$hex$Hex$fromStringHelp,
+					position - 1,
+					_p2._1,
+					accumulated + (additional * Math.pow(16, position)));
+			};
+			var _p3 = _p2._0;
+			switch (_p3.valueOf()) {
+				case '0':
+					return recurse(0);
+				case '1':
+					return recurse(1);
+				case '2':
+					return recurse(2);
+				case '3':
+					return recurse(3);
+				case '4':
+					return recurse(4);
+				case '5':
+					return recurse(5);
+				case '6':
+					return recurse(6);
+				case '7':
+					return recurse(7);
+				case '8':
+					return recurse(8);
+				case '9':
+					return recurse(9);
+				case 'a':
+					return recurse(10);
+				case 'b':
+					return recurse(11);
+				case 'c':
+					return recurse(12);
+				case 'd':
+					return recurse(13);
+				case 'e':
+					return recurse(14);
+				case 'f':
+					return recurse(15);
+				default:
+					return _elm_lang$core$Result$Err(
+						A2(
+							_elm_lang$core$Basics_ops['++'],
+							_elm_lang$core$Basics$toString(_p3),
+							' is not a valid hexadecimal character.'));
+			}
+		}
+	});
+var _rtfeldman$hex$Hex$fromString = function (str) {
+	if (_elm_lang$core$String$isEmpty(str)) {
+		return _elm_lang$core$Result$Err('Empty strings are not valid hexadecimal strings.');
+	} else {
+		var formatError = function (err) {
+			return A2(
+				_elm_lang$core$String$join,
+				' ',
+				{
+					ctor: '::',
+					_0: _elm_lang$core$Basics$toString(str),
+					_1: {
+						ctor: '::',
+						_0: 'is not a valid hexadecimal string because',
+						_1: {
+							ctor: '::',
+							_0: err,
+							_1: {ctor: '[]'}
+						}
+					}
+				});
+		};
+		var result = function () {
+			if (A2(_elm_lang$core$String$startsWith, '-', str)) {
+				var list = A2(
+					_elm_lang$core$Maybe$withDefault,
+					{ctor: '[]'},
+					_elm_lang$core$List$tail(
+						_elm_lang$core$String$toList(str)));
+				return A2(
+					_elm_lang$core$Result$map,
+					_elm_lang$core$Basics$negate,
+					A3(
+						_rtfeldman$hex$Hex$fromStringHelp,
+						_elm_lang$core$List$length(list) - 1,
+						list,
+						0));
+			} else {
+				return A3(
+					_rtfeldman$hex$Hex$fromStringHelp,
+					_elm_lang$core$String$length(str) - 1,
+					_elm_lang$core$String$toList(str),
+					0);
+			}
+		}();
+		return A2(_elm_lang$core$Result$mapError, formatError, result);
+	}
+};
+
 var _Bogdanp$elm_ast$Ast_Expression$op = F2(
 	function (ops, n) {
 		return A2(
@@ -7427,30 +7622,74 @@ var _Bogdanp$elm_ast$Ast_Expression$character = A2(
 					_elm_community$parser_combinators$Combine$string('\\'),
 					_elm_community$parser_combinators$Combine$regex('(n|t|r|\\\\|x..)')),
 				function (a) {
-					var _p12 = a;
-					switch (_p12) {
-						case 'n':
-							return _elm_community$parser_combinators$Combine$succeed(
-								_elm_lang$core$Native_Utils.chr('\n'));
-						case 't':
-							return _elm_community$parser_combinators$Combine$succeed(
-								_elm_lang$core$Native_Utils.chr('\t'));
-						case 'r':
-							return _elm_community$parser_combinators$Combine$succeed(
-								_elm_lang$core$Native_Utils.chr('\r'));
-						case '\\':
-							return _elm_community$parser_combinators$Combine$succeed(
-								_elm_lang$core$Native_Utils.chr('\\'));
-						case '0':
-							return _elm_community$parser_combinators$Combine$succeed(
-								_elm_lang$core$Native_Utils.chr(' '));
-						case 'x00':
-							return _elm_community$parser_combinators$Combine$succeed(
-								_elm_lang$core$Native_Utils.chr(' '));
-						default:
-							return _elm_community$parser_combinators$Combine$fail(
-								A2(_elm_lang$core$Basics_ops['++'], 'No such character as \\', _p12));
-					}
+					var _p12 = _elm_lang$core$String$uncons(a);
+					_v10_6:
+					do {
+						if (_p12.ctor === 'Just') {
+							if (_p12._0.ctor === '_Tuple2') {
+								switch (_p12._0._0.valueOf()) {
+									case 'n':
+										if (_p12._0._1 === '') {
+											return _elm_community$parser_combinators$Combine$succeed(
+												_elm_lang$core$Native_Utils.chr('\n'));
+										} else {
+											break _v10_6;
+										}
+									case 't':
+										if (_p12._0._1 === '') {
+											return _elm_community$parser_combinators$Combine$succeed(
+												_elm_lang$core$Native_Utils.chr('\t'));
+										} else {
+											break _v10_6;
+										}
+									case 'r':
+										if (_p12._0._1 === '') {
+											return _elm_community$parser_combinators$Combine$succeed(
+												_elm_lang$core$Native_Utils.chr('\r'));
+										} else {
+											break _v10_6;
+										}
+									case '\\':
+										if (_p12._0._1 === '') {
+											return _elm_community$parser_combinators$Combine$succeed(
+												_elm_lang$core$Native_Utils.chr('\\'));
+										} else {
+											break _v10_6;
+										}
+									case '0':
+										if (_p12._0._1 === '') {
+											return _elm_community$parser_combinators$Combine$succeed(
+												_elm_lang$core$Native_Utils.chr(' '));
+										} else {
+											break _v10_6;
+										}
+									case 'x':
+										return A2(
+											_elm_lang$core$Result$withDefault,
+											_elm_community$parser_combinators$Combine$fail('Invalid charcode'),
+											A2(
+												_elm_lang$core$Result$map,
+												_elm_community$parser_combinators$Combine$succeed,
+												A2(
+													_elm_lang$core$Result$map,
+													_elm_lang$core$Char$fromCode,
+													_rtfeldman$hex$Hex$fromString(
+														_elm_lang$core$String$toLower(_p12._0._1)))));
+									default:
+										break _v10_6;
+								}
+							} else {
+								break _v10_6;
+							}
+						} else {
+							return _elm_community$parser_combinators$Combine$fail('No character');
+						}
+					} while(false);
+					return _elm_community$parser_combinators$Combine$fail(
+						A2(
+							_elm_lang$core$Basics_ops['++'],
+							'No such character as \\',
+							_elm_lang$core$Basics$toString(_p12._0)));
 				}),
 			_elm_community$parser_combinators$Combine_Char$anyChar)));
 var _Bogdanp$elm_ast$Ast_Expression$term = function (ops) {
@@ -7524,19 +7763,19 @@ var _Bogdanp$elm_ast$Ast_Expression$expression = function (ops) {
 			return _elm_community$parser_combinators$Combine$choice(
 				{
 					ctor: '::',
-					_0: _Bogdanp$elm_ast$Ast_Expression$letExpression(ops),
+					_0: _Bogdanp$elm_ast$Ast_Expression$binary(ops),
 					_1: {
 						ctor: '::',
-						_0: _Bogdanp$elm_ast$Ast_Expression$caseExpression(ops),
+						_0: _Bogdanp$elm_ast$Ast_Expression$letExpression(ops),
 						_1: {
 							ctor: '::',
-							_0: _Bogdanp$elm_ast$Ast_Expression$ifExpression(ops),
+							_0: _Bogdanp$elm_ast$Ast_Expression$caseExpression(ops),
 							_1: {
 								ctor: '::',
-								_0: _Bogdanp$elm_ast$Ast_Expression$lambda(ops),
+								_0: _Bogdanp$elm_ast$Ast_Expression$ifExpression(ops),
 								_1: {
 									ctor: '::',
-									_0: _Bogdanp$elm_ast$Ast_Expression$binary(ops),
+									_0: _Bogdanp$elm_ast$Ast_Expression$lambda(ops),
 									_1: {ctor: '[]'}
 								}
 							}
@@ -7652,15 +7891,18 @@ var _Bogdanp$elm_ast$Ast_Expression$spacesOrIndentedNewline = function (ops) {
 		},
 		_elm_community$parser_combinators$Combine$maybe(startsBinding));
 	return A2(
-		_elm_community$parser_combinators$Combine$or,
+		_elm_lang$core$Debug$log,
+		'or',
 		A2(
-			_elm_community$parser_combinators$Combine_ops['*>'],
+			_elm_community$parser_combinators$Combine$or,
 			A2(
 				_elm_community$parser_combinators$Combine_ops['*>'],
-				A2(_elm_community$parser_combinators$Combine_ops['*>'], _Bogdanp$elm_ast$Ast_Helpers$spaces, _elm_community$parser_combinators$Combine_Char$newline),
-				_Bogdanp$elm_ast$Ast_Helpers$spaces_),
-			_elm_community$parser_combinators$Combine$lookAhead(failAtBinding)),
-		_Bogdanp$elm_ast$Ast_Helpers$spaces_);
+				A2(
+					_elm_community$parser_combinators$Combine_ops['*>'],
+					A2(_elm_community$parser_combinators$Combine_ops['*>'], _Bogdanp$elm_ast$Ast_Helpers$spaces, _elm_community$parser_combinators$Combine_Char$newline),
+					_Bogdanp$elm_ast$Ast_Helpers$spaces_),
+				_elm_community$parser_combinators$Combine$lookAhead(failAtBinding)),
+			_Bogdanp$elm_ast$Ast_Helpers$spaces_));
 };
 var _Bogdanp$elm_ast$Ast_Expression$caseBinding = function (ops) {
 	return _elm_community$parser_combinators$Combine$lazy(
