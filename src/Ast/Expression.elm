@@ -142,11 +142,11 @@ variable : Parser s Expression
 variable =
     Variable
         <$> choice
-                [ singleton <$> emptyTuple
-                , singleton <$> loName
+                [ singleton <$> loName
                 , sepBy1 (Combine.string ".") upName
                 , singleton <$> parens operator
                 , singleton <$> parens (Combine.regex ",+")
+                , singleton <$> emptyTuple
                 ]
 
 
@@ -154,7 +154,7 @@ list : OpTable -> Parser s Expression
 list ops =
     lazy <|
         \() ->
-            List <$> brackets (commaSeparated_ (expression ops))
+            List <$> brackets (commaSeparated_ <| expression ops)
 
 
 tuple : OpTable -> Parser s Expression
@@ -162,7 +162,7 @@ tuple ops =
     lazy <|
         \() ->
             Tuple
-                <$> (parens (commaSeparated_ (expression ops))
+                <$> (parens (commaSeparated_ <| expression ops)
                         >>= \a ->
                                 case a of
                                     [ _ ] ->
@@ -213,7 +213,7 @@ letBinding ops =
     lazy <|
         \() ->
             (,)
-                <$> (between_ whitespace (expression ops))
+                <$> (between_ whitespace <| expression ops)
                 <*> (symbol "=" *> expression ops)
 
 
@@ -250,7 +250,7 @@ lambda ops =
     lazy <|
         \() ->
             Lambda
-                <$> (symbol "\\" *> many (between_ spaces (term ops)))
+                <$> (symbol "\\" *> many (between_ spaces <| term ops))
                 <*> (symbol "->" *> expression ops)
 
 
@@ -261,26 +261,44 @@ application ops =
             term ops |> chainl (Application <$ spacesOrIndentedNewline ops)
 
 
+emptyStr : String
+emptyStr =
+    ""
+
+
 negate : Maybe a -> Parser s String
 negate x =
     case x of
         Just _ ->
-            fail "next line starts a new case or let binding"
+            -- next line starts a new case or let binding
+            fail emptyStr
 
         Nothing ->
-            succeed ""
+            succeed emptyStr
+
+
+maybeBindingAhead : OpTable -> Parser s String
+maybeBindingAhead ops =
+    lazy <|
+        \() ->
+            lookAhead <|
+                (maybe << choice) [ letBinding ops, caseBinding ops ]
+                    >>= negate
 
 
 spacesOrIndentedNewline : OpTable -> Parser s String
 spacesOrIndentedNewline ops =
-    choice
-        [ regex "[ \\t]*\n[ \\t]+"
-            *> lookAhead
-                (maybe ((letBinding ops) <|> (caseBinding ops))
-                    >>= negate
-                )
-        , spaces_
-        ]
+    lazy <|
+        \() ->
+            (regex "[ \\t]*\n[ \\t]+" *> maybeBindingAhead ops)
+                <|> spaces_
+
+
+operatorOrAsBetween : Parser s String
+operatorOrAsBetween =
+    lazy <|
+        \() ->
+            between_ whitespace <| operator <|> symbol_ "as"
 
 
 binary : OpTable -> Parser s Expression
@@ -289,29 +307,26 @@ binary ops =
         \() ->
             let
                 next =
-                    between_ whitespace (choice [ operator, symbol_ "as" ])
+                    operatorOrAsBetween
                         >>= (\op ->
-                                choice [ Cont <$> application ops, Stop <$> expression ops ]
-                                    >>= (\e ->
-                                            case e of
-                                                Cont t ->
-                                                    ((::) ( op, t )) <$> collect
+                                lazy <|
+                                    \() ->
+                                        (or (Cont <$> application ops) (Stop <$> expression ops))
+                                            >>= (\e ->
+                                                    case e of
+                                                        Cont t ->
+                                                            ((::) ( op, t )) <$> collect
 
-                                                Stop e ->
-                                                    succeed [ ( op, e ) ]
-                                        )
+                                                        Stop ex ->
+                                                            succeed [ ( op, ex ) ]
+                                                )
                             )
 
                 collect =
-                    next <|> succeed []
+                    lazy <| \() -> choice [ next, succeed [] ]
             in
                 application ops
-                    >>= (\e ->
-                            collect
-                                >>= (\eops ->
-                                        split ops 0 e eops
-                                    )
-                        )
+                    >>= (\e -> collect >>= split ops 0 e)
 
 
 {-| A parses for term
@@ -321,19 +336,19 @@ term ops =
     lazy <|
         \() ->
             choice
-                [ character
+                [ variable
                 , string
                 , float
                 , integer
-                , access
-                , accessFunction
-                , variable
+                , character
+                , parens (between_ whitespace (expression ops))
                 , list ops
                 , tuple ops
                 , recordUpdate ops
                 , record ops
                 , simplifiedRecord
-                , parens (between_ whitespace (expression ops))
+                , access
+                , accessFunction
                 ]
 
 
