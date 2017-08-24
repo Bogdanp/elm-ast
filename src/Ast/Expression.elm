@@ -308,19 +308,17 @@ binary ops =
             let
                 next =
                     operatorOrAsBetween
-                        >>= (\op ->
+                        >>= \op ->
                                 lazy <|
                                     \() ->
                                         (or (Cont <$> application ops) (Stop <$> expression ops))
-                                            >>= (\e ->
+                                            >>= \e ->
                                                     case e of
                                                         Cont t ->
                                                             ((::) ( op, t )) <$> collect
 
                                                         Stop ex ->
                                                             succeed [ ( op, ex ) ]
-                                                )
-                            )
 
                 collect =
                     lazy <| \() -> choice [ next, succeed [] ]
