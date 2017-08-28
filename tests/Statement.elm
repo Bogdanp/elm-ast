@@ -18,59 +18,71 @@ import Test exposing (describe, test, Test)
 import Helpers exposing (var, isStatement, areStatements)
 
 
+meta =
+    { line = 0, column = 0 }
+
+
 moduleDeclaration : Test
 moduleDeclaration =
     describe "Module declaration statements"
         [ test "simple declaration exposing all" <|
-            \() -> "module A exposing (..)" |> isStatement (ModuleDeclaration [ "A" ] AllExport)
+            \() -> "module A exposing (..)" |> isStatement (ModuleDeclaration [ "A" ] AllExport meta)
         , test "declaration exposing particular things" <|
             \() ->
                 "module A exposing (A, b)"
                     |> isStatement
-                        (ModuleDeclaration [ "A" ] <|
-                            SubsetExport
+                        (ModuleDeclaration [ "A" ]
+                            (SubsetExport
                                 [ TypeExport "A" Nothing
                                 , FunctionExport "b"
                                 ]
+                            )
+                            meta
                         )
         , test "declaration exposing an infix operator" <|
             \() ->
                 "module A exposing ((?))"
                     |> isStatement
-                        (ModuleDeclaration [ "A" ] <|
-                            SubsetExport [ FunctionExport "?" ]
+                        (ModuleDeclaration [ "A" ]
+                            (SubsetExport [ FunctionExport "?" ])
+                            meta
                         )
         , test "declaration exposing union" <|
             \() ->
                 "module A exposing (A(..))"
                     |> isStatement
-                        (ModuleDeclaration [ "A" ] <|
-                            SubsetExport [ TypeExport "A" (Just AllExport) ]
+                        (ModuleDeclaration [ "A" ]
+                            (SubsetExport [ TypeExport "A" (Just AllExport) ])
+                            meta
                         )
         , test "declaration exposing constructor subset" <|
             \() ->
                 "module A exposing (A(A))"
                     |> isStatement
-                        (ModuleDeclaration [ "A" ] <|
-                            SubsetExport [ TypeExport "A" (Just <| SubsetExport [ FunctionExport "A" ]) ]
+                        (ModuleDeclaration [ "A" ]
+                            (SubsetExport [ TypeExport "A" (Just <| SubsetExport [ FunctionExport "A" ]) ])
+                            meta
                         )
         , test "multiline declaration" <|
             \() ->
                 "module A exposing (A, B,\nc)"
                     |> isStatement
-                        (ModuleDeclaration [ "A" ] <|
-                            SubsetExport
+                        (ModuleDeclaration [ "A" ]
+                            (SubsetExport
                                 [ TypeExport "A" Nothing
                                 , TypeExport "B" Nothing
                                 , FunctionExport "c"
                                 ]
+                            )
+                            meta
                         )
         , test "declaration using a port" <|
             \() ->
                 "port module A exposing (A(..))"
                     |> isStatement
-                        (PortModuleDeclaration [ "A" ] <|
-                            SubsetExport [ TypeExport "A" (Just AllExport) ]
+                        (PortModuleDeclaration [ "A" ]
+                            (SubsetExport [ TypeExport "A" (Just AllExport) ])
+                            meta
                         )
         , test "simple effects" <|
             \() ->
@@ -81,6 +93,7 @@ moduleDeclaration =
                             , ( "command", "MyCmd" )
                             ]
                             AllExport
+                            meta
                         )
         ]
 
@@ -89,51 +102,65 @@ importStatements : Test
 importStatements =
     describe "Import statements"
         [ test "simple import" <|
-            \() -> "import A" |> isStatement (ImportStatement [ "A" ] Nothing Nothing)
+            \() -> "import A" |> isStatement (ImportStatement [ "A" ] Nothing Nothing meta)
         , test "import as" <|
-            \() -> "import A as B" |> isStatement (ImportStatement [ "A" ] (Just "B") Nothing)
+            \() -> "import A as B" |> isStatement (ImportStatement [ "A" ] (Just "B") Nothing meta)
         , test "import exposing all" <|
             \() ->
                 "import A exposing (..)"
-                    |> isStatement (ImportStatement [ "A" ] Nothing (Just AllExport))
+                    |> isStatement (ImportStatement [ "A" ] Nothing (Just AllExport) meta)
         , test "import exposing" <|
             \() ->
                 "import A exposing (A, b)"
                     |> isStatement
-                        (ImportStatement [ "A" ] Nothing <|
-                            Just <|
-                                SubsetExport
+                        (ImportStatement [ "A" ]
+                            Nothing
+                            (Just
+                                (SubsetExport
                                     [ TypeExport "A" Nothing
                                     , FunctionExport "b"
                                     ]
+                                )
+                            )
+                            meta
                         )
         , test "import exposing union" <|
             \() ->
                 "import A exposing (A(..))"
                     |> isStatement
-                        (ImportStatement [ "A" ] Nothing <|
-                            Just <|
-                                SubsetExport [ TypeExport "A" (Just AllExport) ]
+                        (ImportStatement [ "A" ]
+                            Nothing
+                            (Just
+                                (SubsetExport [ TypeExport "A" (Just AllExport) ])
+                            )
+                            meta
                         )
         , test "import exposing constructor subset" <|
             \() ->
                 "import A exposing (A(A))"
                     |> isStatement
-                        (ImportStatement [ "A" ] Nothing <|
-                            Just <|
-                                SubsetExport [ TypeExport "A" (Just <| SubsetExport [ FunctionExport "A" ]) ]
+                        (ImportStatement [ "A" ]
+                            Nothing
+                            (Just
+                                (SubsetExport [ TypeExport "A" (Just <| SubsetExport [ FunctionExport "A" ]) ])
+                            )
+                            meta
                         )
         , test "import multiline" <|
             \() ->
                 "import A as B exposing (A, B,\nc)"
                     |> isStatement
-                        (ImportStatement [ "A" ] (Just "B") <|
-                            Just <|
-                                SubsetExport
+                        (ImportStatement [ "A" ]
+                            (Just "B")
+                            (Just
+                                (SubsetExport
                                     [ TypeExport "A" Nothing
                                     , TypeExport "B" Nothing
                                     , FunctionExport "c"
                                     ]
+                                )
+                            )
+                            meta
                         )
         ]
 
@@ -144,24 +171,28 @@ typeAnnotations =
         [ test "constant" <|
             \() ->
                 "x : Int"
-                    |> isStatement (FunctionTypeDeclaration "x" (TypeConstructor [ "Int" ] []))
+                    |> isStatement
+                        (FunctionTypeDeclaration "x" (TypeConstructor [ "Int" ] [] meta) meta)
         , test "variables" <|
             \() ->
                 "x : a"
-                    |> isStatement (FunctionTypeDeclaration "x" (TypeVariable "a"))
+                    |> isStatement
+                        (FunctionTypeDeclaration "x" (TypeVariable "a" meta) meta)
         , test "variables with numbers" <|
             \() ->
                 "x : a1"
-                    |> isStatement (FunctionTypeDeclaration "x" (TypeVariable "a1"))
+                    |> isStatement
+                        (FunctionTypeDeclaration "x" (TypeVariable "a1" meta) meta)
         , test "application" <|
             \() ->
                 "x : a -> b"
                     |> isStatement
                         (FunctionTypeDeclaration "x"
                             (TypeApplication
-                                (TypeVariable "a")
-                                (TypeVariable "b")
+                                (TypeVariable "a" meta)
+                                (TypeVariable "b" meta)
                             )
+                            meta
                         )
         , test "application associativity" <|
             \() ->
@@ -169,12 +200,13 @@ typeAnnotations =
                     |> isStatement
                         (FunctionTypeDeclaration "x"
                             (TypeApplication
-                                (TypeVariable "a")
+                                (TypeVariable "a" meta)
                                 (TypeApplication
-                                    (TypeVariable "b")
-                                    (TypeVariable "c")
+                                    (TypeVariable "b" meta)
+                                    (TypeVariable "c" meta)
                                 )
                             )
+                            meta
                         )
         , test "application parens" <|
             \() ->
@@ -183,11 +215,12 @@ typeAnnotations =
                         (FunctionTypeDeclaration "x"
                             (TypeApplication
                                 (TypeApplication
-                                    (TypeVariable "a")
-                                    (TypeVariable "b")
+                                    (TypeVariable "a" meta)
+                                    (TypeVariable "b" meta)
                                 )
-                                (TypeVariable "c")
+                                (TypeVariable "c" meta)
                             )
+                            meta
                         )
         , test "qualified types" <|
             \() ->
@@ -196,8 +229,10 @@ typeAnnotations =
                         (FunctionTypeDeclaration "m"
                             (TypeConstructor
                                 [ "Html", "App" ]
-                                [ (TypeConstructor [ "Msg" ] []) ]
+                                [ (TypeConstructor [ "Msg" ] []) meta ]
+                                meta
                             )
+                            meta
                         )
         ]
 
@@ -211,11 +246,13 @@ portStatements =
                     |> isStatement
                         (PortTypeDeclaration "focus"
                             (TypeApplication
-                                (TypeConstructor [ "String" ] [])
+                                (TypeConstructor [ "String" ] [] meta)
                                 (TypeConstructor [ "Cmd" ]
-                                    ([ TypeVariable "msg" ])
+                                    [ TypeVariable "msg" meta ]
+                                    meta
                                 )
                             )
+                            meta
                         )
         , test "another port type declaration" <|
             \() ->
@@ -224,13 +261,15 @@ portStatements =
                         (PortTypeDeclaration "users"
                             (TypeApplication
                                 (TypeApplication
-                                    (TypeConstructor [ "User" ] [])
-                                    (TypeVariable "msg")
+                                    (TypeConstructor [ "User" ] [] meta)
+                                    (TypeVariable "msg" meta)
                                 )
                                 (TypeConstructor [ "Sub" ]
-                                    ([ TypeVariable "msg" ])
+                                    [ TypeVariable "msg" meta ]
+                                    meta
                                 )
                             )
+                            meta
                         )
         , test "port definition" <|
             \() ->
@@ -241,7 +280,9 @@ portStatements =
                             (Access
                                 (Variable [ "Cmd" ])
                                 [ "none" ]
+                                meta
                             )
+                            meta
                         )
         ]
 
@@ -252,15 +293,15 @@ infixDeclarations =
         [ test "non" <|
             \() ->
                 "infix 9 :-"
-                    |> isStatement (InfixDeclaration N 9 ":-")
+                    |> isStatement (InfixDeclaration N 9 ":-" meta)
         , test "left" <|
             \() ->
                 "infixl 9 :-"
-                    |> isStatement (InfixDeclaration L 9 ":-")
+                    |> isStatement (InfixDeclaration L 9 ":-" meta)
         , test "right" <|
             \() ->
                 "infixr 9 :-"
-                    |> isStatement (InfixDeclaration R 9 ":-")
+                    |> isStatement (InfixDeclaration R 9 ":-" meta)
         ]
 
 
@@ -281,16 +322,18 @@ singleDeclaration =
                 |> areStatements
                     [ FunctionTypeDeclaration "f"
                         (TypeApplication
-                            (TypeConstructor [ "Int" ] [])
-                            (TypeConstructor [ "Int" ] [])
+                            (TypeConstructor [ "Int" ] [] meta)
+                            (TypeConstructor [ "Int" ] [] meta)
                         )
+                        meta
                     , FunctionDeclaration "f"
                         [ Variable [ "x" ] ]
                         (BinOp
                             (Variable [ "+" ])
                             (Variable [ "x" ])
-                            (Integer 1)
+                            (Integer 1 meta)
                         )
+                        meta
                     ]
 
 
@@ -324,21 +367,24 @@ multipleDeclarations =
                 |> areStatements
                     [ FunctionTypeDeclaration "f"
                         (TypeApplication
-                            (TypeConstructor [ "Int" ] [])
-                            (TypeConstructor [ "Int" ] [])
+                            (TypeConstructor [ "Int" ] [] meta)
+                            (TypeConstructor [ "Int" ] [] meta)
                         )
+                        meta
                     , FunctionDeclaration "f"
                         [ Variable [ "x" ] ]
                         (BinOp
                             (Variable [ "+" ])
                             (Variable [ "x" ])
-                            (Integer 1)
+                            (Integer 1 meta)
                         )
+                        meta
                     , FunctionTypeDeclaration "g"
                         (TypeApplication
-                            (TypeConstructor [ "Int" ] [])
-                            (TypeConstructor [ "Int" ] [])
+                            (TypeConstructor [ "Int" ] [] meta)
+                            (TypeConstructor [ "Int" ] [] meta)
                         )
+                        meta
                     , FunctionDeclaration "g"
                         [ Variable [ "x" ] ]
                         (BinOp
@@ -347,26 +393,35 @@ multipleDeclarations =
                                 (Variable [ "f" ])
                                 (Variable [ "x" ])
                             )
-                            (Integer 1)
+                            (Integer 1 meta)
                         )
+                        meta
                     , FunctionTypeDeclaration "h"
                         (TypeApplication
-                            ((TypeTuple ([ TypeConstructor [ "Int" ] [], TypeConstructor [ "Int" ] [] ])))
-                            (TypeConstructor [ "Int" ] [])
+                            (TypeTuple
+                                [ TypeConstructor [ "Int" ] [] meta
+                                , TypeConstructor [ "Int" ] [] meta
+                                ]
+                                meta
+                            )
+                            (TypeConstructor [ "Int" ] [] meta)
                         )
+                        meta
                     , FunctionDeclaration "h"
-                        [ Tuple [ (Variable [ "a" ]), (Variable [ "b" ]) ] ]
+                        [ Tuple [ (Variable [ "a" ]), (Variable [ "b" ]) ] meta ]
                         (BinOp
                             (Variable [ "+" ])
                             (Variable [ "a" ])
                             (Variable [ "b" ])
                         )
+                        meta
                     , FunctionTypeDeclaration "+"
                         (TypeApplication
-                            (TypeConstructor [ "Int" ] [])
-                            (TypeConstructor [ "Int" ] [])
+                            (TypeConstructor [ "Int" ] [] meta)
+                            (TypeConstructor [ "Int" ] [] meta)
                         )
-                    , FunctionDeclaration "+" [ Variable [ "a" ], Variable [ "b" ] ] (Integer 1)
+                        meta
+                    , FunctionDeclaration "+" [ Variable [ "a" ], Variable [ "b" ] ] (Integer 1 meta) meta
                     ]
 
 
@@ -400,7 +455,8 @@ moduleFixityDeclarations =
                             )
                             (Variable [ "c" ])
                         )
-                    , InfixDeclaration L 1 "++"
+                        meta
+                    , InfixDeclaration L 1 "++" meta
                     , FunctionDeclaration "g"
                         []
                         (BinOp
@@ -412,7 +468,8 @@ moduleFixityDeclarations =
                                 (Variable [ "c" ])
                             )
                         )
-                    , InfixDeclaration R 1 "**"
+                        meta
+                    , InfixDeclaration R 1 "**" meta
                     ]
 
 
@@ -435,8 +492,20 @@ typeDeclarations =
     describe "type declarations"
         [ test "can parse empty record aliases" <|
             \() ->
-                emptyRecordAliasInput |> areStatements [ TypeAliasDeclaration (TypeConstructor [ "A" ] []) (TypeRecord []) ]
+                emptyRecordAliasInput
+                    |> areStatements
+                        [ TypeAliasDeclaration
+                            (TypeConstructor [ "A" ] [] meta)
+                            (TypeRecord [] meta)
+                            meta
+                        ]
         , test "can parse aliases of unit" <|
             \() ->
-                emptyTupleAliasInput |> areStatements [ TypeAliasDeclaration (TypeConstructor [ "A" ] []) (TypeTuple []) ]
+                emptyTupleAliasInput
+                    |> areStatements
+                        [ TypeAliasDeclaration
+                            (TypeConstructor [ "A" ] [] meta)
+                            (TypeTuple [] meta)
+                            meta
+                        ]
         ]

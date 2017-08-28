@@ -21,6 +21,31 @@ type alias Alias =
     String
 
 
+{-| Representation of Parser meta information
+-}
+type alias Meta =
+    { line : Int
+    , column : Int
+    }
+
+
+makeMeta : ParseLocation -> Meta
+makeMeta { line, column } =
+    { line = line
+    , column = column
+
+    -- if column < 0 then
+    --     0
+    -- else
+    --     column
+    }
+
+
+withMeta : Parser s (Meta -> b) -> Parser s b
+withMeta p =
+    withLocation (flip andMap p << succeed << makeMeta)
+
+
 reserved : List Name
 reserved =
     [ "module"

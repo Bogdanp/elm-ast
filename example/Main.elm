@@ -34,10 +34,15 @@ update action model =
             m
 
 
+toText : a -> Html Msg
+toText =
+    text << toString
+
+
 withChild : a -> List (Html Msg) -> Html Msg
 withChild title children =
     li []
-        [ pre [] [ text <| toString title ]
+        [ pre [] [ toText title ]
         , ul [] children
         ]
 
@@ -45,7 +50,7 @@ withChild title children =
 expression : Expression -> Html Msg
 expression e =
     case e of
-        List es ->
+        List es _ ->
             withChild e (List.map expression es)
 
         Application e1 e2 ->
@@ -55,17 +60,17 @@ expression e =
                 ]
 
         e ->
-            li [] [ pre [] [ text <| toString e ] ]
+            li [] [ pre [] [ toText e ] ]
 
 
 statement : Statement -> Html Msg
 statement s =
     case s of
-        FunctionDeclaration _ _ e ->
+        FunctionDeclaration _ _ e _ ->
             withChild s [ expression e ]
 
         s ->
-            li [] [ pre [] [ text <| toString s ] ]
+            li [] [ pre [] [ toText s ] ]
 
 
 tree : String -> Html Msg
@@ -75,7 +80,7 @@ tree m =
             ul [] (List.map statement statements)
 
         err ->
-            div [] [ text <| toString err ]
+            div [] [ toText err ]
 
 
 view : String -> Html Msg

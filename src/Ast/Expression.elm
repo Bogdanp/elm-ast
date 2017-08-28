@@ -44,64 +44,66 @@ type Collect a
 {-| Representations for Elm's expressions.
 -}
 type Expression
-    = Character Char
-    | String String
-    | Integer Int
-    | Float Float
+    = Character Char Meta
+    | String String Meta
+    | Integer Int Meta
+    | Float Float Meta
+    | List (List Expression) Meta
+    | Tuple (List Expression) Meta
+    | Access Expression (List Name) Meta
+    | AccessFunction Name Meta
+    | Record (List ( Name, Expression )) Meta
+    | RecordUpdate Name (List ( Name, Expression )) Meta
+    | If Expression Expression Expression Meta
+    | Let (List ( Expression, Expression )) Expression Meta
+    | Case Expression (List ( Expression, Expression )) Meta
+    | Lambda (List Expression) Expression Meta
+      -- missing meta yet
     | Variable (List Name)
-    | List (List Expression)
-    | Tuple (List Expression)
-    | Access Expression (List Name)
-    | AccessFunction Name
-    | Record (List ( Name, Expression ))
-    | RecordUpdate Name (List ( Name, Expression ))
-    | If Expression Expression Expression
-    | Let (List ( Expression, Expression )) Expression
-    | Case Expression (List ( Expression, Expression ))
-    | Lambda (List Expression) Expression
     | Application Expression Expression
     | BinOp Expression Expression Expression
 
 
 character : Parser s Expression
 character =
-    Character
-        <$> between_ (Combine.string "'")
-                (((Combine.string "\\" *> regex "(n|t|r|\\\\|x..)")
-                    >>= (\a ->
-                            case String.uncons a of
-                                Just ( 'n', "" ) ->
-                                    succeed '\n'
+    withMeta <|
+        Character
+            <$> between_ (Combine.string "'")
+                    (((Combine.string "\\" *> regex "(n|t|r|\\\\|x..)")
+                        >>= (\a ->
+                                case String.uncons a of
+                                    Just ( 'n', "" ) ->
+                                        succeed '\n'
 
-                                Just ( 't', "" ) ->
-                                    succeed '\t'
+                                    Just ( 't', "" ) ->
+                                        succeed '\t'
 
-                                Just ( 'r', "" ) ->
-                                    succeed '\x0D'
+                                    Just ( 'r', "" ) ->
+                                        succeed '\x0D'
 
-                                Just ( '\\', "" ) ->
-                                    succeed '\\'
+                                    Just ( '\\', "" ) ->
+                                        succeed '\\'
 
-                                Just ( '0', "" ) ->
-                                    succeed '\x00'
+                                    Just ( '0', "" ) ->
+                                        succeed '\x00'
 
-                                Just ( 'x', hex ) ->
-                                    hex
-                                        |> String.toLower
-                                        |> Hex.fromString
-                                        |> Result.map Char.fromCode
-                                        |> Result.map succeed
-                                        |> Result.withDefault (fail "Invalid charcode")
+                                    Just ( 'x', hex ) ->
+                                        hex
+                                            |> String.toLower
+                                            |> Hex.fromString
+                                            |> Result.map Char.fromCode
+                                            |> Result.map succeed
+                                            |> Result.withDefault (fail "Invalid charcode")
 
-                                Just other ->
-                                    fail ("No such character as \\" ++ toString other)
+                                    Just other ->
+                                        fail ("No such character as \\" ++ toString other)
 
-                                Nothing ->
-                                    fail "No character"
-                        )
-                 )
-                    <|> anyChar
-                )
+                                    Nothing ->
+                                        fail "No character"
+                            )
+                     )
+                        <|> anyChar
+                    )
 
 
 string : Parser s Expression
@@ -115,27 +117,27 @@ string =
             (String << String.concat)
                 <$> (Combine.string "\"\"\"" *> many (regex "[^\"]*") <* Combine.string "\"\"\"")
     in
-        multiString <|> singleString
+        withMeta <| multiString <|> singleString
 
 
 integer : Parser s Expression
 integer =
-    Integer <$> Combine.Num.int
+    withMeta <| Integer <$> Combine.Num.int
 
 
 float : Parser s Expression
 float =
-    Float <$> Combine.Num.float
+    withMeta <| Float <$> Combine.Num.float
 
 
 access : Parser s Expression
 access =
-    Access <$> variable <*> many1 (Combine.string "." *> loName)
+    withMeta <| Access <$> variable <*> many1 (Combine.string "." *> loName)
 
 
 accessFunction : Parser s Expression
 accessFunction =
-    AccessFunction <$> (Combine.string "." *> loName)
+    withMeta <| AccessFunction <$> (Combine.string "." *> loName)
 
 
 variable : Parser s Expression
@@ -154,58 +156,73 @@ list : OpTable -> Parser s Expression
 list ops =
     lazy <|
         \() ->
-            List <$> brackets (commaSeparated_ <| expression ops)
+            withMeta <| List <$> brackets (commaSeparated_ <| expression ops)
 
 
 tuple : OpTable -> Parser s Expression
 tuple ops =
     lazy <|
         \() ->
-            Tuple
-                <$> (parens (commaSeparated_ <| expression ops)
-                        >>= \a ->
-                                case a of
-                                    [ _ ] ->
-                                        fail "No single tuples"
+            withMeta <|
+                Tuple
+                    <$> (parens (commaSeparated_ <| expression ops)
+                            >>= \a ->
+                                    case a of
+                                        [ _ ] ->
+                                            fail "No single tuples"
 
-                                    anyOther ->
-                                        succeed anyOther
-                    )
+                                        anyOther ->
+                                            succeed anyOther
+                        )
 
 
 record : OpTable -> Parser s Expression
 record ops =
     lazy <|
         \() ->
-            Record <$> braces (commaSeparated ((,) <$> loName <*> (symbol "=" *> expression ops)))
+            withMeta <| Record <$> braces (commaSeparated ((,) <$> loName <*> (symbol "=" *> expression ops)))
 
 
 simplifiedRecord : Parser s Expression
 simplifiedRecord =
     lazy <|
         \() ->
-            Record <$> (braces (commaSeparated ((\a -> ( a, Variable [ a ] )) <$> loName)))
+            withMeta <|
+                Record
+                    <$> (braces
+                            (commaSeparated
+                                ((\a ->
+                                    ( a
+                                    , Variable [ a ]
+                                    )
+                                 )
+                                    <$> loName
+                                )
+                            )
+                        )
 
 
 recordUpdate : OpTable -> Parser s Expression
 recordUpdate ops =
     lazy <|
         \() ->
-            RecordUpdate
-                <$> (symbol "{" *> loName)
-                <*> (symbol "|"
-                        *> (commaSeparated ((,) <$> loName <*> (symbol "=" *> expression ops)))
-                        <* symbol "}"
-                    )
+            withMeta <|
+                RecordUpdate
+                    <$> (symbol "{" *> loName)
+                    <*> (symbol "|"
+                            *> (commaSeparated ((,) <$> loName <*> (symbol "=" *> expression ops)))
+                            <* symbol "}"
+                        )
 
 
 letExpression : OpTable -> Parser s Expression
 letExpression ops =
     lazy <|
         \() ->
-            Let
-                <$> (symbol_ "let" *> many1 (letBinding ops))
-                <*> (symbol "in" *> expression ops)
+            withMeta <|
+                Let
+                    <$> (symbol_ "let" *> many1 (letBinding ops))
+                    <*> (symbol "in" *> expression ops)
 
 
 letBinding : OpTable -> Parser s ( Expression, Expression )
@@ -221,19 +238,21 @@ ifExpression : OpTable -> Parser s Expression
 ifExpression ops =
     lazy <|
         \() ->
-            If
-                <$> (symbol "if" *> expression ops)
-                <*> (symbol "then" *> expression ops)
-                <*> (symbol "else" *> expression ops)
+            withMeta <|
+                If
+                    <$> (symbol "if" *> expression ops)
+                    <*> (symbol "then" *> expression ops)
+                    <*> (symbol "else" *> expression ops)
 
 
 caseExpression : OpTable -> Parser s Expression
 caseExpression ops =
     lazy <|
         \() ->
-            Case
-                <$> (symbol "case" *> expression ops)
-                <*> (symbol "of" *> many1 (caseBinding ops))
+            withMeta <|
+                Case
+                    <$> (symbol "case" *> expression ops)
+                    <*> (symbol "of" *> many1 (caseBinding ops))
 
 
 caseBinding : OpTable -> Parser s ( Expression, Expression )
@@ -249,16 +268,19 @@ lambda : OpTable -> Parser s Expression
 lambda ops =
     lazy <|
         \() ->
-            Lambda
-                <$> (symbol "\\" *> many (between_ spaces <| term ops))
-                <*> (symbol "->" *> expression ops)
+            withMeta <|
+                Lambda
+                    <$> (symbol "\\" *> many (between_ spaces <| term ops))
+                    <*> (symbol "->" *> expression ops)
 
 
 application : OpTable -> Parser s Expression
 application ops =
     lazy <|
         \() ->
-            term ops |> chainl (Application <$ spacesOrIndentedNewline ops)
+            chainl
+                (Application <$ spacesOrIndentedNewline ops)
+                (term ops)
 
 
 negate : Maybe a -> Parser s String
@@ -285,8 +307,7 @@ spacesOrIndentedNewline : OpTable -> Parser s String
 spacesOrIndentedNewline ops =
     lazy <|
         \() ->
-            (regex "[ \\t]*\n[ \\t]+" *> maybeBindingAhead ops)
-                <|> spaces_
+            (regex "[ \\t]*\n[ \\t]+" *> maybeBindingAhead ops) <|> spaces_
 
 
 operatorOrAsBetween : Parser s String
@@ -430,7 +451,15 @@ joinL es ops =
             succeed e
 
         ( a :: b :: remE, op :: remO ) ->
-            joinL ((BinOp (Variable [ op ]) a b) :: remE) remO
+            joinL
+                ((BinOp
+                    (Variable [ op ])
+                    a
+                    b
+                 )
+                    :: remE
+                )
+                remO
 
         _ ->
             fail ""
@@ -444,9 +473,13 @@ joinR es ops =
 
         ( a :: b :: remE, op :: remO ) ->
             joinR (b :: remE) remO
-                |> andThen
-                    (\e ->
-                        succeed (BinOp (Variable [ op ]) a e)
+                >>= (\e ->
+                        succeed
+                            (BinOp
+                                (Variable [ op ])
+                                a
+                                e
+                            )
                     )
 
         _ ->
