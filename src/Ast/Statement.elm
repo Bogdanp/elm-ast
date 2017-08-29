@@ -109,7 +109,7 @@ typeExport =
 subsetExport : Parser s ExportSet
 subsetExport =
     SubsetExport
-        <$> commaSeparated (functionExport |> or typeExport)
+        <$> commaSeparated (typeExport <|> functionExport)
 
 
 exports : Parser s ExportSet

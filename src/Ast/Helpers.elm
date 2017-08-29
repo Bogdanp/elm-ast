@@ -32,12 +32,11 @@ type alias Meta =
 makeMeta : ParseLocation -> Meta
 makeMeta { line, column } =
     { line = line
-    , column = column
-
-    -- if column < 0 then
-    --     0
-    -- else
-    --     column
+    , column =
+        if column < 0 then
+            0
+        else
+            column
     }
 
 
