@@ -45,29 +45,30 @@ type ExportSet
 {-| Representations for Elm's type syntax.
 -}
 type Type
-    = TypeConstructor QualifiedType (List Type)
-    | TypeVariable Name
-    | TypeRecordConstructor Type (List ( Name, Type ))
-    | TypeRecord (List ( Name, Type ))
-    | TypeTuple (List Type)
+    = TypeConstructor QualifiedType (List Type) Meta
+    | TypeVariable Name Meta
+    | TypeRecordConstructor Type (List ( Name, Type )) Meta
+    | TypeRecord (List ( Name, Type )) Meta
+    | TypeTuple (List Type) Meta
+      -- missing meta
     | TypeApplication Type Type
 
 
 {-| Representations for Elm's statements.
 -}
 type Statement
-    = ModuleDeclaration ModuleName ExportSet
-    | PortModuleDeclaration ModuleName ExportSet
-    | EffectModuleDeclaration ModuleName (List ( Name, Name )) ExportSet
-    | ImportStatement ModuleName (Maybe Alias) (Maybe ExportSet)
-    | TypeAliasDeclaration Type Type
-    | TypeDeclaration Type (List Type)
-    | PortTypeDeclaration Name Type
-    | PortDeclaration Name (List Name) Expression
-    | FunctionTypeDeclaration Name Type
-    | FunctionDeclaration Name (List Expression) Expression
-    | InfixDeclaration Assoc Int Name
-    | Comment String
+    = ModuleDeclaration ModuleName ExportSet Meta
+    | PortModuleDeclaration ModuleName ExportSet Meta
+    | EffectModuleDeclaration ModuleName (List ( Name, Name )) ExportSet Meta
+    | ImportStatement ModuleName (Maybe Alias) (Maybe ExportSet) Meta
+    | TypeAliasDeclaration Type Type Meta
+    | TypeDeclaration Type (List Type) Meta
+    | PortTypeDeclaration Name Type Meta
+    | PortDeclaration Name (List Name) Expression Meta
+    | FunctionTypeDeclaration Name Type Meta
+    | FunctionDeclaration Name (List Expression) Expression Meta
+    | InfixDeclaration Assoc Int Name Meta
+    | Comment String Meta
 
 
 
@@ -123,12 +124,12 @@ exports =
 
 typeVariable : Parser s Type
 typeVariable =
-    TypeVariable <$> regex "[a-z]+(\\w|_)*"
+    withMeta <| TypeVariable <$> regex "[a-z]+(\\w|_)*"
 
 
 typeConstant : Parser s Type
 typeConstant =
-    TypeConstructor <$> sepBy1 (string ".") upName <*> succeed []
+    withMeta <| TypeConstructor <$> sepBy1 (string ".") upName <*> succeed []
 
 
 typeApplication : Parser s (Type -> Type -> Type)
@@ -140,7 +141,7 @@ typeTuple : Parser s Type
 typeTuple =
     lazy <|
         \() ->
-            TypeTuple <$> parens (commaSeparated_ type_)
+            withMeta <| TypeTuple <$> parens (commaSeparated_ type_)
 
 
 typeRecordPair : Parser s ( Name, Type )
@@ -162,9 +163,10 @@ typeRecordConstructor =
     lazy <|
         \() ->
             braces <|
-                TypeRecordConstructor
-                    <$> (between_ spaces typeVariable)
-                    <*> (symbol "|" *> typeRecordPairs)
+                withMeta <|
+                    TypeRecordConstructor
+                        <$> (between_ spaces typeVariable)
+                        <*> (symbol "|" *> typeRecordPairs)
 
 
 typeRecord : Parser s Type
@@ -172,8 +174,9 @@ typeRecord =
     lazy <|
         \() ->
             braces <|
-                TypeRecord
-                    <$> typeRecordPairs
+                withMeta <|
+                    TypeRecord
+                        <$> typeRecordPairs
 
 
 typeParameter : Parser s Type
@@ -195,7 +198,7 @@ typeConstructor : Parser s Type
 typeConstructor =
     lazy <|
         \() ->
-            TypeConstructor <$> sepBy1 (string ".") upName <*> many typeParameter
+            withMeta <| TypeConstructor <$> sepBy1 (string ".") upName <*> many typeParameter
 
 
 type_ : Parser s Type
@@ -227,24 +230,27 @@ typeAnnotation =
 
 portModuleDeclaration : Parser s Statement
 portModuleDeclaration =
-    PortModuleDeclaration
-        <$> (initialSymbol "port" *> symbol "module" *> moduleName)
-        <*> (symbol "exposing" *> exports)
+    withMeta <|
+        PortModuleDeclaration
+            <$> (initialSymbol "port" *> symbol "module" *> moduleName)
+            <*> (symbol "exposing" *> exports)
 
 
 effectModuleDeclaration : Parser s Statement
 effectModuleDeclaration =
-    EffectModuleDeclaration
-        <$> (initialSymbol "effect" *> symbol "module" *> moduleName)
-        <*> (symbol "where" *> braces (commaSeparated ((,) <$> loName <*> (symbol "=" *> upName))))
-        <*> (symbol "exposing" *> exports)
+    withMeta <|
+        EffectModuleDeclaration
+            <$> (initialSymbol "effect" *> symbol "module" *> moduleName)
+            <*> (symbol "where" *> braces (commaSeparated ((,) <$> loName <*> (symbol "=" *> upName))))
+            <*> (symbol "exposing" *> exports)
 
 
 moduleDeclaration : Parser s Statement
 moduleDeclaration =
-    ModuleDeclaration
-        <$> (initialSymbol "module" *> moduleName)
-        <*> (symbol "exposing" *> exports)
+    withMeta <|
+        ModuleDeclaration
+            <$> (initialSymbol "module" *> moduleName)
+            <*> (symbol "exposing" *> exports)
 
 
 
@@ -254,10 +260,11 @@ moduleDeclaration =
 
 importStatement : Parser s Statement
 importStatement =
-    ImportStatement
-        <$> (initialSymbol "import" *> moduleName)
-        <*> maybe (symbol "as" *> upName)
-        <*> maybe (symbol "exposing" *> exports)
+    withMeta <|
+        ImportStatement
+            <$> (initialSymbol "import" *> moduleName)
+            <*> maybe (symbol "as" *> upName)
+            <*> maybe (symbol "exposing" *> exports)
 
 
 
@@ -267,16 +274,18 @@ importStatement =
 
 typeAliasDeclaration : Parser s Statement
 typeAliasDeclaration =
-    TypeAliasDeclaration
-        <$> (initialSymbol "type" *> symbol "alias" *> type_)
-        <*> (whitespace *> symbol "=" *> typeAnnotation)
+    withMeta <|
+        TypeAliasDeclaration
+            <$> (initialSymbol "type" *> symbol "alias" *> type_)
+            <*> (whitespace *> symbol "=" *> typeAnnotation)
 
 
 typeDeclaration : Parser s Statement
 typeDeclaration =
-    TypeDeclaration
-        <$> (initialSymbol "type" *> type_)
-        <*> (whitespace *> symbol "=" *> (sepBy1 (symbol "|") (between_ whitespace typeConstructor)))
+    withMeta <|
+        TypeDeclaration
+            <$> (initialSymbol "type" *> type_)
+            <*> (whitespace *> symbol "=" *> (sepBy1 (symbol "|") (between_ whitespace typeConstructor)))
 
 
 
@@ -286,17 +295,19 @@ typeDeclaration =
 
 portTypeDeclaration : Parser s Statement
 portTypeDeclaration =
-    PortTypeDeclaration
-        <$> (initialSymbol "port" *> loName)
-        <*> (symbol ":" *> typeAnnotation)
+    withMeta <|
+        PortTypeDeclaration
+            <$> (initialSymbol "port" *> loName)
+            <*> (symbol ":" *> typeAnnotation)
 
 
 portDeclaration : OpTable -> Parser s Statement
 portDeclaration ops =
-    PortDeclaration
-        <$> (initialSymbol "port" *> loName)
-        <*> (many <| between_ spaces loName)
-        <*> (symbol "=" *> expression ops)
+    withMeta <|
+        PortDeclaration
+            <$> (initialSymbol "port" *> loName)
+            <*> (many <| between_ spaces loName)
+            <*> (symbol "=" *> expression ops)
 
 
 
@@ -306,15 +317,19 @@ portDeclaration ops =
 
 functionTypeDeclaration : Parser s Statement
 functionTypeDeclaration =
-    FunctionTypeDeclaration <$> (choice [ loName, parens operator ] <* symbol ":") <*> typeAnnotation
+    withMeta <|
+        FunctionTypeDeclaration
+            <$> (choice [ loName, parens operator ] <* symbol ":")
+            <*> typeAnnotation
 
 
 functionDeclaration : OpTable -> Parser s Statement
 functionDeclaration ops =
-    FunctionDeclaration
-        <$> (choice [ loName, parens operator ])
-        <*> (many (between_ whitespace <| term ops))
-        <*> (symbol "=" *> whitespace *> expression ops)
+    withMeta <|
+        FunctionDeclaration
+            <$> (choice [ loName, parens operator ])
+            <*> (many (between_ whitespace <| term ops))
+            <*> (symbol "=" *> whitespace *> expression ops)
 
 
 
@@ -324,14 +339,15 @@ functionDeclaration ops =
 
 infixDeclaration : Parser s Statement
 infixDeclaration =
-    InfixDeclaration
-        <$> choice
-                [ L <$ initialSymbol "infixl"
-                , R <$ initialSymbol "infixr"
-                , N <$ initialSymbol "infix"
-                ]
-        <*> (spaces *> Combine.Num.int)
-        <*> (spaces *> (loName <|> operator))
+    withMeta <|
+        InfixDeclaration
+            <$> choice
+                    [ L <$ initialSymbol "infixl"
+                    , R <$ initialSymbol "infixr"
+                    , N <$ initialSymbol "infix"
+                    ]
+            <*> (spaces *> Combine.Num.int)
+            <*> (spaces *> (loName <|> operator))
 
 
 
@@ -341,12 +357,12 @@ infixDeclaration =
 
 singleLineComment : Parser s Statement
 singleLineComment =
-    Comment <$> (string "--" *> regex ".*" <* whitespace)
+    withMeta <| Comment <$> (string "--" *> regex ".*" <* whitespace)
 
 
 multiLineComment : Parser s Statement
 multiLineComment =
-    (Comment << String.fromList) <$> (string "{-" *> manyTill anyChar (string "-}"))
+    withMeta <| (Comment << String.fromList) <$> (string "{-" *> manyTill anyChar (string "-}"))
 
 
 comment : Parser s Statement
@@ -358,20 +374,22 @@ comment =
 -}
 statement : OpTable -> Parser s Statement
 statement ops =
-    choice
-        [ portModuleDeclaration
-        , effectModuleDeclaration
-        , moduleDeclaration
-        , importStatement
-        , typeAliasDeclaration
-        , typeDeclaration
-        , portTypeDeclaration
-        , portDeclaration ops
-        , functionTypeDeclaration
-        , functionDeclaration ops
-        , infixDeclaration
-        , comment
-        ]
+    lazy <|
+        \() ->
+            choice
+                [ portModuleDeclaration
+                , effectModuleDeclaration
+                , moduleDeclaration
+                , importStatement
+                , typeAliasDeclaration
+                , typeDeclaration
+                , portTypeDeclaration
+                , portDeclaration ops
+                , functionTypeDeclaration
+                , functionDeclaration ops
+                , infixDeclaration
+                , comment
+                ]
 
 
 {-| A parser for a series of Elm statements.
@@ -398,10 +416,8 @@ infixStatements =
                 <* end
     in
         statements
-            |> andThen
-                (\xs ->
+            >>= \xs ->
                     succeed <| List.filterMap identity xs
-                )
 
 
 {-| A scanner that returns an updated OpTable based on the infix
@@ -412,14 +428,12 @@ opTable ops =
     let
         collect s d =
             case s of
-                InfixDeclaration a l n ->
+                InfixDeclaration a l n _ ->
                     Dict.insert n ( a, l ) d
 
                 _ ->
                     Debug.crash "impossible"
     in
         infixStatements
-            |> andThen
-                (\xs ->
+            >>= \xs ->
                     succeed <| List.foldr collect ops xs
-                )

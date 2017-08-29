@@ -21,6 +21,31 @@ type alias Alias =
     String
 
 
+{-| Representation of Parser meta information
+-}
+type alias Meta =
+    { line : Int
+    , column : Int
+    }
+
+
+makeMeta : ParseLocation -> Meta
+makeMeta { line, column } =
+    { line = line
+    , column = column
+
+    -- if column < 0 then
+    --     0
+    -- else
+    --     column
+    }
+
+
+withMeta : Parser s (Meta -> b) -> Parser s b
+withMeta p =
+    withLocation (flip andMap p << succeed << makeMeta)
+
+
 reserved : List Name
 reserved =
     [ "module"
@@ -68,7 +93,7 @@ symbol_ k =
 
 symbol : String -> Parser s String
 symbol k =
-    between_ whitespace (string k)
+    between_ whitespace <| string k
 
 
 initialSymbol : String -> Parser s String
@@ -78,12 +103,12 @@ initialSymbol k =
 
 commaSeparated : Parser s res -> Parser s (List res)
 commaSeparated p =
-    sepBy1 (string ",") (between_ whitespace p)
+    sepBy1 (string ",") <| between_ whitespace p
 
 
 commaSeparated_ : Parser s res -> Parser s (List res)
 commaSeparated_ p =
-    sepBy (string ",") (between_ whitespace p)
+    sepBy (string ",") <| between_ whitespace p
 
 
 name : Parser s Char -> Parser s String
@@ -96,8 +121,7 @@ loName =
     let
         loName_ =
             name lower
-                |> andThen
-                    (\n ->
+                >>= (\n ->
                         if List.member n reserved then
                             fail <| "name '" ++ n ++ "' is reserved"
                         else
@@ -119,14 +143,15 @@ emptyTuple =
 
 operator : Parser s String
 operator =
-    regex "[+\\-\\/*=.$<>:&|^?%#@~!]+|\x8As\x08"
-        |> andThen
-            (\n ->
-                if List.member n reservedOperators then
-                    fail <| "operator '" ++ n ++ "' is reserved"
-                else
-                    succeed n
-            )
+    lazy <|
+        \() ->
+            regex "[+\\-\\/*=.$<>:&|^?%#@~!]+|\x8As\x08"
+                >>= (\n ->
+                        if List.member n reservedOperators then
+                            fail <| "operator '" ++ n ++ "' is reserved"
+                        else
+                            succeed n
+                    )
 
 
 functionName : Parser s String
