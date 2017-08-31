@@ -1,42 +1,32 @@
-module Statement exposing (all)
+module Statement
+    exposing
+        ( moduleDeclaration
+        , importStatements
+        , infixDeclarations
+        , moduleFixityDeclarations
+        , multipleDeclarations
+        , portStatements
+        , singleDeclaration
+        , typeAnnotations
+        , typeDeclarations
+        )
 
-import Ast exposing (parseStatement, parse)
-import Ast.BinOp exposing (Assoc(..), operators)
+import Ast.BinOp exposing (Assoc(..))
 import Ast.Expression exposing (Expression(..))
 import Ast.Statement exposing (ExportSet(..), Type(..), Statement(..))
-import Expect exposing (..)
 import Test exposing (describe, test, Test)
-
-
-is : Statement -> String -> Expectation
-is s i =
-    case parseStatement operators i of
-        Ok ( _, _, r ) ->
-            Expect.equal r s
-
-        _ ->
-            Expect.fail ("failed to parse: \"" ++ i ++ "\" <vs> " ++ toString s)
-
-
-are : List Statement -> String -> Expectation
-are s i =
-    case parse i of
-        Ok ( _, _, r ) ->
-            Expect.equal r s
-
-        _ ->
-            Expect.fail ("failed to parse: \"" ++ i ++ "\" <vs> " ++ toString s)
+import Helpers exposing (var, isStatement, areStatements)
 
 
 moduleDeclaration : Test
 moduleDeclaration =
     describe "Module declaration statements"
         [ test "simple declaration exposing all" <|
-            \() -> "module A exposing (..)" |> is (ModuleDeclaration [ "A" ] AllExport)
+            \() -> "module A exposing (..)" |> isStatement (ModuleDeclaration [ "A" ] AllExport)
         , test "declaration exposing particular things" <|
             \() ->
                 "module A exposing (A, b)"
-                    |> is
+                    |> isStatement
                         (ModuleDeclaration [ "A" ] <|
                             SubsetExport
                                 [ TypeExport "A" Nothing
@@ -46,28 +36,28 @@ moduleDeclaration =
         , test "declaration exposing an infix operator" <|
             \() ->
                 "module A exposing ((?))"
-                    |> is
+                    |> isStatement
                         (ModuleDeclaration [ "A" ] <|
                             SubsetExport [ FunctionExport "?" ]
                         )
         , test "declaration exposing union" <|
             \() ->
                 "module A exposing (A(..))"
-                    |> is
+                    |> isStatement
                         (ModuleDeclaration [ "A" ] <|
                             SubsetExport [ TypeExport "A" (Just AllExport) ]
                         )
         , test "declaration exposing constructor subset" <|
             \() ->
                 "module A exposing (A(A))"
-                    |> is
+                    |> isStatement
                         (ModuleDeclaration [ "A" ] <|
                             SubsetExport [ TypeExport "A" (Just <| SubsetExport [ FunctionExport "A" ]) ]
                         )
         , test "multiline declaration" <|
             \() ->
                 "module A exposing (A, B,\nc)"
-                    |> is
+                    |> isStatement
                         (ModuleDeclaration [ "A" ] <|
                             SubsetExport
                                 [ TypeExport "A" Nothing
@@ -78,14 +68,14 @@ moduleDeclaration =
         , test "declaration using a port" <|
             \() ->
                 "port module A exposing (A(..))"
-                    |> is
+                    |> isStatement
                         (PortModuleDeclaration [ "A" ] <|
                             SubsetExport [ TypeExport "A" (Just AllExport) ]
                         )
         , test "simple effects" <|
             \() ->
                 "effect module A where {subscription = MySub, command = MyCmd} exposing (..)"
-                    |> is
+                    |> isStatement
                         (EffectModuleDeclaration [ "A" ]
                             [ ( "subscription", "MySub" )
                             , ( "command", "MyCmd" )
@@ -99,17 +89,17 @@ importStatements : Test
 importStatements =
     describe "Import statements"
         [ test "simple import" <|
-            \() -> "import A" |> is (ImportStatement [ "A" ] Nothing Nothing)
+            \() -> "import A" |> isStatement (ImportStatement [ "A" ] Nothing Nothing)
         , test "import as" <|
-            \() -> "import A as B" |> is (ImportStatement [ "A" ] (Just "B") Nothing)
+            \() -> "import A as B" |> isStatement (ImportStatement [ "A" ] (Just "B") Nothing)
         , test "import exposing all" <|
             \() ->
                 "import A exposing (..)"
-                    |> is (ImportStatement [ "A" ] Nothing (Just AllExport))
+                    |> isStatement (ImportStatement [ "A" ] Nothing (Just AllExport))
         , test "import exposing" <|
             \() ->
                 "import A exposing (A, b)"
-                    |> is
+                    |> isStatement
                         (ImportStatement [ "A" ] Nothing <|
                             Just <|
                                 SubsetExport
@@ -120,7 +110,7 @@ importStatements =
         , test "import exposing union" <|
             \() ->
                 "import A exposing (A(..))"
-                    |> is
+                    |> isStatement
                         (ImportStatement [ "A" ] Nothing <|
                             Just <|
                                 SubsetExport [ TypeExport "A" (Just AllExport) ]
@@ -128,7 +118,7 @@ importStatements =
         , test "import exposing constructor subset" <|
             \() ->
                 "import A exposing (A(A))"
-                    |> is
+                    |> isStatement
                         (ImportStatement [ "A" ] Nothing <|
                             Just <|
                                 SubsetExport [ TypeExport "A" (Just <| SubsetExport [ FunctionExport "A" ]) ]
@@ -136,7 +126,7 @@ importStatements =
         , test "import multiline" <|
             \() ->
                 "import A as B exposing (A, B,\nc)"
-                    |> is
+                    |> isStatement
                         (ImportStatement [ "A" ] (Just "B") <|
                             Just <|
                                 SubsetExport
@@ -154,19 +144,19 @@ typeAnnotations =
         [ test "constant" <|
             \() ->
                 "x : Int"
-                    |> is (FunctionTypeDeclaration "x" (TypeConstructor [ "Int" ] []))
+                    |> isStatement (FunctionTypeDeclaration "x" (TypeConstructor [ "Int" ] []))
         , test "variables" <|
             \() ->
                 "x : a"
-                    |> is (FunctionTypeDeclaration "x" (TypeVariable "a"))
+                    |> isStatement (FunctionTypeDeclaration "x" (TypeVariable "a"))
         , test "variables with numbers" <|
             \() ->
                 "x : a1"
-                    |> is (FunctionTypeDeclaration "x" (TypeVariable "a1"))
+                    |> isStatement (FunctionTypeDeclaration "x" (TypeVariable "a1"))
         , test "application" <|
             \() ->
                 "x : a -> b"
-                    |> is
+                    |> isStatement
                         (FunctionTypeDeclaration "x"
                             (TypeApplication
                                 (TypeVariable "a")
@@ -176,7 +166,7 @@ typeAnnotations =
         , test "application associativity" <|
             \() ->
                 "x : a -> b -> c"
-                    |> is
+                    |> isStatement
                         (FunctionTypeDeclaration "x"
                             (TypeApplication
                                 (TypeVariable "a")
@@ -189,7 +179,7 @@ typeAnnotations =
         , test "application parens" <|
             \() ->
                 "x : (a -> b) -> c"
-                    |> is
+                    |> isStatement
                         (FunctionTypeDeclaration "x"
                             (TypeApplication
                                 (TypeApplication
@@ -202,7 +192,7 @@ typeAnnotations =
         , test "qualified types" <|
             \() ->
                 "m : Html.App Msg"
-                    |> is
+                    |> isStatement
                         (FunctionTypeDeclaration "m"
                             (TypeConstructor
                                 [ "Html", "App" ]
@@ -218,7 +208,7 @@ portStatements =
         [ test "constant" <|
             \() ->
                 "port focus : String -> Cmd msg"
-                    |> is
+                    |> isStatement
                         (PortTypeDeclaration "focus"
                             (TypeApplication
                                 (TypeConstructor [ "String" ] [])
@@ -230,7 +220,7 @@ portStatements =
         , test "another port type declaration" <|
             \() ->
                 "port users : (User -> msg) -> Sub msg"
-                    |> is
+                    |> isStatement
                         (PortTypeDeclaration "users"
                             (TypeApplication
                                 (TypeApplication
@@ -245,7 +235,7 @@ portStatements =
         , test "port definition" <|
             \() ->
                 "port focus = Cmd.none"
-                    |> is
+                    |> isStatement
                         (PortDeclaration "focus"
                             []
                             (Access
@@ -262,15 +252,15 @@ infixDeclarations =
         [ test "non" <|
             \() ->
                 "infix 9 :-"
-                    |> is (InfixDeclaration N 9 ":-")
+                    |> isStatement (InfixDeclaration N 9 ":-")
         , test "left" <|
             \() ->
                 "infixl 9 :-"
-                    |> is (InfixDeclaration L 9 ":-")
+                    |> isStatement (InfixDeclaration L 9 ":-")
         , test "right" <|
             \() ->
                 "infixr 9 :-"
-                    |> is (InfixDeclaration R 9 ":-")
+                    |> isStatement (InfixDeclaration R 9 ":-")
         ]
 
 
@@ -288,7 +278,7 @@ singleDeclaration =
     test "simple function" <|
         \() ->
             singleDeclarationInput
-                |> are
+                |> areStatements
                     [ FunctionTypeDeclaration "f"
                         (TypeApplication
                             (TypeConstructor [ "Int" ] [])
@@ -331,7 +321,7 @@ multipleDeclarations =
     test "multiple functions" <|
         \() ->
             multipleDeclarationsInput
-                |> are
+                |> areStatements
                     [ FunctionTypeDeclaration "f"
                         (TypeApplication
                             (TypeConstructor [ "Int" ] [])
@@ -398,7 +388,7 @@ moduleFixityDeclarations =
     test "module fixity scanning" <|
         \() ->
             moduleFixityInput
-                |> are
+                |> areStatements
                     [ FunctionDeclaration "f"
                         []
                         (BinOp
@@ -445,23 +435,8 @@ typeDeclarations =
     describe "type declarations"
         [ test "can parse empty record aliases" <|
             \() ->
-                emptyRecordAliasInput |> are [ TypeAliasDeclaration (TypeConstructor [ "A" ] []) (TypeRecord []) ]
+                emptyRecordAliasInput |> areStatements [ TypeAliasDeclaration (TypeConstructor [ "A" ] []) (TypeRecord []) ]
         , test "can parse aliases of unit" <|
             \() ->
-                emptyTupleAliasInput |> are [ TypeAliasDeclaration (TypeConstructor [ "A" ] []) (TypeTuple []) ]
-        ]
-
-
-all : Test
-all =
-    describe "Statement suite"
-        [ moduleDeclaration
-        , importStatements
-        , typeAnnotations
-        , portStatements
-        , infixDeclarations
-        , singleDeclaration
-        , multipleDeclarations
-        , moduleFixityDeclarations
-        , typeDeclarations
+                emptyTupleAliasInput |> areStatements [ TypeAliasDeclaration (TypeConstructor [ "A" ] []) (TypeTuple []) ]
         ]

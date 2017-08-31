@@ -6,4 +6,4 @@ A parser for Elm in Elm. See it in action [here][demo].
 [demo]: http://bogdanp.github.io/elm-ast/example/
 
 
-Created by @Bogdanp. Currently maintained by @wende
+Created by [@Bogdanp](https://github.com/Bogdanp). Currently maintained by [@wende](https://github.com/wende)
