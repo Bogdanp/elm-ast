@@ -323,7 +323,8 @@ operatorOrAsBetween : Parser s Operator
 operatorOrAsBetween =
     lazy <|
         \() ->
-            between_ whitespace <| operator <|> withMeta ((,) <$> symbol_ "as")
+            between_ whitespace <|
+                choice [ operator, withMeta ((,) <$> symbol_ "as") ]
 
 
 binary : OpTable -> Parser s Expression
@@ -334,16 +335,17 @@ binary ops =
                 next =
                     operatorOrAsBetween
                         >>= \op ->
-                                lazy <|
-                                    \() ->
-                                        (or (Cont <$> application ops) (Stop <$> expression ops))
-                                            >>= \e ->
-                                                    case e of
-                                                        Cont t ->
-                                                            ((::) ( op, t )) <$> collect
+                                (or
+                                    (Cont <$> application ops)
+                                    (Stop <$> expression ops)
+                                )
+                                    >>= \e ->
+                                            case e of
+                                                Cont t ->
+                                                    ((::) ( op, t )) <$> collect
 
-                                                        Stop ex ->
-                                                            succeed [ ( op, ex ) ]
+                                                Stop ex ->
+                                                    succeed [ ( op, ex ) ]
 
                 collect =
                     lazy <| \() -> choice [ next, succeed [] ]

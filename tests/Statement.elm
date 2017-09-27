@@ -239,6 +239,7 @@ typeAnnotations =
                             (TypeApplication
                                 (TypeVariable "a" { line = 1, column = 4 })
                                 (TypeVariable "b" { line = 1, column = 9 })
+                                { line = 1, column = 6 }
                             )
                             { line = 1, column = 0 }
                         )
@@ -252,7 +253,9 @@ typeAnnotations =
                                 (TypeApplication
                                     (TypeVariable "b" { line = 1, column = 9 })
                                     (TypeVariable "c" { line = 1, column = 14 })
+                                    { line = 1, column = 11 }
                                 )
+                                { line = 1, column = 6 }
                             )
                             { line = 1, column = 0 }
                         )
@@ -265,8 +268,10 @@ typeAnnotations =
                                 (TypeApplication
                                     (TypeVariable "a" { line = 1, column = 5 })
                                     (TypeVariable "b" { line = 1, column = 10 })
+                                    { line = 1, column = 7 }
                                 )
                                 (TypeVariable "c" { line = 1, column = 16 })
+                                { line = 1, column = 13 }
                             )
                             { line = 1, column = 0 }
                         )
@@ -308,6 +313,7 @@ portStatements =
                                     )
                                     { line = 1, column = 23 }
                                 )
+                                { line = 1, column = 20 }
                             )
                             { line = 1, column = 0 }
                         )
@@ -324,11 +330,13 @@ portStatements =
                                         "msg"
                                         { line = 1, column = 22 }
                                     )
+                                    { line = 1, column = 19 }
                                 )
                                 (TypeConstructor [ "Sub" ]
                                     ([ TypeVariable "msg" { line = 1, column = 34 } ])
                                     { line = 1, column = 30 }
                                 )
+                                { line = 1, column = 27 }
                             )
                             { line = 1, column = 0 }
                         )
@@ -385,6 +393,7 @@ singleDeclaration =
                         (TypeApplication
                             (TypeConstructor [ "Int" ] [] { line = 1, column = 3 })
                             (TypeConstructor [ "Int" ] [] { line = 1, column = 10 })
+                            { line = 1, column = 7 }
                         )
                         { line = 1, column = 0 }
                     , FunctionDeclaration "f"
@@ -431,6 +440,7 @@ multipleDeclarations =
                         (TypeApplication
                             (TypeConstructor [ "Int" ] [] { line = 3, column = 3 })
                             (TypeConstructor [ "Int" ] [] { line = 3, column = 10 })
+                            { line = 3, column = 7 }
                         )
                         { line = 3, column = 0 }
                     , FunctionDeclaration "f"
@@ -446,6 +456,7 @@ multipleDeclarations =
                         (TypeApplication
                             (TypeConstructor [ "Int" ] [] { line = 7, column = 3 })
                             (TypeConstructor [ "Int" ] [] { line = 7, column = 10 })
+                            { line = 7, column = 7 }
                         )
                         { line = 7, column = 0 }
                     , FunctionDeclaration "g"
@@ -480,6 +491,7 @@ multipleDeclarations =
                                 []
                                 { line = 11, column = 17 }
                             )
+                            { line = 11, column = 14 }
                         )
                         { line = 11, column = 0 }
                     , FunctionDeclaration "h"
@@ -510,6 +522,7 @@ multipleDeclarations =
                                 []
                                 { line = 14, column = 12 }
                             )
+                            { line = 14, column = 9 }
                         )
                         { line = 14, column = 0 }
                     , FunctionDeclaration "+"

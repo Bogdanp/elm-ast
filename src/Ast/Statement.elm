@@ -50,8 +50,7 @@ type Type
     | TypeRecordConstructor Type (List ( Name, Type )) Meta
     | TypeRecord (List ( Name, Type )) Meta
     | TypeTuple (List Type) Meta
-      -- missing meta
-    | TypeApplication Type Type
+    | TypeApplication Type Type Meta
 
 
 {-| Representations for Elm's statements.
@@ -134,7 +133,11 @@ typeConstant =
 
 typeApplication : Parser s (Type -> Type -> Type)
 typeApplication =
-    TypeApplication <$ symbol "->"
+    let
+        flippedApp m e1 e2 =
+            TypeApplication e1 e2 m
+    in
+        withMeta ((\m -> flippedApp m) <$ symbol "->")
 
 
 typeTuple : Parser s Type
