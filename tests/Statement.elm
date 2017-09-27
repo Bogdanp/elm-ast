@@ -338,7 +338,11 @@ portStatements =
                     |> isStatement
                         (PortDeclaration "focus"
                             []
-                            (Access (Variable [ "Cmd" ]) [ "none" ] { line = 1, column = 13 })
+                            (Access
+                                (var "Cmd" { line = 1, column = 13 })
+                                [ "none" ]
+                                { line = 1, column = 13 }
+                            )
                             { line = 1, column = 0 }
                         )
         ]
@@ -384,10 +388,12 @@ singleDeclaration =
                         )
                         { line = 1, column = 0 }
                     , FunctionDeclaration "f"
-                        ([ Variable [ "x" ] ])
-                        (BinOp (Variable [ "+" ])
-                            (Variable [ "x" ])
+                        ([ var "x" { line = 2, column = 1 } ])
+                        (BinOp
+                            (var "+" { line = 3, column = 4 })
+                            (var "x" { line = 3, column = 1 })
                             (Integer 1 { line = 3, column = 5 })
+                            { line = 3, column = 4 }
                         )
                         { line = 2, column = 0 }
                     ]
@@ -428,11 +434,12 @@ multipleDeclarations =
                         )
                         { line = 3, column = 0 }
                     , FunctionDeclaration "f"
-                        ([ Variable [ "x" ] ])
+                        ([ var "x" { line = 4, column = 1 } ])
                         (BinOp
-                            (Variable [ "+" ])
-                            (Variable [ "x" ])
+                            (var "+" { line = 5, column = 4 })
+                            (var "x" { line = 5, column = 1 })
                             (Integer 1 { line = 5, column = 5 })
+                            { line = 5, column = 4 }
                         )
                         { line = 4, column = 0 }
                     , FunctionTypeDeclaration "g"
@@ -442,10 +449,16 @@ multipleDeclarations =
                         )
                         { line = 7, column = 0 }
                     , FunctionDeclaration "g"
-                        ([ Variable [ "x" ] ])
-                        (BinOp (Variable [ "+" ])
-                            (Application (Variable [ "f" ]) (Variable [ "x" ]))
+                        ([ var "x" { line = 8, column = 1 } ])
+                        (BinOp
+                            (var "+" { line = 9, column = 6 })
+                            (Application
+                                (var "f" { line = 9, column = 1 })
+                                (var "x" { line = 9, column = 3 })
+                                { line = 9, column = 2 }
+                            )
                             (Integer 1 { line = 9, column = 7 })
+                            { line = 9, column = 6 }
                         )
                         { line = 8, column = 0 }
                     , FunctionTypeDeclaration "h"
@@ -454,34 +467,56 @@ multipleDeclarations =
                                 ([ TypeConstructor [ "Int" ]
                                     []
                                     { line = 11, column = 4 }
-                                 , TypeConstructor [ "Int" ] [] { line = 11, column = 9 }
+                                 , TypeConstructor
+                                    [ "Int" ]
+                                    []
+                                    { line = 11, column = 9 }
                                  ]
                                 )
                                 { line = 11, column = 3 }
                             )
-                            (TypeConstructor [ "Int" ] [] { line = 11, column = 17 })
+                            (TypeConstructor
+                                [ "Int" ]
+                                []
+                                { line = 11, column = 17 }
+                            )
                         )
                         { line = 11, column = 0 }
                     , FunctionDeclaration "h"
                         ([ Tuple
-                            ([ Variable [ "a" ], Variable [ "b" ] ])
+                            ([ var "a" { line = 12, column = 2 }
+                             , var "b" { line = 12, column = 5 }
+                             ]
+                            )
                             { line = 12, column = 1 }
                          ]
                         )
                         (BinOp
-                            (Variable [ "+" ])
-                            (Variable [ "a" ])
-                            (Variable [ "b" ])
+                            (var "+" { line = 12, column = 13 })
+                            (var "a" { line = 12, column = 10 })
+                            (var "b" { line = 12, column = 14 })
+                            { line = 12, column = 13 }
                         )
                         { line = 12, column = 0 }
                     , FunctionTypeDeclaration "+"
                         (TypeApplication
-                            (TypeConstructor [ "Int" ] [] { line = 14, column = 5 })
-                            (TypeConstructor [ "Int" ] [] { line = 14, column = 12 })
+                            (TypeConstructor
+                                [ "Int" ]
+                                []
+                                { line = 14, column = 5 }
+                            )
+                            (TypeConstructor
+                                [ "Int" ]
+                                []
+                                { line = 14, column = 12 }
+                            )
                         )
                         { line = 14, column = 0 }
                     , FunctionDeclaration "+"
-                        ([ Variable [ "a" ], Variable [ "b" ] ])
+                        ([ var "a" { line = 15, column = 3 }
+                         , var "b" { line = 15, column = 5 }
+                         ]
+                        )
                         (Integer 1 { line = 16, column = 1 })
                         { line = 15, column = 0 }
                     ]
@@ -508,22 +543,31 @@ moduleFixityDeclarations =
                 |> areStatements
                     [ FunctionDeclaration "f"
                         []
-                        (BinOp (Variable [ "++" ])
+                        (BinOp
+                            (var "++" { line = 1, column = 12 })
                             (BinOp
-                                (Variable [ "++" ])
-                                (Variable [ "a" ])
-                                (Variable [ "b" ])
+                                (var "++" { line = 1, column = 7 })
+                                (var "a" { line = 1, column = 3 })
+                                (var "b" { line = 1, column = 8 })
+                                { line = 1, column = 7 }
                             )
-                            (Variable [ "c" ])
+                            (var "c" { line = 1, column = 13 })
+                            { line = 1, column = 12 }
                         )
                         { line = 1, column = 0 }
                     , InfixDeclaration L 1 "++" { line = 3, column = 0 }
                     , FunctionDeclaration "g"
                         []
                         (BinOp
-                            (Variable [ "**" ])
-                            (Variable [ "a" ])
-                            (BinOp (Variable [ "**" ]) (Variable [ "b" ]) (Variable [ "c" ]))
+                            (var "**" { line = 5, column = 7 })
+                            (var "a" { line = 5, column = 3 })
+                            (BinOp
+                                (var "**" { line = 5, column = 12 })
+                                (var "b" { line = 5, column = 8 })
+                                (var "c" { line = 5, column = 13 })
+                                { line = 5, column = 12 }
+                            )
+                            { line = 5, column = 7 }
                         )
                         { line = 5, column = 0 }
                     , InfixDeclaration R 1 "**" { line = 7, column = 0 }

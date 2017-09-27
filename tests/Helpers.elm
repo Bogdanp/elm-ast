@@ -3,13 +3,13 @@ module Helpers
         ( isExpression
         , isStatement
         , areStatements
-        , isApplication
         , fails
         , var
         )
 
 import Ast exposing (parse, parseExpression, parseStatement)
 import Ast.BinOp exposing (operators)
+import Ast.Helpers
 import Ast.Expression exposing (Expression(..))
 import Ast.Statement exposing (ExportSet(..), Type(..), Statement(..))
 import Expect exposing (..)
@@ -37,11 +37,6 @@ isExpression e i =
 
         Err ( _, { position }, es ) ->
             Expect.fail ("failed to parse: " ++ i ++ " at position " ++ toString position ++ " with errors: " ++ toString es)
-
-
-isApplication : Expression -> List Expression -> String -> Expectation
-isApplication fn args =
-    isExpression (List.foldl (flip Application) fn args)
 
 
 isStatement : Statement -> String -> Expectation
