@@ -144,6 +144,19 @@ emptyTuple =
     string "()"
 
 
+operatorAsString : Parser s String
+operatorAsString =
+    lazy <|
+        \() ->
+            regex "[+\\-\\/*=.$<>:&|^?%#@~!]+|\x8As\x08"
+                >>= (\n ->
+                        if List.member n reservedOperators then
+                            fail <| "operator '" ++ n ++ "' is reserved"
+                        else
+                            succeed n
+                    )
+
+
 operator : Parser s Operator
 operator =
     lazy <|

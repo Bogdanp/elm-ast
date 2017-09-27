@@ -324,8 +324,8 @@ application =
                     |> isExpression
                         (Application
                             (var "f" { line = 1, column = 0 })
-                            (var "==" { line = 1, column = 0 })
-                            { line = 1, column = 0 }
+                            (var "==" { line = 2, column = 1 })
+                            { line = 2, column = 0 }
                         )
         , test "same multiline bug" <|
             \() ->
@@ -524,18 +524,18 @@ expressions =
     describe "Expressions"
         [ test "Operator in parens" <|
             \() -> "(+)" |> isExpression (var "+" { line = 1, column = 0 })
-        , test "Operators passed to map" <|
+        , test "Operator passed to map" <|
             \() ->
                 "reduce (+) list"
                     |> isExpression
                         (Application
                             (Application
                                 (var "reduce" { line = 1, column = 0 })
-                                (var "+" { line = 1, column = 0 })
-                                { line = 1, column = 0 }
+                                (var "+" { line = 1, column = 7 })
+                                { line = 1, column = 6 }
                             )
-                            (var "list" { line = 1, column = 0 })
-                            { line = 1, column = 0 }
+                            (var "list" { line = 1, column = 11 })
+                            { line = 1, column = 10 }
                         )
         , test "partial application" <|
             \() ->
@@ -544,7 +544,7 @@ expressions =
                         (Application
                             (var "+" { line = 1, column = 0 })
                             (Integer 2 { line = 1, column = 4 })
-                            { line = 1, column = 0 }
+                            { line = 1, column = 3 }
                         )
         , test "Case with as" <|
             \() ->

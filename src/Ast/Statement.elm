@@ -123,12 +123,17 @@ exports =
 
 typeVariable : Parser s Type
 typeVariable =
-    withMeta <| TypeVariable <$> regex "[a-z]+(\\w|_)*"
+    withMeta <|
+        TypeVariable
+            <$> regex "[a-z]+(\\w|_)*"
 
 
 typeConstant : Parser s Type
 typeConstant =
-    withMeta <| TypeConstructor <$> sepBy1 (string ".") upName <*> succeed []
+    withMeta <|
+        TypeConstructor
+            <$> sepBy1 (string ".") upName
+            <*> succeed []
 
 
 typeApplication : Parser s (Type -> Type -> Type)
@@ -144,14 +149,18 @@ typeTuple : Parser s Type
 typeTuple =
     lazy <|
         \() ->
-            withMeta <| TypeTuple <$> parens (commaSeparated_ type_)
+            withMeta <|
+                TypeTuple
+                    <$> parens (commaSeparated_ type_)
 
 
 typeRecordPair : Parser s ( Name, Type )
 typeRecordPair =
     lazy <|
         \() ->
-            (,) <$> (loName <* symbol ":") <*> typeAnnotation
+            (,)
+                <$> (loName <* symbol ":")
+                <*> typeAnnotation
 
 
 typeRecordPairs : Parser s (List ( Name, Type ))
@@ -360,12 +369,16 @@ infixDeclaration =
 
 singleLineComment : Parser s Statement
 singleLineComment =
-    withMeta <| Comment <$> (string "--" *> regex ".*" <* whitespace)
+    withMeta <|
+        Comment
+            <$> (string "--" *> regex ".*" <* whitespace)
 
 
 multiLineComment : Parser s Statement
 multiLineComment =
-    withMeta <| (Comment << String.fromList) <$> (string "{-" *> manyTill anyChar (string "-}"))
+    withMeta <|
+        (Comment << String.fromList)
+            <$> (string "{-" *> manyTill anyChar (string "-}"))
 
 
 comment : Parser s Statement

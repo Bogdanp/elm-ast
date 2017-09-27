@@ -146,6 +146,7 @@ variable =
             <$> choice
                     [ singleton <$> loName
                     , sepBy1 (Combine.string ".") upName
+                    , singleton <$> parens operatorAsString
                     , singleton <$> parens (Combine.regex ",+")
                     , singleton <$> emptyTuple
                     ]
