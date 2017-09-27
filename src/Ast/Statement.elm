@@ -92,12 +92,7 @@ constructorSubsetExports =
 
 constructorExports : Parser s (Maybe ExportSet)
 constructorExports =
-    maybe <|
-        parens <|
-            choice
-                [ allExport
-                , constructorSubsetExports
-                ]
+    maybe <| parens <| choice [ allExport, constructorSubsetExports ]
 
 
 typeExport : Parser s ExportSet
@@ -107,8 +102,7 @@ typeExport =
 
 subsetExport : Parser s ExportSet
 subsetExport =
-    SubsetExport
-        <$> commaSeparated (typeExport <|> functionExport)
+    SubsetExport <$> commaSeparated (typeExport <|> functionExport)
 
 
 exports : Parser s ExportSet
@@ -123,9 +117,7 @@ exports =
 
 typeVariable : Parser s Type
 typeVariable =
-    withMeta <|
-        TypeVariable
-            <$> regex "[a-z]+(\\w|_)*"
+    withMeta <| TypeVariable <$> regex "[a-z]+(\\w|_)*"
 
 
 typeConstant : Parser s Type
@@ -149,18 +141,14 @@ typeTuple : Parser s Type
 typeTuple =
     lazy <|
         \() ->
-            withMeta <|
-                TypeTuple
-                    <$> parens (commaSeparated_ type_)
+            withMeta <| TypeTuple <$> parens (commaSeparated_ type_)
 
 
 typeRecordPair : Parser s ( Name, Type )
 typeRecordPair =
     lazy <|
         \() ->
-            (,)
-                <$> (loName <* symbol ":")
-                <*> typeAnnotation
+            (,) <$> (loName <* symbol ":") <*> typeAnnotation
 
 
 typeRecordPairs : Parser s (List ( Name, Type ))
@@ -185,10 +173,7 @@ typeRecord : Parser s Type
 typeRecord =
     lazy <|
         \() ->
-            braces <|
-                withMeta <|
-                    TypeRecord
-                        <$> typeRecordPairs
+            braces <| withMeta <| TypeRecord <$> typeRecordPairs
 
 
 typeParameter : Parser s Type
@@ -369,16 +354,12 @@ infixDeclaration =
 
 singleLineComment : Parser s Statement
 singleLineComment =
-    withMeta <|
-        Comment
-            <$> (string "--" *> regex ".*" <* whitespace)
+    withMeta <| Comment <$> (string "--" *> regex ".*" <* whitespace)
 
 
 multiLineComment : Parser s Statement
 multiLineComment =
-    withMeta <|
-        (Comment << String.fromList)
-            <$> (string "{-" *> manyTill anyChar (string "-}"))
+    withMeta <| (Comment << String.fromList) <$> (string "{-" *> manyTill anyChar (string "-}"))
 
 
 comment : Parser s Statement
@@ -422,18 +403,9 @@ infixStatements : Parser s (List Statement)
 infixStatements =
     let
         statements =
-            many
-                (choice
-                    [ Just <$> infixDeclaration
-                    , Nothing <$ regex ".*"
-                    ]
-                    <* whitespace
-                )
-                <* end
+            many (choice [ Just <$> infixDeclaration, Nothing <$ regex ".*" ] <* whitespace) <* end
     in
-        statements
-            >>= \xs ->
-                    succeed <| List.filterMap identity xs
+        statements >>= \xs -> succeed <| List.filterMap identity xs
 
 
 {-| A scanner that returns an updated OpTable based on the infix
@@ -450,6 +422,4 @@ opTable ops =
                 _ ->
                     Debug.crash "impossible"
     in
-        infixStatements
-            >>= \xs ->
-                    succeed <| List.foldr collect ops xs
+        infixStatements >>= \xs -> succeed <| List.foldr collect ops xs

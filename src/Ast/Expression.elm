@@ -182,13 +182,7 @@ record ops =
         \() ->
             withMeta <|
                 Record
-                    <$> braces
-                            (commaSeparated
-                                ((,)
-                                    <$> loName
-                                    <*> (symbol "=" *> expression ops)
-                                )
-                            )
+                    <$> (braces <| commaSeparated <| (,) <$> loName <*> (symbol "=" *> expression ops))
 
 
 simplifiedRecord : Parser s Expression
@@ -197,15 +191,7 @@ simplifiedRecord =
         \() ->
             withMeta <|
                 Record
-                    <$> (braces
-                            (commaSeparated
-                                (withMeta
-                                    ((\a -> (\m -> ( a, Variable [ a ] m )))
-                                        <$> loName
-                                    )
-                                )
-                            )
-                        )
+                    <$> (braces <| commaSeparated <| withMeta <| ((\a -> (\m -> ( a, Variable [ a ] m ))) <$> loName))
 
 
 recordUpdate : OpTable -> Parser s Expression
@@ -288,9 +274,7 @@ application ops =
     in
         lazy <|
             \() ->
-                chainl
-                    (withMeta ((\m -> flippedApp m) <$ spacesOrIndentedNewline ops))
-                    (term ops)
+                term ops |> chainl (withMeta ((\m -> flippedApp m) <$ spacesOrIndentedNewline ops))
 
 
 negate : Maybe a -> Parser s String
@@ -308,9 +292,7 @@ maybeBindingAhead : OpTable -> Parser s String
 maybeBindingAhead ops =
     lazy <|
         \() ->
-            lookAhead <|
-                (maybe << choice) [ letBinding ops, caseBinding ops ]
-                    >>= negate
+            lookAhead <| (maybe << choice) [ letBinding ops, caseBinding ops ] >>= negate
 
 
 spacesOrIndentedNewline : OpTable -> Parser s String
@@ -324,8 +306,7 @@ operatorOrAsBetween : Parser s Operator
 operatorOrAsBetween =
     lazy <|
         \() ->
-            between_ whitespace <|
-                choice [ operator, withMeta ((,) <$> symbol_ "as") ]
+            between_ whitespace <| choice [ operator, withMeta ((,) <$> symbol_ "as") ]
 
 
 binary : OpTable -> Parser s Expression
@@ -336,10 +317,7 @@ binary ops =
                 next =
                     operatorOrAsBetween
                         >>= \op ->
-                                (or
-                                    (Cont <$> application ops)
-                                    (Stop <$> expression ops)
-                                )
+                                (or (Cont <$> application ops) (Stop <$> expression ops))
                                     >>= \e ->
                                             case e of
                                                 Cont t ->
@@ -395,8 +373,7 @@ expression ops =
 
 op : OpTable -> String -> ( Assoc, Int )
 op ops n =
-    Dict.get n ops
-        |> Maybe.withDefault ( L, 9 )
+    Dict.get n ops |> Maybe.withDefault ( L, 9 )
 
 
 assoc : OpTable -> String -> Assoc
@@ -463,16 +440,7 @@ joinL es ops =
             succeed e
 
         ( a :: b :: remE, ( op, m ) :: remO ) ->
-            joinL
-                ((BinOp
-                    (Variable [ op ] m)
-                    a
-                    b
-                    m
-                 )
-                    :: remE
-                )
-                remO
+            joinL ((BinOp (Variable [ op ] m) a b m) :: remE) remO
 
         _ ->
             fail ""
@@ -486,15 +454,7 @@ joinR es ops =
 
         ( a :: b :: remE, ( op, m ) :: remO ) ->
             joinR (b :: remE) remO
-                >>= (\e ->
-                        succeed
-                            (BinOp
-                                (Variable [ op ] m)
-                                a
-                                e
-                                m
-                            )
-                    )
+                >>= (\e -> succeed (BinOp (Variable [ op ] m) a e m))
 
         _ ->
             fail ""
@@ -513,10 +473,7 @@ findAssoc ops l eops =
             List.map (assoc ops) bareops
 
         error issue =
-            "conflicting "
-                ++ issue
-                ++ " for operators "
-                ++ (bareops |> String.join " and ")
+            "conflicting " ++ issue ++ " for operators " ++ (bareops |> String.join " and ")
     in
         if List.all ((==) L) assocs then
             succeed L
