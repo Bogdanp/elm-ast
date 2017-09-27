@@ -141,13 +141,14 @@ accessFunction =
 
 variable : Parser s Expression
 variable =
-    withMeta <| Variable
-        <$> choice
-                [ singleton <$> loName
-                , sepBy1 (Combine.string ".") upName
-                , singleton <$> parens (Combine.regex ",+")
-                , singleton <$> emptyTuple
-                ]
+    withMeta <|
+        Variable
+            <$> choice
+                    [ singleton <$> loName
+                    , sepBy1 (Combine.string ".") upName
+                    , singleton <$> parens (Combine.regex ",+")
+                    , singleton <$> emptyTuple
+                    ]
 
 
 list : OpTable -> Parser s Expression
@@ -178,7 +179,15 @@ record : OpTable -> Parser s Expression
 record ops =
     lazy <|
         \() ->
-            withMeta <| Record <$> braces (commaSeparated ((,) <$> loName <*> (symbol "=" *> expression ops)))
+            withMeta <|
+                Record
+                    <$> braces
+                            (commaSeparated
+                                ((,)
+                                    <$> loName
+                                    <*> (symbol "=" *> expression ops)
+                                )
+                            )
 
 
 simplifiedRecord : Parser s Expression
@@ -189,14 +198,13 @@ simplifiedRecord =
                 Record
                     <$> (braces
                             (commaSeparated
-                                (withMeta ((\a -> (\m ->
-                                    ( a
-                                    , Variable [ a ] m
+                                (withMeta
+                                    ((\a -> (\m -> ( a, Variable [ a ] m )))
+                                        <$> loName
                                     )
-                                 ))
-                                    <$> loName))
                                 )
                             )
+                        )
 
 
 recordUpdate : OpTable -> Parser s Expression
@@ -273,12 +281,15 @@ lambda ops =
 
 application : OpTable -> Parser s Expression
 application ops =
-    let flippedapp m e1 e2 = Application e1 e2 m in
-    lazy <|
-        \() ->
-            chainl
-                (withMeta ((\m->flippedapp m) <$ spacesOrIndentedNewline ops))
-                (term ops)
+    let
+        flippedApp m e1 e2 =
+            Application e1 e2 m
+    in
+        lazy <|
+            \() ->
+                chainl
+                    (withMeta ((\m -> flippedApp m) <$ spacesOrIndentedNewline ops))
+                    (term ops)
 
 
 negate : Maybe a -> Parser s String
@@ -313,6 +324,7 @@ operatorOrAsBetween =
     lazy <|
         \() ->
             between_ whitespace <| operator <|> withMeta ((,) <$> symbol_ "as")
+
 
 binary : OpTable -> Parser s Expression
 binary ops =
@@ -413,7 +425,7 @@ split ops l e eops =
                                     let
                                         ops_ =
                                             List.filterMap
-                                                (\(x,_) ->
+                                                (\( x, _ ) ->
                                                     if hasLevel ops l (Tuple.first x) then
                                                         Just x
                                                     else
@@ -447,10 +459,10 @@ joinL es ops =
         ( [ e ], [] ) ->
             succeed e
 
-        ( a :: b :: remE, (op,m) :: remO ) ->
+        ( a :: b :: remE, ( op, m ) :: remO ) ->
             joinL
                 ((BinOp
-                    (Variable [op] m)
+                    (Variable [ op ] m)
                     a
                     b
                     m
@@ -469,12 +481,12 @@ joinR es ops =
         ( [ e ], [] ) ->
             succeed e
 
-        ( a :: b :: remE, (op,m) :: remO ) ->
+        ( a :: b :: remE, ( op, m ) :: remO ) ->
             joinR (b :: remE) remO
                 >>= (\e ->
                         succeed
                             (BinOp
-                                (Variable [op] m)
+                                (Variable [ op ] m)
                                 a
                                 e
                                 m
@@ -488,7 +500,9 @@ joinR es ops =
 findAssoc : OpTable -> Int -> List ( Operator, Expression ) -> Parser s Assoc
 findAssoc ops l eops =
     let
-        bareops = List.map (Tuple.first << Tuple.first) eops
+        bareops =
+            List.map (Tuple.first << Tuple.first) eops
+
         lops =
             List.filter (hasLevel ops l) bareops
 
@@ -496,11 +510,10 @@ findAssoc ops l eops =
             List.map (assoc ops) bareops
 
         error issue =
-            let
-                operators =
-                    bareops |> String.join " and "
-            in
-                "conflicting " ++ issue ++ " for operators " ++ operators
+            "conflicting "
+                ++ issue
+                ++ " for operators "
+                ++ (bareops |> String.join " and ")
     in
         if List.all ((==) L) assocs then
             succeed L
