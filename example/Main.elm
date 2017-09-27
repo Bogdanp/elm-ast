@@ -53,7 +53,7 @@ expression e =
         List es _ ->
             withChild e (List.map expression es)
 
-        Application e1 e2 ->
+        Application e1 e2 m ->
             withChild e
                 [ expression e1
                 , expression e2

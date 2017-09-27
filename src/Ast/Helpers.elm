@@ -28,6 +28,7 @@ type alias Meta =
     , column : Int
     }
 
+type alias Operator = (String, Meta)
 
 makeMeta : ParseLocation -> Meta
 makeMeta { line, column } =
@@ -139,8 +140,7 @@ emptyTuple : Parser s String
 emptyTuple =
     string "()"
 
-
-operator : Parser s String
+operator : Parser s Operator
 operator =
     lazy <|
         \() ->
@@ -149,7 +149,7 @@ operator =
                         if List.member n reservedOperators then
                             fail <| "operator '" ++ n ++ "' is reserved"
                         else
-                            succeed n
+                            withLocation (\l -> succeed (n,makeMeta l))
                     )
 
 
