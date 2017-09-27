@@ -83,7 +83,7 @@ allExport =
 
 functionExport : Parser s ExportSet
 functionExport =
-    FunctionExport <$> choice [ functionName, parens operator ]
+    FunctionExport <$> choice [ functionName, map (Tuple.first) (parens operator) ]
 
 
 constructorSubsetExports : Parser s ExportSet
@@ -319,7 +319,7 @@ functionTypeDeclaration : Parser s Statement
 functionTypeDeclaration =
     withMeta <|
         FunctionTypeDeclaration
-            <$> (choice [ loName, parens operator ] <* symbol ":")
+            <$> (choice [ loName, map (Tuple.first) (parens operator) ] <* symbol ":")
             <*> typeAnnotation
 
 
@@ -327,7 +327,7 @@ functionDeclaration : OpTable -> Parser s Statement
 functionDeclaration ops =
     withMeta <|
         FunctionDeclaration
-            <$> (choice [ loName, parens operator ])
+            <$> (choice [ loName, map (Tuple.first) (parens operator) ])
             <*> (many (between_ whitespace <| term ops))
             <*> (symbol "=" *> whitespace *> expression ops)
 
@@ -347,7 +347,7 @@ infixDeclaration =
                     , N <$ initialSymbol "infix"
                     ]
             <*> (spaces *> Combine.Num.int)
-            <*> (spaces *> (loName <|> operator))
+            <*> (spaces *> (loName <|> map (Tuple.first) operator))
 
 
 

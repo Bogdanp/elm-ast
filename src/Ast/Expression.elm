@@ -58,10 +58,9 @@ type Expression
     | Let (List ( Expression, Expression )) Expression Meta
     | Case Expression (List ( Expression, Expression )) Meta
     | Lambda (List Expression) Expression Meta
-      -- missing meta yet
-    | Variable (List Name)
-    | Application Expression Expression
-    | BinOp Expression Expression Expression
+    | Variable (List Name) Meta
+    | Application Expression Expression Meta
+    | BinOp Expression Expression Expression Meta
 
 
 character : Parser s Expression
@@ -142,11 +141,10 @@ accessFunction =
 
 variable : Parser s Expression
 variable =
-    Variable
+    withMeta <| Variable
         <$> choice
                 [ singleton <$> loName
                 , sepBy1 (Combine.string ".") upName
-                , singleton <$> parens operator
                 , singleton <$> parens (Combine.regex ",+")
                 , singleton <$> emptyTuple
                 ]
@@ -191,15 +189,14 @@ simplifiedRecord =
                 Record
                     <$> (braces
                             (commaSeparated
-                                ((\a ->
+                                (withMeta ((\a -> (\m ->
                                     ( a
-                                    , Variable [ a ]
+                                    , Variable [ a ] m
                                     )
-                                 )
-                                    <$> loName
+                                 ))
+                                    <$> loName))
                                 )
                             )
-                        )
 
 
 recordUpdate : OpTable -> Parser s Expression
@@ -276,10 +273,11 @@ lambda ops =
 
 application : OpTable -> Parser s Expression
 application ops =
+    let flippedapp m e1 e2 = Application e1 e2 m in
     lazy <|
         \() ->
             chainl
-                (Application <$ spacesOrIndentedNewline ops)
+                (withMeta ((\m->flippedapp m) <$ spacesOrIndentedNewline ops))
                 (term ops)
 
 
@@ -310,12 +308,11 @@ spacesOrIndentedNewline ops =
             (regex "[ \\t]*\n[ \\t]+" *> maybeBindingAhead ops) <|> spaces_
 
 
-operatorOrAsBetween : Parser s String
+operatorOrAsBetween : Parser s Operator
 operatorOrAsBetween =
     lazy <|
         \() ->
-            between_ whitespace <| operator <|> symbol_ "as"
-
+            between_ whitespace <| operator <|> withMeta ((,) <$> symbol_ "as")
 
 binary : OpTable -> Parser s Expression
 binary ops =
@@ -397,12 +394,12 @@ level ops n =
     Tuple.second <| op ops n
 
 
-hasLevel : OpTable -> Int -> ( String, Expression ) -> Bool
-hasLevel ops l ( n, _ ) =
+hasLevel : OpTable -> Int -> String -> Bool
+hasLevel ops l n =
     level ops n == l
 
 
-split : OpTable -> Int -> Expression -> List ( String, Expression ) -> Parser s Expression
+split : OpTable -> Int -> Expression -> List ( Operator, Expression ) -> Parser s Expression
 split ops l e eops =
     case eops of
         [] ->
@@ -416,9 +413,9 @@ split ops l e eops =
                                     let
                                         ops_ =
                                             List.filterMap
-                                                (\x ->
-                                                    if hasLevel ops l x then
-                                                        Just (Tuple.first x)
+                                                (\(x,_) ->
+                                                    if hasLevel ops l (Tuple.first x) then
+                                                        Just x
                                                     else
                                                         Nothing
                                                 )
@@ -434,9 +431,9 @@ split ops l e eops =
                     )
 
 
-splitLevel : OpTable -> Int -> Expression -> List ( String, Expression ) -> List (Parser s Expression)
+splitLevel : OpTable -> Int -> Expression -> List ( Operator, Expression ) -> List (Parser s Expression)
 splitLevel ops l e eops =
-    case break (hasLevel ops l) eops of
+    case break ((hasLevel ops l) << Tuple.first << Tuple.first) eops of
         ( lops, ( _, e_ ) :: rops ) ->
             split ops (l + 1) e lops :: splitLevel ops l e_ rops
 
@@ -444,18 +441,19 @@ splitLevel ops l e eops =
             [ split ops (l + 1) e lops ]
 
 
-joinL : List Expression -> List String -> Parser s Expression
+joinL : List Expression -> List Operator -> Parser s Expression
 joinL es ops =
     case ( es, ops ) of
         ( [ e ], [] ) ->
             succeed e
 
-        ( a :: b :: remE, op :: remO ) ->
+        ( a :: b :: remE, (op,m) :: remO ) ->
             joinL
                 ((BinOp
-                    (Variable [ op ])
+                    (Variable [op] m)
                     a
                     b
+                    m
                  )
                     :: remE
                 )
@@ -465,20 +463,21 @@ joinL es ops =
             fail ""
 
 
-joinR : List Expression -> List String -> Parser s Expression
+joinR : List Expression -> List Operator -> Parser s Expression
 joinR es ops =
     case ( es, ops ) of
         ( [ e ], [] ) ->
             succeed e
 
-        ( a :: b :: remE, op :: remO ) ->
+        ( a :: b :: remE, (op,m) :: remO ) ->
             joinR (b :: remE) remO
                 >>= (\e ->
                         succeed
                             (BinOp
-                                (Variable [ op ])
+                                (Variable [op] m)
                                 a
                                 e
+                                m
                             )
                     )
 
@@ -486,19 +485,20 @@ joinR es ops =
             fail ""
 
 
-findAssoc : OpTable -> Int -> List ( String, Expression ) -> Parser s Assoc
+findAssoc : OpTable -> Int -> List ( Operator, Expression ) -> Parser s Assoc
 findAssoc ops l eops =
     let
+        bareops = List.map (Tuple.first << Tuple.first) eops
         lops =
-            List.filter (hasLevel ops l) eops
+            List.filter (hasLevel ops l) bareops
 
         assocs =
-            List.map (assoc ops << Tuple.first) lops
+            List.map (assoc ops) bareops
 
         error issue =
             let
                 operators =
-                    List.map Tuple.first lops |> String.join " and "
+                    bareops |> String.join " and "
             in
                 "conflicting " ++ issue ++ " for operators " ++ operators
     in
