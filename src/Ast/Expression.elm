@@ -28,7 +28,8 @@ import Combine exposing (..)
 import Combine.Char exposing (..)
 import Combine.Num
 import Dict exposing (Dict)
-import List.Extra exposing (break, singleton)
+import List exposing (singleton)
+import List.Extra exposing (break)
 import String
 import Ast.BinOp exposing (..)
 import Ast.Helpers exposing (..)
