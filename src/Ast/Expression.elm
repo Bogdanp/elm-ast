@@ -296,6 +296,11 @@ operatorOrAsBetween =
             between_ whitespace <| operator <|> symbol_ "as"
 
 
+successOrEmptyList : Parser s (List a) -> Parser s (List a)
+successOrEmptyList p =
+    lazy <| \() -> choice [ p, succeed [] ]
+
+
 binary : OpTable -> Parser s Expression
 binary ops =
     lazy <|
@@ -310,16 +315,13 @@ binary ops =
                                             >>= \e ->
                                                     case e of
                                                         Cont t ->
-                                                            ((::) ( op, t )) <$> collect
+                                                            ((::) ( op, t )) <$> successOrEmptyList next
 
                                                         Stop ex ->
                                                             succeed [ ( op, ex ) ]
-
-                collect =
-                    lazy <| \() -> choice [ next, succeed [] ]
             in
                 application ops
-                    >>= (\e -> collect >>= \eops -> split ops 0 e eops)
+                    >>= (\e -> successOrEmptyList next >>= \eops -> split ops 0 e eops)
 
 
 {-| A parses for term
