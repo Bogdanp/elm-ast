@@ -12,7 +12,7 @@
     "dependencies": {
         "elm-lang/core": "5.0.0 <= v < 6.0.0",
         "elm-community/elm-test": "4.0.0 <= v < 5.0.0",
-        "elm-community/list-extra": "5.0.0 <= v < 6.0.0",
+        "elm-community/list-extra": "6.0.0 <= v < 7.0.0",
         "elm-community/parser-combinators": "1.1.0 <= v < 2.0.0",
         "rtfeldman/hex": "1.0.0 <= v < 2.0.0"
     },
