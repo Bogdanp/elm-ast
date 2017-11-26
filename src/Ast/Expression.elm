@@ -28,10 +28,13 @@ import Combine exposing (..)
 import Combine.Char exposing (..)
 import Combine.Num
 import Dict exposing (Dict)
-import List.Extra exposing (break, singleton)
+import List exposing (singleton)
+import List.Extra exposing (break)
 import String
 import Ast.BinOp exposing (..)
 import Ast.Helpers exposing (..)
+import Hex
+import Char
 
 
 type Collect a
@@ -67,27 +70,35 @@ character =
         <$> between_ (Combine.string "'")
                 (((Combine.string "\\" *> regex "(n|t|r|\\\\|x..)")
                     >>= (\a ->
-                            case a of
-                                "n" ->
+                            case String.uncons a of
+                                Just ( 'n', "" ) ->
                                     succeed '\n'
 
-                                "t" ->
+                                Just ( 't', "" ) ->
                                     succeed '\t'
 
-                                "r" ->
+                                Just ( 'r', "" ) ->
                                     succeed '\x0D'
 
-                                "\\" ->
+                                Just ( '\\', "" ) ->
                                     succeed '\\'
 
-                                "0" ->
+                                Just ( '0', "" ) ->
                                     succeed '\x00'
 
-                                "x00" ->
-                                    succeed '\x00'
+                                Just ( 'x', hex ) ->
+                                    hex
+                                        |> String.toLower
+                                        |> Hex.fromString
+                                        |> Result.map Char.fromCode
+                                        |> Result.map succeed
+                                        |> Result.withDefault (fail "Invalid charcode")
 
-                                a ->
-                                    fail ("No such character as \\" ++ a)
+                                Just other ->
+                                    fail ("No such character as \\" ++ toString other)
+
+                                Nothing ->
+                                    fail "No character"
                         )
                  )
                     <|> anyChar
@@ -132,11 +143,11 @@ variable : Parser s Expression
 variable =
     Variable
         <$> choice
-                [ singleton <$> emptyTuple
-                , singleton <$> loName
+                [ singleton <$> loName
                 , sepBy1 (Combine.string ".") upName
                 , singleton <$> parens operator
                 , singleton <$> parens (Combine.regex ",+")
+                , singleton <$> emptyTuple
                 ]
 
 
@@ -144,7 +155,7 @@ list : OpTable -> Parser s Expression
 list ops =
     lazy <|
         \() ->
-            List <$> brackets (commaSeparated_ (expression ops))
+            List <$> brackets (commaSeparated_ <| expression ops)
 
 
 tuple : OpTable -> Parser s Expression
@@ -152,7 +163,7 @@ tuple ops =
     lazy <|
         \() ->
             Tuple
-                <$> (parens (commaSeparated_ (expression ops))
+                <$> (parens (commaSeparated_ <| expression ops)
                         >>= \a ->
                                 case a of
                                     [ _ ] ->
@@ -203,7 +214,7 @@ letBinding ops =
     lazy <|
         \() ->
             (,)
-                <$> (between_ whitespace (expression ops))
+                <$> (between_ whitespace <| expression ops)
                 <*> (symbol "=" *> expression ops)
 
 
@@ -240,7 +251,7 @@ lambda ops =
     lazy <|
         \() ->
             Lambda
-                <$> (symbol "\\" *> many (between_ spaces (term ops)))
+                <$> (symbol "\\" *> many (between_ spaces <| term ops))
                 <*> (symbol "->" *> expression ops)
 
 
@@ -251,29 +262,44 @@ application ops =
             term ops |> chainl (Application <$ spacesOrIndentedNewline ops)
 
 
+negate : Maybe a -> Parser s String
+negate x =
+    case x of
+        Just _ ->
+            -- next line starts a new case or let binding
+            fail ""
+
+        Nothing ->
+            succeed ""
+
+
+maybeBindingAhead : OpTable -> Parser s String
+maybeBindingAhead ops =
+    lazy <|
+        \() ->
+            lookAhead <|
+                (maybe << choice) [ letBinding ops, caseBinding ops ]
+                    >>= negate
+
+
 spacesOrIndentedNewline : OpTable -> Parser s String
 spacesOrIndentedNewline ops =
-    let
-        startsBinding =
-            or
-                (letBinding ops)
-                (caseBinding ops)
+    lazy <|
+        \() ->
+            (regex "[ \\t]*\n[ \\t]+" *> maybeBindingAhead ops)
+                <|> spaces_
 
-        failAtBinding =
-            maybe startsBinding
-                |> andThen
-                    (\x ->
-                        case x of
-                            Just _ ->
-                                fail "next line starts a new case or let binding"
 
-                            Nothing ->
-                                succeed ""
-                    )
-    in
-        or
-            (spaces *> newline *> spaces_ *> lookAhead failAtBinding)
-            (spaces_)
+operatorOrAsBetween : Parser s String
+operatorOrAsBetween =
+    lazy <|
+        \() ->
+            between_ whitespace <| operator <|> symbol_ "as"
+
+
+successOrEmptyList : Parser s (List a) -> Parser s (List a)
+successOrEmptyList p =
+    lazy <| \() -> choice [ p, succeed [] ]
 
 
 binary : OpTable -> Parser s Expression
@@ -282,33 +308,21 @@ binary ops =
         \() ->
             let
                 next =
-                    between_ whitespace (choice [ operator, symbol_ "as" ])
-                        |> andThen
-                            (\op ->
-                                choice [ Cont <$> application ops, Stop <$> expression ops ]
-                                    |> andThen
-                                        (\e ->
-                                            case e of
-                                                Cont t ->
-                                                    ((::) ( op, t )) <$> collect
+                    operatorOrAsBetween
+                        >>= \op ->
+                                lazy <|
+                                    \() ->
+                                        (or (Cont <$> application ops) (Stop <$> expression ops))
+                                            >>= \e ->
+                                                    case e of
+                                                        Cont t ->
+                                                            ((::) ( op, t )) <$> successOrEmptyList next
 
-                                                Stop e ->
-                                                    succeed [ ( op, e ) ]
-                                        )
-                            )
-
-                collect =
-                    next <|> succeed []
+                                                        Stop ex ->
+                                                            succeed [ ( op, ex ) ]
             in
                 application ops
-                    |> andThen
-                        (\e ->
-                            collect
-                                |> andThen
-                                    (\eops ->
-                                        split ops 0 e eops
-                                    )
-                        )
+                    >>= (\e -> successOrEmptyList next >>= \eops -> split ops 0 e eops)
 
 
 {-| A parses for term
@@ -318,19 +332,19 @@ term ops =
     lazy <|
         \() ->
             choice
-                [ character
+                [ access
+                , variable
+                , accessFunction
                 , string
                 , float
                 , integer
-                , access
-                , accessFunction
-                , variable
+                , character
+                , parens (between_ whitespace (expression ops))
                 , list ops
                 , tuple ops
                 , recordUpdate ops
                 , record ops
                 , simplifiedRecord
-                , parens (between_ whitespace (expression ops))
                 ]
 
 
@@ -341,11 +355,11 @@ expression ops =
     lazy <|
         \() ->
             choice
-                [ letExpression ops
+                [ binary ops
+                , letExpression ops
                 , caseExpression ops
                 , ifExpression ops
                 , lambda ops
-                , binary ops
                 ]
 
 
@@ -378,11 +392,9 @@ split ops l e eops =
 
         _ ->
             findAssoc ops l eops
-                |> andThen
-                    (\assoc ->
+                >>= (\assoc ->
                         sequence (splitLevel ops l e eops)
-                            |> andThen
-                                (\es ->
+                            >>= (\es ->
                                     let
                                         ops_ =
                                             List.filterMap
