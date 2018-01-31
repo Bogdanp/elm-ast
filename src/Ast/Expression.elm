@@ -196,7 +196,7 @@ recordUpdate ops =
                 <$> (symbol "{" *> loName)
                 <*> (symbol "|"
                         *> (commaSeparated ((,) <$> loName <*> (symbol "=" *> expression ops)))
-                        <* symbol "}"
+                        <* Combine.string "}"
                     )
 
 
@@ -271,28 +271,18 @@ application ops =
             withColumn (\l -> chainl (Application <$ spacesOrIndentedNewline l) (term ops))
 
 
-negate : Maybe a -> Parser s String
-negate x =
-    case x of
-        Just _ ->
-            -- next line starts a new case or let binding
-            fail ""
-
-        Nothing ->
-            succeed ""
-
-
 spacesOrIndentedNewline : Int -> Parser s String
 spacesOrIndentedNewline indentation =
     lazy <|
         \() ->
-            or spaces_ <|
-                countIndent
+            or (spaces_)
+                (countIndent
                     >>= \column ->
                             if column < indentation then
                                 fail "Arguments have to be at least the same indentation as the function"
                             else
-                                succeed ""
+                                whitespace
+                )
 
 
 operatorOrAsBetween : Parser s String

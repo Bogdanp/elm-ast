@@ -292,7 +292,7 @@ application =
                         )
         , test "Application with record update" <|
             \() ->
-                "a { r | f = 1 } c"
+                "a  { r | f = 1 } c"
                     |> isExpression
                         (Application
                             (Application
