@@ -230,11 +230,24 @@ ifExpression ops =
 
 caseExpression : OpTable -> Parser s Expression
 caseExpression ops =
-    lazy <|
-        \() ->
-            Case
-                <$> (symbol "case" *> expression ops)
-                <*> (symbol "of" *> many1 (caseBinding ops))
+    let
+        binding indent =
+            lazy <|
+                \() ->
+                    (,)
+                        <$> (exactIndentation indent *> expression ops)
+                        <*> (symbol "->" *> expression ops)
+    in
+        lazy <|
+            \() ->
+                Case
+                    <$> (symbol "case" *> expression ops)
+                    <*> (whitespace
+                            *> Combine.string "of"
+                            *> lookAhead countIndent
+                            >>= \indent ->
+                                    many1 (binding indent)
+                        )
 
 
 caseBinding : OpTable -> Parser s ( Expression, Expression )
@@ -244,6 +257,11 @@ caseBinding ops =
             (,)
                 <$> (whitespace *> expression ops)
                 <*> (symbol "->" *> expression ops)
+
+
+countIndent : Parser s Int
+countIndent =
+    whitespace >>= (String.filter (\char -> char == ' ') >> String.length >> succeed)
 
 
 lambda : OpTable -> Parser s Expression

@@ -61,6 +61,11 @@ spaces_ =
     regex "[ \\t]+"
 
 
+exactIndentation : Int -> Parser s String
+exactIndentation int =
+    regex ("\n*[ \\t]{" ++ toString int ++ "}\n*")
+
+
 symbol_ : String -> Parser s String
 symbol_ k =
     between_ whitespace (string k <* regex "( |\\n)+")
