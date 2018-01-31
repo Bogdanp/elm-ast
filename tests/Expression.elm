@@ -15,7 +15,6 @@ module Expression
         )
 
 import Ast.Expression exposing (..)
-import String
 import Test exposing (describe, test, Test)
 import Helpers exposing (var, fails, isExpression)
 
@@ -197,6 +196,25 @@ case x of
                         (Case
                             (var "x")
                             [ ( var "_", Integer 42 ) ]
+                        )
+        , test "Nested case" <|
+            \() ->
+                """
+case x of
+  a -> a
+  b ->
+    case y of
+      a1 -> a1
+      b1 -> b1
+  c -> c
+            """
+                    |> isExpression
+                        (Case
+                            (var "x")
+                            [ ( var "a", var "a" )
+                            , ( var "b", Case (var "y") [ ( var "a1", var "a1" ), ( var "b1", var "b1" ) ] )
+                            , ( var "c", var "c" )
+                            ]
                         )
         ]
 

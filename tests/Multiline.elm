@@ -1,8 +1,5 @@
 module Multiline exposing (application)
 
-import Ast exposing (parseExpression, parseStatement)
-import Ast.BinOp exposing (operators)
-import Ast.Expression exposing (..)
 import Test exposing (describe, test, Test)
 import Helpers exposing (isApplication, var)
 
