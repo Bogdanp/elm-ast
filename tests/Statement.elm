@@ -269,7 +269,7 @@ singleDeclarationInput =
     """
 f : Int -> Int
 f x =
-  x + 1
+  a { r | f = 1 }    c
 """
 
 
@@ -286,10 +286,12 @@ singleDeclaration =
                         )
                     , FunctionDeclaration "f"
                         [ Variable [ "x" ] ]
-                        (BinOp
-                            (Variable [ "+" ])
-                            (Variable [ "x" ])
-                            (Integer 1)
+                        (Application
+                            (Application
+                                (var "a")
+                                (RecordUpdate "r" [ ( "f", Integer 1 ) ])
+                            )
+                            (var "c")
                         )
                     ]
 

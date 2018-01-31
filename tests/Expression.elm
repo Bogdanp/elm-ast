@@ -254,7 +254,7 @@ application =
                         )
         , test "multiline application" <|
             \() ->
-                "f\n a\n b"
+                "  f\n   a\n b"
                     |> isExpression
                         (Application
                             (Application
@@ -289,6 +289,17 @@ application =
                                 (var "a")
                             )
                             (var "Nil")
+                        )
+        , test "Application with record update" <|
+            \() ->
+                "a  { r | f = 1 } c"
+                    |> isExpression
+                        (Application
+                            (Application
+                                (var "a")
+                                (RecordUpdate "r" [ ( "f", Integer 1 ) ])
+                            )
+                            (var "c")
                         )
         ]
 
