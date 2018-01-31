@@ -142,3 +142,8 @@ functionName =
 moduleName : Parser s ModuleName
 moduleName =
     between_ spaces <| sepBy1 (string ".") upName
+
+
+logContent : String -> Parser s x -> Parser s x
+logContent label xsParser =
+    xsParser >>= (Debug.log label >> succeed)

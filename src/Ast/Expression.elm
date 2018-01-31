@@ -250,15 +250,6 @@ caseExpression ops =
                         )
 
 
-caseBinding : OpTable -> Parser s ( Expression, Expression )
-caseBinding ops =
-    lazy <|
-        \() ->
-            (,)
-                <$> (whitespace *> expression ops)
-                <*> (symbol "->" *> expression ops)
-
-
 countIndent : Parser s Int
 countIndent =
     whitespace >>= (String.filter (\char -> char == ' ') >> String.length >> succeed)
@@ -277,7 +268,7 @@ application : OpTable -> Parser s Expression
 application ops =
     lazy <|
         \() ->
-            term ops |> chainl (Application <$ spacesOrIndentedNewline ops)
+            withColumn (\l -> chainl (Application <$ spacesOrIndentedNewline l) (term ops))
 
 
 negate : Maybe a -> Parser s String
@@ -291,21 +282,17 @@ negate x =
             succeed ""
 
 
-maybeBindingAhead : OpTable -> Parser s String
-maybeBindingAhead ops =
+spacesOrIndentedNewline : Int -> Parser s String
+spacesOrIndentedNewline indentation =
     lazy <|
         \() ->
-            lookAhead <|
-                (maybe << choice) [ letBinding ops, caseBinding ops ]
-                    >>= negate
-
-
-spacesOrIndentedNewline : OpTable -> Parser s String
-spacesOrIndentedNewline ops =
-    lazy <|
-        \() ->
-            (regex "[ \\t]*\n[ \\t]+" *> maybeBindingAhead ops)
-                <|> spaces_
+            or spaces_ <|
+                countIndent
+                    >>= \column ->
+                            if column < indentation then
+                                fail "Arguments have to be at least the same indentation as the function"
+                            else
+                                succeed ""
 
 
 operatorOrAsBetween : Parser s String
