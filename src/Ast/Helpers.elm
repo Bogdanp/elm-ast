@@ -1,4 +1,30 @@
-module Ast.Helpers exposing (..)
+module Ast.Helpers exposing
+    ( Alias
+    , ModuleName
+    , Name
+    , QualifiedType
+    , WithMeta
+    , between_
+    , commaSeparated
+    , commaSeparated_
+    , emptyTuple
+    , exactIndentation
+    , functionName
+    , initialSymbol
+    , loName
+    , logContent
+    , moduleName
+    , name
+    , operator
+    , reserved
+    , reservedOperators
+    , spaces
+    , spaces_
+    , symbol
+    , symbol_
+    , upName
+    , withMeta
+    )
 
 import Combine exposing (..)
 import Combine.Char exposing (..)
@@ -19,6 +45,15 @@ type alias ModuleName =
 
 type alias Alias =
     String
+
+
+type alias WithMeta x =
+    { meta : ParseLocation, e : x }
+
+
+withMeta : Parser s x -> Parser s (WithMeta x)
+withMeta p =
+    withLocation (\a -> WithMeta a <$> p)
 
 
 reserved : List Name
@@ -104,11 +139,12 @@ loName =
                 >>= (\n ->
                         if List.member n reserved then
                             fail <| "name '" ++ n ++ "' is reserved"
+
                         else
                             succeed n
                     )
     in
-        string "_" <|> loName_
+    string "_" <|> loName_
 
 
 upName : Parser s String
@@ -129,6 +165,7 @@ operator =
                 >>= (\n ->
                         if List.member n reservedOperators then
                             fail <| "operator '" ++ n ++ "' is reserved"
+
                         else
                             succeed n
                     )

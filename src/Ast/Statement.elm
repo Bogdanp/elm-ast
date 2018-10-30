@@ -1,13 +1,7 @@
-module Ast.Statement
-    exposing
-        ( ExportSet(..)
-        , Type(..)
-        , Statement(..)
-        , statement
-        , statements
-        , infixStatements
-        , opTable
-        )
+module Ast.Statement exposing
+    ( ExportSet(..), Type(..), Statement(..)
+    , statement, statements, infixStatements, opTable
+    )
 
 {-| This module exposes parsers for Elm statements.
 
@@ -23,14 +17,14 @@ module Ast.Statement
 
 -}
 
+import Ast.BinOp exposing (Assoc(..), OpTable)
+import Ast.Expression exposing (Expression, MExp, expression, term)
+import Ast.Helpers exposing (..)
 import Combine exposing (..)
 import Combine.Char exposing (..)
 import Combine.Num
 import Dict
 import String
-import Ast.BinOp exposing (Assoc(..), OpTable)
-import Ast.Expression exposing (Expression, expression, term)
-import Ast.Helpers exposing (..)
 
 
 {-| Representations for modules' exports.
@@ -63,9 +57,9 @@ type Statement
     | TypeAliasDeclaration Type Type
     | TypeDeclaration Type (List Type)
     | PortTypeDeclaration Name Type
-    | PortDeclaration Name (List Name) Expression
+    | PortDeclaration Name (List Name) MExp
     | FunctionTypeDeclaration Name Type
-    | FunctionDeclaration Name (List Expression) Expression
+    | FunctionDeclaration Name (List MExp) MExp
     | InfixDeclaration Assoc Int Name
     | Comment String
 
@@ -163,7 +157,7 @@ typeRecordConstructor =
         \() ->
             braces <|
                 TypeRecordConstructor
-                    <$> (between_ spaces typeVariable)
+                    <$> between_ spaces typeVariable
                     <*> (symbol "|" *> typeRecordPairs)
 
 
@@ -276,7 +270,7 @@ typeDeclaration : Parser s Statement
 typeDeclaration =
     TypeDeclaration
         <$> (initialSymbol "type" *> type_)
-        <*> (whitespace *> symbol "=" *> (sepBy1 (symbol "|") (between_ whitespace typeConstructor)))
+        <*> (whitespace *> symbol "=" *> sepBy1 (symbol "|") (between_ whitespace typeConstructor))
 
 
 
@@ -312,8 +306,8 @@ functionTypeDeclaration =
 functionDeclaration : OpTable -> Parser s Statement
 functionDeclaration ops =
     FunctionDeclaration
-        <$> (choice [ loName, parens operator ])
-        <*> (many (between_ whitespace <| term ops))
+        <$> choice [ loName, parens operator ]
+        <*> many (between_ whitespace <| term ops)
         <*> (symbol "=" *> whitespace *> expression ops)
 
 
@@ -399,9 +393,10 @@ infixStatements =
                 )
                 <* end
     in
-        statements
-            >>= \xs ->
-                    succeed <| List.filterMap identity xs
+    statements
+        >>= (\xs ->
+                succeed <| List.filterMap identity xs
+            )
 
 
 {-| A scanner that returns an updated OpTable based on the infix
@@ -418,6 +413,7 @@ opTable ops =
                 _ ->
                     Debug.crash "impossible"
     in
-        infixStatements
-            >>= \xs ->
-                    succeed <| List.foldr collect ops xs
+    infixStatements
+        >>= (\xs ->
+                succeed <| List.foldr collect ops xs
+            )
