@@ -1,21 +1,21 @@
-module Statement
-    exposing
-        ( moduleDeclaration
-        , importStatements
-        , infixDeclarations
-        , moduleFixityDeclarations
-        , multipleDeclarations
-        , portStatements
-        , singleDeclaration
-        , typeAnnotations
-        , typeDeclarations
-        )
+module Statement exposing
+    ( importStatements
+    , infixDeclarations
+    , moduleDeclaration
+    , moduleFixityDeclarations
+    , multipleDeclarations
+    , portStatements
+    , singleDeclaration
+    , typeAnnotations
+    , typeDeclarations
+    , wrongWhitespace
+    )
 
 import Ast.BinOp exposing (Assoc(..))
 import Ast.Expression exposing (Expression(..))
-import Ast.Statement exposing (ExportSet(..), Type(..), Statement(..))
-import Test exposing (describe, test, Test)
-import Helpers exposing (var, isStatement, areStatements)
+import Ast.Statement exposing (ExportSet(..), Statement(..), Type(..))
+import Helpers exposing (areStatements, isStatement, var)
+import Test exposing (Test, describe, test)
 
 
 moduleDeclaration : Test
@@ -196,7 +196,7 @@ typeAnnotations =
                         (FunctionTypeDeclaration "m"
                             (TypeConstructor
                                 [ "Html", "App" ]
-                                [ (TypeConstructor [ "Msg" ] []) ]
+                                [ TypeConstructor [ "Msg" ] [] ]
                             )
                         )
         ]
@@ -213,7 +213,7 @@ portStatements =
                             (TypeApplication
                                 (TypeConstructor [ "String" ] [])
                                 (TypeConstructor [ "Cmd" ]
-                                    ([ TypeVariable "msg" ])
+                                    [ TypeVariable "msg" ]
                                 )
                             )
                         )
@@ -228,7 +228,7 @@ portStatements =
                                     (TypeVariable "msg")
                                 )
                                 (TypeConstructor [ "Sub" ]
-                                    ([ TypeVariable "msg" ])
+                                    [ TypeVariable "msg" ]
                                 )
                             )
                         )
@@ -353,11 +353,11 @@ multipleDeclarations =
                         )
                     , FunctionTypeDeclaration "h"
                         (TypeApplication
-                            ((TypeTuple ([ TypeConstructor [ "Int" ] [], TypeConstructor [ "Int" ] [] ])))
+                            (TypeTuple [ TypeConstructor [ "Int" ] [], TypeConstructor [ "Int" ] [] ])
                             (TypeConstructor [ "Int" ] [])
                         )
                     , FunctionDeclaration "h"
-                        [ Tuple [ (Variable [ "a" ]), (Variable [ "b" ]) ] ]
+                        [ Tuple [ Variable [ "a" ], Variable [ "b" ] ] ]
                         (BinOp
                             (Variable [ "+" ])
                             (Variable [ "a" ])
@@ -441,4 +441,30 @@ typeDeclarations =
         , test "can parse aliases of unit" <|
             \() ->
                 emptyTupleAliasInput |> areStatements [ TypeAliasDeclaration (TypeConstructor [ "A" ] []) (TypeTuple []) ]
+        ]
+
+
+wrongWhitespaceInput : String
+wrongWhitespaceInput =
+    """
+-- Empty line with spaces at the end here
+b =
+  2
+""" ++ "  " ++ """
+a =
+  1
+"""
+
+
+wrongWhitespace : Test
+wrongWhitespace =
+    describe "Doesn't crash on wrong whitespace"
+        [ test "Two spaces at the end of an empty line" <|
+            \() ->
+                wrongWhitespaceInput
+                    |> areStatements
+                        [ Comment " Empty line with spaces at the end here"
+                        , FunctionDeclaration "b" [] (Integer 2)
+                        , FunctionDeclaration "a" [] (Integer 1)
+                        ]
         ]

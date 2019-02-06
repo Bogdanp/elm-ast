@@ -317,7 +317,6 @@ functionDeclaration ops =
         <*> (symbol "=" *> whitespace *> expression ops)
 
 
-
 -- Infix declarations
 -- ------------------
 
@@ -380,7 +379,7 @@ statement ops =
 -}
 statements : OpTable -> Parser s (List Statement)
 statements ops =
-    manyTill (whitespace *> statement ops <* whitespace) end
+    manyTill ((or whitespace spaces) *> statement ops <* (or whitespace spaces)) end
 
 
 {-| A scanner for infix statements. This is useful for performing a
