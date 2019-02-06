@@ -1,9 +1,8 @@
-module Ast.Expression
-    exposing
-        ( Expression(..)
-        , expression
-        , term
-        )
+module Ast.Expression exposing
+    ( Expression(..)
+    , expression
+    , term
+    )
 
 {-| This module exposes parsers for Elm expressions.
 
@@ -24,17 +23,17 @@ module Ast.Expression
 
 -}
 
+import Ast.BinOp exposing (..)
+import Ast.Helpers exposing (..)
+import Char
 import Combine exposing (..)
 import Combine.Char exposing (..)
 import Combine.Num
 import Dict exposing (Dict)
+import Hex
 import List exposing (singleton)
 import List.Extra exposing (break)
 import String
-import Ast.BinOp exposing (..)
-import Ast.Helpers exposing (..)
-import Hex
-import Char
 
 
 type Collect a
@@ -116,7 +115,7 @@ string =
             (String << String.concat)
                 <$> (Combine.string "\"\"\"" *> many (regex "[^\"]*") <* Combine.string "\"\"\"")
     in
-        multiString <|> singleString
+    multiString <|> singleString
 
 
 integer : Parser s Expression
@@ -164,13 +163,14 @@ tuple ops =
         \() ->
             Tuple
                 <$> (parens (commaSeparated_ <| expression ops)
-                        >>= \a ->
+                        >>= (\a ->
                                 case a of
                                     [ _ ] ->
                                         fail "No single tuples"
 
                                     anyOther ->
                                         succeed anyOther
+                            )
                     )
 
 
@@ -185,7 +185,7 @@ simplifiedRecord : Parser s Expression
 simplifiedRecord =
     lazy <|
         \() ->
-            Record <$> (braces (commaSeparated ((\a -> ( a, Variable [ a ] )) <$> loName)))
+            Record <$> braces (commaSeparated ((\a -> ( a, Variable [ a ] )) <$> loName))
 
 
 recordUpdate : OpTable -> Parser s Expression
@@ -195,7 +195,7 @@ recordUpdate ops =
             RecordUpdate
                 <$> (symbol "{" *> loName)
                 <*> (symbol "|"
-                        *> (commaSeparated ((,) <$> loName <*> (symbol "=" *> expression ops)))
+                        *> commaSeparated ((,) <$> loName <*> (symbol "=" *> expression ops))
                         <* Combine.string "}"
                     )
 
@@ -238,21 +238,22 @@ caseExpression ops =
                         <$> (exactIndentation indent *> expression ops)
                         <*> (symbol "->" *> expression ops)
     in
-        lazy <|
-            \() ->
-                Case
-                    <$> (symbol "case" *> expression ops)
-                    <*> (whitespace
-                            *> Combine.string "of"
-                            *> lookAhead countIndent
-                            >>= \indent ->
-                                    many1 (binding indent)
-                        )
+    lazy <|
+        \() ->
+            Case
+                <$> (symbol "case" *> expression ops)
+                <*> (whitespace
+                        *> Combine.string "of"
+                        *> lookAhead countIndent
+                        >>= (\indent ->
+                                many1 (binding indent)
+                            )
+                    )
 
 
 countIndent : Parser s Int
 countIndent =
-    whitespace >>= (String.filter (\char -> char == ' ') >> String.length >> succeed)
+    newline *> spaces >>= (String.filter (\char -> char == ' ') >> String.length >> succeed)
 
 
 lambda : OpTable -> Parser s Expression
@@ -268,20 +269,22 @@ application : OpTable -> Parser s Expression
 application ops =
     lazy <|
         \() ->
-            withColumn (\l -> chainl (Application <$ spacesOrIndentedNewline l) (term ops))
+            withColumn (\l -> chainl (Application <$ spacesOrIndentedNewline (l + 1)) (term ops))
 
 
-spacesOrIndentedNewline : Int -> Parser s String
+spacesOrIndentedNewline : Int -> Parser s ()
 spacesOrIndentedNewline indentation =
     lazy <|
         \() ->
-            or (spaces_)
+            or (spaces_ *> succeed ())
                 (countIndent
-                    >>= \column ->
+                    >>= (\column ->
                             if column < indentation then
                                 fail "Arguments have to be at least the same indentation as the function"
+
                             else
-                                whitespace
+                                succeed ()
+                        )
                 )
 
 
@@ -304,20 +307,22 @@ binary ops =
             let
                 next =
                     operatorOrAsBetween
-                        >>= \op ->
+                        >>= (\op ->
                                 lazy <|
                                     \() ->
-                                        (or (Cont <$> application ops) (Stop <$> expression ops))
-                                            >>= \e ->
+                                        or (Cont <$> application ops) (Stop <$> expression ops)
+                                            >>= (\e ->
                                                     case e of
                                                         Cont t ->
-                                                            ((::) ( op, t )) <$> successOrEmptyList next
+                                                            (::) ( op, t ) <$> successOrEmptyList next
 
                                                         Stop ex ->
                                                             succeed [ ( op, ex ) ]
+                                                )
+                            )
             in
-                application ops
-                    >>= (\e -> successOrEmptyList next >>= \eops -> split ops 0 e eops)
+            application ops
+                >>= (\e -> successOrEmptyList next >>= (\eops -> split ops 0 e eops))
 
 
 {-| A parses for term
@@ -396,17 +401,18 @@ split ops l e eops =
                                                 (\x ->
                                                     if hasLevel ops l x then
                                                         Just (Tuple.first x)
+
                                                     else
                                                         Nothing
                                                 )
                                                 eops
                                     in
-                                        case assoc of
-                                            R ->
-                                                joinR es ops_
+                                    case assoc of
+                                        R ->
+                                            joinR es ops_
 
-                                            _ ->
-                                                joinL es ops_
+                                        _ ->
+                                            joinL es ops_
                                 )
                     )
 
@@ -428,7 +434,7 @@ joinL es ops =
             succeed e
 
         ( a :: b :: remE, op :: remO ) ->
-            joinL ((BinOp (Variable [ op ]) a b) :: remE) remO
+            joinL (BinOp (Variable [ op ]) a b :: remE) remO
 
         _ ->
             fail ""
@@ -465,18 +471,21 @@ findAssoc ops l eops =
                 operators =
                     List.map Tuple.first lops |> String.join " and "
             in
-                "conflicting " ++ issue ++ " for operators " ++ operators
+            "conflicting " ++ issue ++ " for operators " ++ operators
     in
-        if List.all ((==) L) assocs then
-            succeed L
-        else if List.all ((==) R) assocs then
-            succeed R
-        else if List.all ((==) N) assocs then
-            case assocs of
-                [ _ ] ->
-                    succeed N
+    if List.all ((==) L) assocs then
+        succeed L
 
-                _ ->
-                    fail <| error "precedence"
-        else
-            fail <| error "associativity"
+    else if List.all ((==) R) assocs then
+        succeed R
+
+    else if List.all ((==) N) assocs then
+        case assocs of
+            [ _ ] ->
+                succeed N
+
+            _ ->
+                fail <| error "precedence"
+
+    else
+        fail <| error "associativity"

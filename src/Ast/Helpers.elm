@@ -60,6 +60,10 @@ spaces_ : Parser s String
 spaces_ =
     regex "[ \\t]+"
 
+notWhitespace_ : Parser s String
+notWhitespace_ =
+    regex "[^ \t\x0D\n]*" <?> "whitespace"
+
 
 exactIndentation : Int -> Parser s String
 exactIndentation int =
