@@ -1,17 +1,16 @@
-module Helpers
-    exposing
-        ( isExpression
-        , isStatement
-        , areStatements
-        , isApplication
-        , fails
-        , var
-        )
+module Helpers exposing
+    ( areStatements
+    , fails
+    , isApplication
+    , isExpression
+    , isStatement
+    , var
+    )
 
 import Ast exposing (parse, parseExpression, parseStatement)
 import Ast.BinOp exposing (operators)
 import Ast.Expression exposing (Expression(..))
-import Ast.Statement exposing (ExportSet(..), Type(..), Statement(..))
+import Ast.Statement exposing (ExportSet(..), Statement(..), Type(..))
 import Expect exposing (..)
 
 
@@ -50,8 +49,8 @@ isStatement s i =
         Ok ( _, _, r ) ->
             Expect.equal r s
 
-        _ ->
-            Expect.fail ("failed to parse: \"" ++ i ++ "\" <vs> " ++ toString s)
+        Err ( _, { position }, es ) ->
+            Expect.fail ("failed to parse: " ++ i ++ " at position " ++ toString position ++ " with errors: " ++ toString es)
 
 
 areStatements : List Statement -> String -> Expectation
@@ -60,5 +59,5 @@ areStatements s i =
         Ok ( _, _, r ) ->
             Expect.equal r s
 
-        _ ->
-            Expect.fail ("failed to parse: \"" ++ i ++ "\" <vs> " ++ toString s)
+        Err ( _, { position }, es ) ->
+            Expect.fail ("failed to parse: " ++ i ++ " at position " ++ toString position ++ " with errors: " ++ toString es)
