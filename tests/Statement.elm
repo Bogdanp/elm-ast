@@ -8,6 +8,7 @@ module Statement exposing
     , singleDeclaration
     , typeAnnotations
     , typeDeclarations
+    , wrongWhitespace
     )
 
 import Ast.BinOp exposing (Assoc(..))
@@ -440,4 +441,30 @@ typeDeclarations =
         , test "can parse aliases of unit" <|
             \() ->
                 emptyTupleAliasInput |> areStatements [ TypeAliasDeclaration (TypeConstructor [ "A" ] []) (TypeTuple []) ]
+        ]
+
+
+wrongWhitespaceInput : String
+wrongWhitespaceInput =
+    """
+-- Empty line with spaces at the end here
+b =
+  2
+""" ++ "  " ++ """
+a =
+  1
+"""
+
+
+wrongWhitespace : Test
+wrongWhitespace =
+    describe "Doesn't crash on wrong whitespace"
+        [ test "Two spaces at the end of an empty line" <|
+            \() ->
+                wrongWhitespaceInput
+                    |> areStatements
+                        [ Comment " Empty line with spaces at the end here"
+                        , FunctionDeclaration "b" [] (Integer 2)
+                        , FunctionDeclaration "a" [] (Integer 1)
+                        ]
         ]

@@ -126,8 +126,8 @@ isStatement s i =
         Ok ( _, _, r ) ->
             Expect.equal r s
 
-        _ ->
-            Expect.fail ("failed to parse: \"" ++ i ++ "\" <vs> " ++ toString s)
+        Err ( _, { position }, es ) ->
+            Expect.fail ("failed to parse: " ++ i ++ " at position " ++ toString position ++ " with errors: " ++ toString es)
 
 
 areStatements : List Statement -> String -> Expectation
@@ -136,5 +136,5 @@ areStatements s i =
         Ok ( _, _, r ) ->
             Expect.equal r s
 
-        _ ->
-            Expect.fail ("failed to parse: \"" ++ i ++ "\" <vs> " ++ toString s)
+        Err ( _, { position }, es ) ->
+            Expect.fail ("failed to parse: " ++ i ++ " at position " ++ toString position ++ " with errors: " ++ toString es)

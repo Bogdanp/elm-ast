@@ -277,7 +277,7 @@ caseExpression ops =
 
 countIndent : Parser s Int
 countIndent =
-    whitespace >>= (String.filter (\char -> char == ' ') >> String.length >> succeed)
+    newline *> spaces >>= (String.filter (\char -> char == ' ') >> String.length >> succeed)
 
 
 lambda : OpTable -> Parser s MExp
@@ -297,18 +297,18 @@ application ops =
             withLocation (\l -> chainl ((\a b -> WithMeta l (Application a b)) <$ spacesOrIndentedNewline l.line) (term ops))
 
 
-spacesOrIndentedNewline : Int -> Parser s String
+spacesOrIndentedNewline : Int -> Parser s ()
 spacesOrIndentedNewline indentation =
     lazy <|
         \() ->
-            or spaces_
+            or (spaces_ *> succeed ())
                 (countIndent
                     >>= (\column ->
                             if column < indentation then
                                 fail "Arguments have to be at least the same indentation as the function"
 
                             else
-                                whitespace
+                                whitespace <* lookAhead notSpaces_
                         )
                 )
 

@@ -466,7 +466,7 @@ expressions =
             \() -> "(+) 2" |> isExpression (app (var "+") (integer 2))
         , test "case_ with as" <|
             \() ->
-                "case a of \nT _ as x -> 1"
+                "case a of\n  T _ as x -> 1"
                     |> isExpression
                         (case_
                             (var "a")

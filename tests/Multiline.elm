@@ -9,7 +9,7 @@ application =
     describe "Multiline performance"
         [ test "Application" <|
             \() ->
-                "fn\n a\n b\n c\n d\n e\n f\n g\n h\n i\n j\n k\n      i"
+                "fn\n  a\n  b\n  c\n  d\n  e\n  f\n  g\n  h\n  i\n  j\n  k\n   i"
                     |> isApplication (var "fn")
                         [ var "a"
                         , var "b"
