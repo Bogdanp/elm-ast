@@ -6,15 +6,15 @@ module Expression exposing
     , floatLiterals
     , intLiterals
     , letExpressions
-    , list
+    , lists
     , literals
-    , record
+    , records
     , stringLiterals
-    , tuple
+    , tuples
     )
 
 import Ast.Expression exposing (..)
-import Helpers exposing (fails, isExpression, var)
+import Helpers exposing (app, binOp, case_, fails, integer, isExpression, list, record, recordUpdate, tuple, var, wm)
 import Test exposing (Test, describe, test)
 
 
@@ -22,11 +22,11 @@ characterLiterals : Test
 characterLiterals =
     describe "Character literals"
         [ test "character literal" <|
-            \() -> "'a'" |> isExpression (Character 'a')
+            \() -> "'a'" |> isExpression (wm <| Character 'a')
         , test "newline literal" <|
-            \() -> "'\n'" |> isExpression (Character '\n')
+            \() -> "'\n'" |> isExpression (wm <| Character '\n')
         , test "Charcode literals" <|
-            \() -> "'\\x23'" |> isExpression (Character '#')
+            \() -> "'\\x23'" |> isExpression (wm <| Character '#')
         , test "character literals must contain one character" <|
             \() -> fails "''"
         ]
@@ -36,11 +36,11 @@ intLiterals : Test
 intLiterals =
     describe "Integer literals"
         [ test "integer literal" <|
-            \() -> "0" |> isExpression (Integer 0)
+            \() -> "0" |> isExpression (integer 0)
         , test "positive literal" <|
-            \() -> "+12" |> isExpression (Integer 12)
+            \() -> "+12" |> isExpression (integer 12)
         , test "negative literal" <|
-            \() -> "-12" |> isExpression (Integer -12)
+            \() -> "-12" |> isExpression (integer -12)
         ]
 
 
@@ -48,11 +48,11 @@ floatLiterals : Test
 floatLiterals =
     describe "Float literals"
         [ test "float literal" <|
-            \() -> "0.5" |> isExpression (Float 0.5)
+            \() -> "0.5" |> isExpression (wm <| Float 0.5)
         , test "positive literal" <|
-            \() -> "+12.5" |> isExpression (Float 12.5)
+            \() -> "+12.5" |> isExpression (wm <| Float 12.5)
         , test "negative literal" <|
-            \() -> "-12.5" |> isExpression (Float -12.5)
+            \() -> "-12.5" |> isExpression (wm <| Float -12.5)
         ]
 
 
@@ -60,17 +60,17 @@ stringLiterals : Test
 stringLiterals =
     describe "String literals"
         [ test "empty string" <|
-            \() -> "\"\"" |> isExpression (String "")
+            \() -> "\"\"" |> isExpression (wm <| String "")
         , test "simple string" <|
-            \() -> "\"hello\"" |> isExpression (String "hello")
+            \() -> "\"hello\"" |> isExpression (wm <| String "hello")
         , test "escaped string" <|
-            \() -> "\"hello, \\\"world\\\"\"" |> isExpression (String "hello, \\\"world\\\"")
+            \() -> "\"hello, \\\"world\\\"\"" |> isExpression (wm <| String "hello, \\\"world\\\"")
         , test "triple-quoted string" <|
-            \() -> "\"\"\"\"\"\"" |> isExpression (String "")
+            \() -> "\"\"\"\"\"\"" |> isExpression (wm <| String "")
         , test "multi-line strings" <|
-            \() -> "\"\"\"hello\nworld\"\"\"" |> isExpression (String "hello\nworld")
+            \() -> "\"\"\"hello\nworld\"\"\"" |> isExpression (wm <| String "hello\nworld")
         , test "double escaped string" <|
-            \() -> "\"\\\\\"" |> isExpression (String "\\\\")
+            \() -> "\"\\\\\"" |> isExpression (wm <| String "\\\\")
         ]
 
 
@@ -91,25 +91,28 @@ letExpressions =
             \() ->
                 "let a = 42 in a"
                     |> isExpression
-                        (Let
-                            [ ( var "a", Integer 42 ) ]
-                            (var "a")
+                        (wm <|
+                            Let
+                                [ ( var "a", integer 42 ) ]
+                                (var "a")
                         )
         , test "bind to _" <|
             \() ->
                 "let _ = 42 in 24"
                     |> isExpression
-                        (Let
-                            [ ( var "_", Integer 42 ) ]
-                            (Integer 24)
+                        (wm <|
+                            Let
+                                [ ( var "_", integer 42 ) ]
+                                (integer 24)
                         )
         , test "Can start with a tag name" <|
             \() ->
                 "let letter = 1 \n in letter"
                     |> isExpression
-                        (Let
-                            [ ( var "letter", Integer 1 ) ]
-                            (var "letter")
+                        (wm <|
+                            Let
+                                [ ( var "letter", integer 1 ) ]
+                                (var "letter")
                         )
         , test "function 1" <|
             \() ->
@@ -120,9 +123,10 @@ in
   f 4
         """
                     |> isExpression
-                        (Let
-                            [ ( Application (var "f") (var "x"), BinOp (var "+") (var "x") (Integer 1) ) ]
-                            (Application (var "f") (Integer 4))
+                        (wm <|
+                            Let
+                                [ ( app (var "f") (var "x"), binOp (var "+") (var "x") (integer 1) ) ]
+                                (app (var "f") (integer 4))
                         )
         , test "function 2" <|
             \() ->
@@ -134,15 +138,16 @@ in
   f 4
         """
                     |> isExpression
-                        (Let
-                            [ ( Application (var "f") (var "x")
-                              , BinOp (var "+") (var "x") (Integer 1)
-                              )
-                            , ( Application (var "g") (var "x")
-                              , BinOp (var "+") (var "x") (Integer 1)
-                              )
-                            ]
-                            (Application (var "f") (Integer 4))
+                        (wm <|
+                            Let
+                                [ ( app (var "f") (var "x")
+                                  , binOp (var "+") (var "x") (integer 1)
+                                  )
+                                , ( app (var "g") (var "x")
+                                  , binOp (var "+") (var "x") (integer 1)
+                                  )
+                                ]
+                                (app (var "f") (integer 4))
                         )
         , test "multiple bindings" <|
             \() ->
@@ -155,18 +160,19 @@ in
   b
             """
                     |> isExpression
-                        (Let
-                            [ ( var "a", Integer 42 )
-                            , ( var "b", BinOp (var "+") (var "a") (Integer 1) )
-                            ]
-                            (var "b")
+                        (wm <|
+                            Let
+                                [ ( var "a", integer 42 )
+                                , ( var "b", binOp (var "+") (var "a") (integer 1) )
+                                ]
+                                (var "b")
                         )
         ]
 
 
 caseExpressions : Test
 caseExpressions =
-    describe "Case"
+    describe "case_"
         [ test "simple statement" <|
             \() ->
                 """
@@ -178,10 +184,10 @@ case x of
     y
           """
                     |> isExpression
-                        (Case
+                        (case_
                             (var "x")
-                            [ ( var "Nothing", Integer 0 )
-                            , ( Application (var "Just") (var "y"), var "y" )
+                            [ ( var "Nothing", integer 0 )
+                            , ( app (var "Just") (var "y"), var "y" )
                             ]
                         )
         , test "binding to underscore" <|
@@ -192,9 +198,9 @@ case x of
     42
           """
                     |> isExpression
-                        (Case
+                        (case_
                             (var "x")
-                            [ ( var "_", Integer 42 ) ]
+                            [ ( var "_", integer 42 ) ]
                         )
         , test "Nested case" <|
             \() ->
@@ -208,10 +214,10 @@ case x of
   c -> c
             """
                     |> isExpression
-                        (Case
+                        (case_
                             (var "x")
                             [ ( var "a", var "a" )
-                            , ( var "b", Case (var "y") [ ( var "a1", var "a1" ), ( var "b1", var "b1" ) ] )
+                            , ( var "b", case_ (var "y") [ ( var "a1", var "a1" ), ( var "b1", var "b1" ) ] )
                             , ( var "c", var "c" )
                             ]
                         )
@@ -220,12 +226,12 @@ case x of
 
 application : Test
 application =
-    describe "Application"
+    describe "app"
         [ test "simple application" <|
             \() ->
                 "f a"
                     |> isExpression
-                        (Application
+                        (app
                             (var "f")
                             (var "a")
                         )
@@ -233,8 +239,8 @@ application =
             \() ->
                 "f a b"
                     |> isExpression
-                        (Application
-                            (Application
+                        (app
+                            (app
                                 (var "f")
                                 (var "a")
                             )
@@ -244,8 +250,8 @@ application =
             \() ->
                 "(f a) b"
                     |> isExpression
-                        (Application
-                            (Application
+                        (app
+                            (app
                                 (var "f")
                                 (var "a")
                             )
@@ -255,8 +261,8 @@ application =
             \() ->
                 "  f\n   a\n b"
                     |> isExpression
-                        (Application
-                            (Application
+                        (app
+                            (app
                                 (var "f")
                                 (var "a")
                             )
@@ -266,7 +272,7 @@ application =
             \() ->
                 "f\n (==)"
                     |> isExpression
-                        (Application
+                        (app
                             (var "f")
                             (var "==")
                         )
@@ -274,45 +280,45 @@ application =
             \() ->
                 "f\n \"I like the symbol =\""
                     |> isExpression
-                        (Application
+                        (app
                             (var "f")
-                            (String "I like the symbol =")
+                            (wm <| String "I like the symbol =")
                         )
         , test "constructor application" <|
             \() ->
                 "Cons a Nil"
                     |> isExpression
-                        (Application
-                            (Application
+                        (app
+                            (app
                                 (var "Cons")
                                 (var "a")
                             )
                             (var "Nil")
                         )
-        , test "Application with record update" <|
+        , test "app with record update" <|
             \() ->
                 "a  { r | f = 1 } c"
                     |> isExpression
-                        (Application
-                            (Application
+                        (app
+                            (app
                                 (var "a")
-                                (RecordUpdate "r" [ ( "f", Integer 1 ) ])
+                                (recordUpdate "r" [ ( wm "f", integer 1 ) ])
                             )
                             (var "c")
                         )
         ]
 
 
-tuple : Test
-tuple =
-    describe "Tuples"
+tuples : Test
+tuples =
+    describe "tuples"
         [ test "Empty tuple" <|
             \() -> "()" |> isExpression (var "()")
         , test "Simple tuple" <|
             \() ->
                 "(a, b)"
                     |> isExpression
-                        (Tuple
+                        (tuple
                             [ var "a"
                             , var "b"
                             ]
@@ -321,7 +327,7 @@ tuple =
             \() ->
                 "( a, b )"
                     |> isExpression
-                        (Tuple
+                        (tuple
                             [ var "a"
                             , var "b"
                             ]
@@ -329,22 +335,22 @@ tuple =
         ]
 
 
-list : Test
-list =
+lists : Test
+lists =
     describe "Lists"
-        [ test "Empty list" <| \() -> "[]" |> isExpression (List [])
+        [ test "Empty list" <| \() -> "[]" |> isExpression (list [])
         , test "Simple list" <|
-            \() -> "[1, 2]" |> isExpression (List [ Integer 1, Integer 2 ])
-        , test "Tuple list" <|
+            \() -> "[1, 2]" |> isExpression (list [ integer 1, integer 2 ])
+        , test "tuple list" <|
             \() ->
                 "[(a, b), (a, b)]"
                     |> isExpression
-                        (List
-                            [ Tuple
+                        (list
+                            [ tuple
                                 [ var "a"
                                 , var "b"
                                 ]
-                            , Tuple
+                            , tuple
                                 [ var "a"
                                 , var "b"
                                 ]
@@ -353,36 +359,36 @@ list =
         ]
 
 
-record : Test
-record =
+records : Test
+records =
     describe "Record"
         [ test "Simple record" <|
             \() ->
                 "{a = b}"
                     |> isExpression
-                        (Record [ ( "a", var "b" ) ])
+                        (record [ ( wm <| "a", var "b" ) ])
         , test "Simple record with many fields" <|
             \() ->
                 "{a = b, b = 2}"
                     |> isExpression
-                        (Record
-                            [ ( "a", var "b" )
-                            , ( "b", Integer 2 )
+                        (record
+                            [ ( wm "a", var "b" )
+                            , ( wm "b", integer 2 )
                             ]
                         )
         , test "Simple record with many tuple fields" <|
             \() ->
                 "{a = (a, b), b = (a, b)}"
                     |> isExpression
-                        (Record
-                            [ ( "a"
-                              , Tuple
+                        (record
+                            [ ( wm "a"
+                              , tuple
                                     [ var "a"
                                     , var "b"
                                     ]
                               )
-                            , ( "b"
-                              , Tuple
+                            , ( wm "b"
+                              , tuple
                                     [ var "a"
                                     , var "b"
                                     ]
@@ -393,21 +399,21 @@ record =
             \() ->
                 "{a | b = 2, c = 3}"
                     |> isExpression
-                        (RecordUpdate
+                        (recordUpdate
                             "a"
-                            [ ( "b", Integer 2 )
-                            , ( "c", Integer 3 )
+                            [ ( wm "b", integer 2 )
+                            , ( wm "c", integer 3 )
                             ]
                         )
         , test "Simple record with advanced field" <|
             \() ->
                 "{a = Just 2}"
                     |> isExpression
-                        (Record
-                            [ ( "a"
-                              , Application
+                        (record
+                            [ ( wm "a"
+                              , app
                                     (var "Just")
-                                    (Integer 2)
+                                    (integer 2)
                               )
                             ]
                         )
@@ -415,12 +421,12 @@ record =
             \() ->
                 "{a | a = Just 2}"
                     |> isExpression
-                        (RecordUpdate
+                        (recordUpdate
                             "a"
-                            [ ( "a"
-                              , Application
+                            [ ( wm "a"
+                              , app
                                     (var "Just")
-                                    (Integer 2)
+                                    (integer 2)
                               )
                             ]
                         )
@@ -428,11 +434,11 @@ record =
             \() ->
                 "{a, b}"
                     |> isExpression
-                        (Record
-                            [ ( "a"
+                        (record
+                            [ ( wm "a"
                               , var "a"
                               )
-                            , ( "b"
+                            , ( wm "b"
                               , var "b"
                               )
                             ]
@@ -449,27 +455,27 @@ expressions =
             \() ->
                 "reduce (+) list"
                     |> isExpression
-                        (Application
-                            (Application
+                        (app
+                            (app
                                 (var "reduce")
                                 (var "+")
                             )
                             (var "list")
                         )
         , test "partial application" <|
-            \() -> "(+) 2" |> isExpression (Application (var "+") (Integer 2))
-        , test "Case with as" <|
+            \() -> "(+) 2" |> isExpression (app (var "+") (integer 2))
+        , test "case_ with as" <|
             \() ->
                 "case a of \nT _ as x -> 1"
                     |> isExpression
-                        (Case
+                        (case_
                             (var "a")
-                            [ ( BinOp (var "as")
-                                    (Application (var "T")
+                            [ ( binOp (var "as")
+                                    (app (var "T")
                                         (var "_")
                                     )
                                     (var "x")
-                              , Integer 1
+                              , integer 1
                               )
                             ]
                         )
@@ -477,44 +483,46 @@ expressions =
             \() ->
                 "a :: b :: c"
                     |> isExpression
-                        (BinOp (var "::")
+                        (binOp (var "::")
                             (var "a")
-                            (BinOp (var "::") (var "b") (var "c"))
+                            (binOp (var "::") (var "b") (var "c"))
                         )
         , test "cons has right assoc with tuple" <|
             \() ->
                 "(a, a :: b :: c)"
                     |> isExpression
-                        (Tuple
+                        (tuple
                             [ var "a"
-                            , BinOp (var "::") (var "a")
-                                (BinOp (var "::") (var "b") (var "c"))
+                            , binOp (var "::")
+                                (var "a")
+                                (binOp (var "::") (var "b") (var "c"))
                             ]
                         )
         , test "Destructuring lambda" <|
             \() ->
                 "\\(a,b) acc -> 1"
                     |> isExpression
-                        (Lambda [ Tuple [ var "a", var "b" ], var "acc" ] (Integer 1))
+                        (wm <| Lambda [ tuple [ var "a", var "b" ], var "acc" ] (integer 1))
         , test "Destructuring Let" <|
             \() ->
                 "let (a,b) = (1,2) in a"
                     |> isExpression
-                        (Let
-                            [ ( Tuple [ var "a", var "b" ]
-                              , Tuple [ Integer 1, Integer 2 ]
-                              )
-                            ]
-                            (var "a")
+                        (wm <|
+                            Let
+                                [ ( tuple [ var "a", var "b" ]
+                                  , tuple [ integer 1, integer 2 ]
+                                  )
+                                ]
+                                (var "a")
                         )
         , test "Access" <|
             \() ->
                 "Module.a"
                     |> isExpression
-                        (Access (var "Module") [ "a" ])
+                        (wm <| Access (var "Module") [ wm "a" ])
         , test "AccessFunction" <|
             \() ->
                 "map .a list"
                     |> isExpression
-                        (Application (Application (var "map") (AccessFunction "a")) (var "list"))
+                        (app (app (var "map") (wm <| AccessFunction "a")) (var "list"))
         ]

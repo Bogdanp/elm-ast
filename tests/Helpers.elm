@@ -1,15 +1,25 @@
 module Helpers exposing
-    ( areStatements
+    ( app
+    , areStatements
+    , binOp
+    , case_
     , fails
+    , integer
     , isApplication
     , isExpression
     , isStatement
+    , list
+    , record
+    , recordUpdate
+    , tuple
     , var
+    , wm
     )
 
 import Ast exposing (parse, parseExpression, parseStatement)
 import Ast.BinOp exposing (operators)
 import Ast.Expression exposing (Expression(..), MExp)
+import Ast.Helpers exposing (WithMeta)
 import Ast.Statement exposing (ExportSet(..), Statement(..), Type(..))
 import Expect exposing (..)
 
@@ -18,9 +28,53 @@ import Expect exposing (..)
 -- Structures
 
 
-var : Int -> Int -> String -> MExp
-var line column a =
-    { e = Variable [ a ], meta = { line = line, column = column, source = a } }
+wm : a -> WithMeta a
+wm e =
+    { e = e, meta = { line = 0, column = 0, source = "" } }
+
+
+app : MExp -> MExp -> MExp
+app left right =
+    wm (Application left right)
+
+
+record =
+    wm << Record
+
+
+recordUpdate : String -> List ( WithMeta String, MExp ) -> MExp
+recordUpdate name =
+    wm << RecordUpdate (wm name)
+
+
+var : String -> MExp
+var name =
+    mvar 0 0 name
+
+
+integer =
+    wm << Integer
+
+
+binOp name l r =
+    wm <| BinOp name l r
+
+
+tuple =
+    wm << Tuple
+
+
+case_ mexp cases =
+    wm <| Case mexp cases
+
+
+list =
+    wm << List
+
+
+mvar : Int -> Int -> String -> MExp
+mvar line column name =
+    { meta = { source = name, line = line, column = column }, e = Variable [ name ] }
 
 
 
@@ -37,11 +91,11 @@ fails s =
             Expect.fail (s ++ " expected to fail")
 
 
-isExpression : Expression -> String -> Expectation
+isExpression : MExp -> String -> Expectation
 isExpression e i =
     case parseExpression operators (String.trim i) of
         Ok ( _, _, r ) ->
-            Expect.equal e r.e
+            Expect.equal e.e r.e
 
         Err ( _, { position }, es ) ->
             Expect.fail ("failed to parse: " ++ i ++ " at position " ++ toString position ++ " with errors: " ++ toString es)
