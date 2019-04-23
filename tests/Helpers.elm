@@ -30,7 +30,7 @@ import Expect exposing (..)
 
 wm : a -> WithMeta a
 wm e =
-    { e = e, meta = { line = 0, column = 0, source = "" } }
+    { meta = { line = 0, column = 0 }, e = e }
 
 
 app : MExp -> MExp -> MExp
@@ -74,7 +74,7 @@ list =
 
 mvar : Int -> Int -> String -> MExp
 mvar line column name =
-    { meta = { source = name, line = line, column = column }, e = Variable [ name ] }
+    { meta = { line = line, column = column }, e = Variable [ name ] }
 
 
 

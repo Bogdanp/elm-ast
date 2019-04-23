@@ -48,12 +48,12 @@ type alias Alias =
 
 
 type alias WithMeta x =
-    { meta : ParseLocation, e : x }
+    { meta : { line : Int, column : Int }, e : x }
 
 
 withMeta : Parser s x -> Parser s (WithMeta x)
 withMeta p =
-    withLocation (\a -> WithMeta a <$> p)
+    withLocation (\a -> WithMeta { line = a.line, column = a.column } <$> p)
 
 
 reserved : List Name
@@ -94,6 +94,7 @@ spaces =
 spaces_ : Parser s String
 spaces_ =
     regex "[ \\t]+"
+
 
 notWhitespace_ : Parser s String
 notWhitespace_ =

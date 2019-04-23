@@ -12,7 +12,7 @@ module Ast.Expression exposing
 @docs Expression, MExp
 
 
-# Parsers
+# rs
 
 @docs expression
 
@@ -197,9 +197,9 @@ record ops =
 simplifiedRecord : Parser s MExp
 simplifiedRecord =
     let
-        branch location =
+        branch { line, column } =
             loName
-                |> map (\a -> ( WithMeta location a, WithMeta location (Variable [ a ]) ))
+                |> map (\a -> ( WithMeta { line = line, column = column } a, WithMeta { line = line, column = column } (Variable [ a ]) ))
     in
     lazy <|
         \() ->
@@ -294,7 +294,7 @@ application : OpTable -> Parser s MExp
 application ops =
     lazy <|
         \() ->
-            withLocation (\l -> chainl ((\a b -> WithMeta l (Application a b)) <$ spacesOrIndentedNewline l.line) (term ops))
+            withLocation (\l -> chainl ((\a b -> WithMeta { line = l.line, column = l.column } (Application a b)) <$ spacesOrIndentedNewline (l.line + 1)) (term ops))
 
 
 spacesOrIndentedNewline : Int -> Parser s ()
@@ -308,7 +308,7 @@ spacesOrIndentedNewline indentation =
                                 fail "Arguments have to be at least the same indentation as the function"
 
                             else
-                                whitespace <* lookAhead notSpaces_
+                                succeed ()
                         )
                 )
 
