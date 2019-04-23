@@ -1,6 +1,6 @@
 module Ast.Expression exposing
-    ( Expression(..), MExp
-    , expression
+    ( Expression(..), MExp, ExpressionSansMeta(..)
+    , expression, dropMExpMeta
     , term
     )
 
@@ -9,12 +9,12 @@ module Ast.Expression exposing
 
 # Types
 
-@docs Expression, MExp
+@docs Expression, MExp, ExpressionSansMeta
 
 
 # rs
 
-@docs expression
+@docs expression, dropMExpMeta
 
 
 # Expression
@@ -71,6 +71,100 @@ type Expression
     | Lambda (List MExp) MExp
     | Application MExp MExp
     | BinOp MExp MExp MExp
+
+
+{-| Test only
+-}
+type ExpressionSansMeta
+    = CharacterSM Char
+    | StringSM String
+    | IntegerSM Int
+    | FloatSM Float
+    | VariableSM (List Name)
+    | ListSM (List ExpressionSansMeta)
+    | TupleSM (List ExpressionSansMeta)
+    | AccessSM ExpressionSansMeta (List Name)
+    | AccessFunctionSM Name
+    | RecordSM (List ( Name, ExpressionSansMeta ))
+    | RecordUpdateSM Name (List ( Name, ExpressionSansMeta ))
+    | IfSM ExpressionSansMeta ExpressionSansMeta ExpressionSansMeta
+    | LetSM (List ( ExpressionSansMeta, ExpressionSansMeta )) ExpressionSansMeta
+    | CaseSM ExpressionSansMeta (List ( ExpressionSansMeta, ExpressionSansMeta ))
+    | LambdaSM (List ExpressionSansMeta) ExpressionSansMeta
+    | ApplicationSM ExpressionSansMeta ExpressionSansMeta
+    | BinOpSM ExpressionSansMeta ExpressionSansMeta ExpressionSansMeta
+
+
+{-| Test only
+-}
+dropMExpMeta : MExp -> ExpressionSansMeta
+dropMExpMeta { meta, e } =
+    dropExpressionMeta e
+
+
+dropWithMetaMExp : ( WithMeta a, MExp ) -> ( a, ExpressionSansMeta )
+dropWithMetaMExp ( a, b ) =
+    ( dropMeta a, dropMExpMeta b )
+
+
+dropDoubleMExp : ( MExp, MExp ) -> ( ExpressionSansMeta, ExpressionSansMeta )
+dropDoubleMExp ( a, b ) =
+    ( dropMExpMeta a, dropMExpMeta b )
+
+
+dropExpressionMeta : Expression -> ExpressionSansMeta
+dropExpressionMeta e =
+    case e of
+        Character c ->
+            CharacterSM c
+
+        String s ->
+            StringSM s
+
+        Integer i ->
+            IntegerSM i
+
+        Float f ->
+            FloatSM f
+
+        Variable l ->
+            VariableSM l
+
+        List l ->
+            ListSM (List.map dropMExpMeta l)
+
+        Tuple l ->
+            TupleSM (List.map dropMExpMeta l)
+
+        Access e l ->
+            AccessSM (dropMExpMeta e) (List.map dropMeta l)
+
+        AccessFunction n ->
+            AccessFunctionSM n
+
+        Record l ->
+            RecordSM (List.map dropWithMetaMExp l)
+
+        RecordUpdate n l ->
+            RecordUpdateSM (dropMeta n) (List.map dropWithMetaMExp l)
+
+        If e1 e2 e3 ->
+            IfSM (dropMExpMeta e1) (dropMExpMeta e2) (dropMExpMeta e3)
+
+        Let l e ->
+            LetSM (List.map dropDoubleMExp l) (dropMExpMeta e)
+
+        Case e l ->
+            CaseSM (dropMExpMeta e) (List.map dropDoubleMExp l)
+
+        Lambda l e ->
+            LambdaSM (List.map dropMExpMeta l) (dropMExpMeta e)
+
+        Application e1 e2 ->
+            ApplicationSM (dropMExpMeta e1) (dropMExpMeta e2)
+
+        BinOp e1 e2 e3 ->
+            BinOpSM (dropMExpMeta e1) (dropMExpMeta e2) (dropMExpMeta e3)
 
 
 character : Parser s MExp

@@ -13,7 +13,7 @@ module Statement exposing
 import Ast.BinOp exposing (Assoc(..))
 import Ast.Expression exposing (Expression(..))
 import Ast.Statement exposing (ExportSet(..), Statement(..), Type(..))
-import Helpers exposing (areStatements, isStatement, var)
+import Helpers exposing (areStatementsSansMeta, areStatements, fakeMeta, isStatement, isStatementSansMeta, var)
 import Test exposing (Test, describe, test)
 
 
@@ -234,12 +234,13 @@ portStatements =
         , test "port definition" <|
             \() ->
                 "port focus = Cmd.none"
-                    |> isStatement
+                    |> isStatementSansMeta
                         (PortDeclaration "focus"
                             []
-                            (Access
-                                (Variable [ "Cmd" ])
-                                [ "none" ]
+                            (fakeMeta <|
+                                Access
+                                    (fakeMeta <| Variable [ "Cmd" ])
+                                    [ fakeMeta "none" ]
                             )
                         )
         ]
@@ -277,20 +278,22 @@ singleDeclaration =
     test "simple function" <|
         \() ->
             singleDeclarationInput
-                |> areStatements
+                |> areStatementsSansMeta
                     [ FunctionTypeDeclaration "f"
                         (TypeApplication
                             (TypeConstructor [ "Int" ] [])
                             (TypeConstructor [ "Int" ] [])
                         )
                     , FunctionDeclaration "f"
-                        [ Variable [ "x" ] ]
-                        (Application
-                            (Application
-                                (var "a")
-                                (RecordUpdate "r" [ ( "f", Integer 1 ) ])
-                            )
-                            (var "c")
+                        [ fakeMeta <| Variable [ "x" ] ]
+                        (fakeMeta <|
+                            Application
+                                (fakeMeta <|
+                                    Application
+                                        (var "a")
+                                        (fakeMeta <| RecordUpdate (fakeMeta "r") [ ( fakeMeta "f", fakeMeta <| Integer 1 ) ])
+                                )
+                                (var "c")
                         )
                     ]
 
@@ -322,18 +325,19 @@ multipleDeclarations =
     test "multiple functions" <|
         \() ->
             multipleDeclarationsInput
-                |> areStatements
+                |> areStatementsSansMeta
                     [ FunctionTypeDeclaration "f"
                         (TypeApplication
                             (TypeConstructor [ "Int" ] [])
                             (TypeConstructor [ "Int" ] [])
                         )
                     , FunctionDeclaration "f"
-                        [ Variable [ "x" ] ]
-                        (BinOp
-                            (Variable [ "+" ])
-                            (Variable [ "x" ])
-                            (Integer 1)
+                        [ fakeMeta <| Variable [ "x" ] ]
+                        (fakeMeta <|
+                            BinOp
+                                (fakeMeta <| Variable [ "+" ])
+                                (fakeMeta <| Variable [ "x" ])
+                                (fakeMeta <| Integer 1)
                         )
                     , FunctionTypeDeclaration "g"
                         (TypeApplication
@@ -341,14 +345,16 @@ multipleDeclarations =
                             (TypeConstructor [ "Int" ] [])
                         )
                     , FunctionDeclaration "g"
-                        [ Variable [ "x" ] ]
-                        (BinOp
-                            (Variable [ "+" ])
-                            (Application
-                                (Variable [ "f" ])
-                                (Variable [ "x" ])
-                            )
-                            (Integer 1)
+                        [ fakeMeta <| Variable [ "x" ] ]
+                        (fakeMeta <|
+                            BinOp
+                                (fakeMeta <| Variable [ "+" ])
+                                (fakeMeta <|
+                                    Application
+                                        (fakeMeta <| Variable [ "f" ])
+                                        (fakeMeta <| Variable [ "x" ])
+                                )
+                                (fakeMeta <| Integer 1)
                         )
                     , FunctionTypeDeclaration "h"
                         (TypeApplication
@@ -356,18 +362,19 @@ multipleDeclarations =
                             (TypeConstructor [ "Int" ] [])
                         )
                     , FunctionDeclaration "h"
-                        [ Tuple [ Variable [ "a" ], Variable [ "b" ] ] ]
-                        (BinOp
-                            (Variable [ "+" ])
-                            (Variable [ "a" ])
-                            (Variable [ "b" ])
+                        [ fakeMeta <| Tuple [ fakeMeta <| Variable [ "a" ], fakeMeta <| Variable [ "b" ] ] ]
+                        (fakeMeta <|
+                            BinOp
+                                (fakeMeta <| Variable [ "+" ])
+                                (fakeMeta <| Variable [ "a" ])
+                                (fakeMeta <| Variable [ "b" ])
                         )
                     , FunctionTypeDeclaration "+"
                         (TypeApplication
                             (TypeConstructor [ "Int" ] [])
                             (TypeConstructor [ "Int" ] [])
                         )
-                    , FunctionDeclaration "+" [ Variable [ "a" ], Variable [ "b" ] ] (Integer 1)
+                    , FunctionDeclaration "+" [ fakeMeta <| Variable [ "a" ], fakeMeta <| Variable [ "b" ] ] (fakeMeta <| Integer 1)
                     ]
 
 
@@ -392,25 +399,33 @@ moduleFixityDeclarations =
                 |> areStatements
                     [ FunctionDeclaration "f"
                         []
-                        (BinOp
-                            (Variable [ "++" ])
+                        (fakeMeta
                             (BinOp
-                                (Variable [ "++" ])
-                                (Variable [ "a" ])
-                                (Variable [ "b" ])
+                                (fakeMeta <| Variable [ "++" ])
+                                (fakeMeta
+                                    (BinOp
+                                        (fakeMeta <| Variable [ "++" ])
+                                        (fakeMeta <| Variable [ "a" ])
+                                        (fakeMeta <| Variable [ "b" ])
+                                    )
+                                )
+                                (fakeMeta <| Variable [ "c" ])
                             )
-                            (Variable [ "c" ])
                         )
                     , InfixDeclaration L 1 "++"
                     , FunctionDeclaration "g"
                         []
-                        (BinOp
-                            (Variable [ "**" ])
-                            (Variable [ "a" ])
+                        (fakeMeta
                             (BinOp
-                                (Variable [ "**" ])
-                                (Variable [ "b" ])
-                                (Variable [ "c" ])
+                                (fakeMeta <| Variable [ "**" ])
+                                (fakeMeta <| Variable [ "a" ])
+                                (fakeMeta
+                                    (BinOp
+                                        (fakeMeta <| Variable [ "**" ])
+                                        (fakeMeta <| Variable [ "b" ])
+                                        (fakeMeta <| Variable [ "c" ])
+                                    )
+                                )
                             )
                         )
                     , InfixDeclaration R 1 "**"
@@ -436,8 +451,8 @@ typeDeclarations =
     describe "type declarations"
         [ test "can parse empty record aliases" <|
             \() ->
-                emptyRecordAliasInput |> areStatements [ TypeAliasDeclaration (TypeConstructor [ "A" ] []) (TypeRecord []) ]
+                emptyRecordAliasInput |> areStatementsSansMeta [ TypeAliasDeclaration (TypeConstructor [ "A" ] []) (TypeRecord []) ]
         , test "can parse aliases of unit" <|
             \() ->
-                emptyTupleAliasInput |> areStatements [ TypeAliasDeclaration (TypeConstructor [ "A" ] []) (TypeTuple []) ]
+                emptyTupleAliasInput |> areStatementsSansMeta [ TypeAliasDeclaration (TypeConstructor [ "A" ] []) (TypeTuple []) ]
         ]

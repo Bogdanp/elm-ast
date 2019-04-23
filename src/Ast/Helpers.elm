@@ -7,6 +7,7 @@ module Ast.Helpers exposing
     , between_
     , commaSeparated
     , commaSeparated_
+    , dropMeta
     , emptyTuple
     , exactIndentation
     , functionName
@@ -54,6 +55,11 @@ type alias WithMeta x =
 withMeta : Parser s x -> Parser s (WithMeta x)
 withMeta p =
     withLocation (\a -> WithMeta { line = a.line, column = a.column } <$> p)
+
+
+dropMeta : WithMeta a -> a
+dropMeta { meta, e } =
+    e
 
 
 reserved : List Name
