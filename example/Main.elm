@@ -4,7 +4,6 @@ import Ast
 import Ast.Expression exposing (..)
 import Ast.Statement exposing (..)
 import Html exposing (..)
-import Html
 import Html.Events exposing (..)
 import Json.Decode as JD
 
@@ -42,9 +41,9 @@ withChild title children =
         ]
 
 
-expression : Expression -> Html Msg
+expression : MExp -> Html Msg
 expression e =
-    case e of
+    case e.e of
         List es ->
             withChild e (List.map expression es)
 
