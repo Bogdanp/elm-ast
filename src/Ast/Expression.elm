@@ -1,6 +1,6 @@
 module Ast.Expression exposing
     ( Expression(..), MExp, ExpressionSansMeta(..)
-    , expression, dropMExpMeta
+    , expression, dropMExpMeta, dropExpressionMeta
     , term
     )
 
@@ -14,7 +14,7 @@ module Ast.Expression exposing
 
 # rs
 
-@docs expression, dropMExpMeta
+@docs expression, dropMExpMeta, dropExpressionMeta
 
 
 # Expression
@@ -424,21 +424,24 @@ binary ops =
     lazy <|
         \() ->
             let
-                contOrStop op =
-                    lazy <|
-                        \() ->
-                            or (Stop <$> expression ops) (Cont <$> application ops) >>= collect op
+                next =
+                    operatorOrAsBetween
+                        >>= (\op ->
+                                lazy <|
+                                    \() ->
+                                        or (Cont <$> application ops) (Stop <$> expression ops)
+                                            >>= (\e ->
+                                                    case e of
+                                                        Cont t ->
+                                                            (::) ( op, t ) <$> successOrEmptyList next
 
-                collect op e =
-                    case e of
-                        Cont t ->
-                            (::) ( op, t ) <$> successOrEmptyList (operatorOrAsBetween >>= contOrStop)
-
-                        Stop ex ->
-                            succeed [ ( op, ex ) ]
+                                                        Stop ex ->
+                                                            succeed [ ( op, ex ) ]
+                                                )
+                            )
             in
             application ops
-                >>= (\e -> successOrEmptyList (operatorOrAsBetween >>= contOrStop) >>= split ops 0 e)
+                >>= (\e -> successOrEmptyList next >>= (\eops -> split ops 0 e eops))
 
 
 {-| A parses for term

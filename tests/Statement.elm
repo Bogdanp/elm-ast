@@ -396,7 +396,7 @@ moduleFixityDeclarations =
     test "module fixity scanning" <|
         \() ->
             moduleFixityInput
-                |> areStatements
+                |> areStatementsSansMeta
                     [ FunctionDeclaration "f"
                         []
                         (fakeMeta

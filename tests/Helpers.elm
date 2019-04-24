@@ -8,7 +8,9 @@ module Helpers exposing
     , fakeMeta
     , integer
     , isApplication
+    , isApplicationSansMeta
     , isExpression
+    , isExpressionSansMeta
     , isStatement
     , isStatementSansMeta
     , list
@@ -21,7 +23,7 @@ module Helpers exposing
 
 import Ast exposing (parse, parseExpression, parseStatement)
 import Ast.BinOp exposing (operators)
-import Ast.Expression exposing (Expression(..), MExp)
+import Ast.Expression exposing (Expression(..), ExpressionSansMeta, MExp, dropMExpMeta, dropExpressionMeta)
 import Ast.Helpers exposing (WithMeta)
 import Ast.Statement exposing (ExportSet(..), Statement(..), Type(..), dropStatementMeta)
 import Expect exposing (..)
@@ -104,17 +106,28 @@ isExpression e i =
             Expect.fail ("failed to parse: " ++ i ++ " at position " ++ toString position ++ " with errors: " ++ toString es)
 
 
+isExpressionSansMeta : MExp -> String -> Expectation
+isExpressionSansMeta e i =
+    case parseExpression operators (String.trim i) of
+        Ok ( _, _, r ) ->
+            Expect.equal (dropMExpMeta e) (dropMExpMeta r)
+
+        Err ( _, { position }, es ) ->
+            Expect.fail ("failed to parse: " ++ i ++ " at position " ++ toString position ++ " with errors: " ++ toString es)
+
+
+appToList : MExp -> List Expression
+appToList app =
+    case app.e of
+        Application a b ->
+            [ a.e ] ++ appToList b
+
+        e ->
+            [ e ]
+
+
 isApplication : Expression -> List Expression -> String -> Expectation
 isApplication fn args i =
-    let
-        appToList app =
-            case app.e of
-                Application a b ->
-                    [ a.e ] ++ appToList b
-
-                e ->
-                    [ e ]
-    in
     case parseExpression operators (String.trim i) of
         Ok ( _, _, app ) ->
             Expect.equal (fn :: args) (appToList app)
@@ -122,6 +135,15 @@ isApplication fn args i =
         Err ( _, { position }, es ) ->
             Expect.fail ("failed to parse: " ++ i ++ " at position " ++ toString position ++ " with errors: " ++ toString es)
 
+
+isApplicationSansMeta : Expression -> List Expression -> String -> Expectation
+isApplicationSansMeta fn args i =
+    case parseExpression operators (String.trim i) of
+        Ok ( _, _, app ) ->
+            Expect.equal (List.map dropExpressionMeta (fn :: args)) (List.map dropExpressionMeta (appToList app))
+
+        Err ( _, { position }, es ) ->
+            Expect.fail ("failed to parse: " ++ i ++ " at position " ++ toString position ++ " with errors: " ++ toString es)
 
 isStatement : Statement -> String -> Expectation
 isStatement s i =
@@ -132,6 +154,7 @@ isStatement s i =
         Err ( _, { position }, es ) ->
             Expect.fail ("failed to parse: " ++ i ++ " at position " ++ toString position ++ " with errors: " ++ toString es)
 
+
 isStatementSansMeta : Statement -> String -> Expectation
 isStatementSansMeta s i =
     case parseStatement operators i of
@@ -140,6 +163,7 @@ isStatementSansMeta s i =
 
         Err ( _, { position }, es ) ->
             Expect.fail ("failed to parse: " ++ i ++ " at position " ++ toString position ++ " with errors: " ++ toString es)
+
 
 areStatements : List Statement -> String -> Expectation
 areStatements s i =
