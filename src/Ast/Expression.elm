@@ -388,7 +388,7 @@ application : OpTable -> Parser s MExp
 application ops =
     lazy <|
         \() ->
-            withLocation (\l -> chainl ((\a b -> WithMeta { line = l.line, column = l.column } (Application a b)) <$ spacesOrIndentedNewline (l.line + 1)) (term ops))
+            withLocation (\l -> chainl ((\a b -> WithMeta { line = l.line, column = l.column } (Application a b)) <$ spacesOrIndentedNewline (l.column + 1)) (term ops))
 
 
 spacesOrIndentedNewline : Int -> Parser s ()
