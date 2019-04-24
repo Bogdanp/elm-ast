@@ -7,7 +7,6 @@ module Helpers exposing
     , fails
     , fakeMeta
     , integer
-    , isApplication
     , isApplicationSansMeta
     , isExpression
     , isExpressionSansMeta
@@ -22,7 +21,7 @@ module Helpers exposing
 
 import Ast exposing (parse, parseExpression, parseStatement)
 import Ast.BinOp exposing (operators)
-import Ast.Expression exposing (Expression(..), ExpressionSansMeta, MExp, dropMExpMeta, dropExpressionMeta)
+import Ast.Expression exposing (Expression(..), ExpressionSansMeta(..), MExp, dropExpressionMeta, dropMExpMeta)
 import Ast.Helpers exposing (WithMeta)
 import Ast.Statement exposing (ExportSet(..), Statement(..), Type(..), dropStatementMeta)
 import Expect exposing (..)
@@ -106,37 +105,27 @@ isExpressionSansMeta e i =
             Expect.equal (dropMExpMeta e) (dropMExpMeta r)
 
         Err ( _, a, es ) ->
-            Expect.fail ("failed to parse: " ++ i ++ " at position " ++ toString a.position ++ " rest: |" ++ a.input ++"| with errors: " ++ toString es)
-
-
-appToList : MExp -> List Expression
-appToList app =
-    case app.e of
-        Application a b ->
-            [ a.e ] ++ appToList b
-
-        e ->
-            [ e ]
-
-
-isApplication : Expression -> List Expression -> String -> Expectation
-isApplication fn args i =
-    case parseExpression operators (String.trim i) of
-        Ok ( _, _, app ) ->
-            Expect.equal (fn :: args) (appToList app)
-
-        Err ( _, { position }, es ) ->
-            Expect.fail ("failed to parse: " ++ i ++ " at position " ++ toString position ++ " with errors: " ++ toString es)
+            Expect.fail ("failed to parse: " ++ i ++ " at position " ++ toString a.position ++ " rest: |" ++ a.input ++ "| with errors: " ++ toString es)
 
 
 isApplicationSansMeta : MExp -> List MExp -> String -> Expectation
 isApplicationSansMeta fn args i =
     case parseExpression operators (String.trim i) of
         Ok ( _, _, app ) ->
-            Expect.equal (List.map dropMExpMeta (fn :: args)) (List.map dropExpressionMeta (appToList app))
+            let
+                l =
+                    List.foldl (flip ApplicationSM)
+                        (dropMExpMeta fn)
+                        (List.map dropMExpMeta args)
+
+                r =
+                    dropMExpMeta app
+            in
+            Expect.equal l r
 
         Err ( _, { position }, es ) ->
             Expect.fail ("failed to parse: " ++ i ++ " at position " ++ toString position ++ " with errors: " ++ toString es)
+
 
 isStatement : Statement -> String -> Expectation
 isStatement s i =
