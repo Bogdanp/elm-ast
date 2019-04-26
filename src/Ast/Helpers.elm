@@ -48,17 +48,29 @@ type alias Alias =
     String
 
 
+type alias Line =
+    Int
+
+
+type alias Column =
+    Int
+
+
+type alias Id =
+    Int
+
+
 type alias WithMeta x =
-    { meta : { line : Int, column : Int }, e : x }
+    ( Maybe Id, Line, Column, x )
 
 
 withMeta : Parser s x -> Parser s (WithMeta x)
 withMeta p =
-    withLocation (\a -> WithMeta { line = a.line, column = a.column } <$> p)
+    withLocation (\a -> (\x -> ( Nothing, a.line, a.column, x )) <$> p)
 
 
 dropMeta : WithMeta a -> a
-dropMeta { meta, e } =
+dropMeta ( _, _, _, e ) =
     e
 
 
