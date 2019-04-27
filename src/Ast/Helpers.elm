@@ -3,11 +3,9 @@ module Ast.Helpers exposing
     , ModuleName
     , Name
     , QualifiedType
-    , WithMeta
     , between_
     , commaSeparated
     , commaSeparated_
-    , dropMeta
     , emptyTuple
     , exactIndentation
     , functionName
@@ -24,7 +22,6 @@ module Ast.Helpers exposing
     , symbol
     , symbol_
     , upName
-    , withMeta
     )
 
 import Combine exposing (..)
@@ -46,33 +43,6 @@ type alias ModuleName =
 
 type alias Alias =
     String
-
-
-type alias Line =
-    Int
-
-
-type alias Column =
-    Int
-
-
-type alias Id =
-    Int
-
-
-type alias WithMeta x =
-    ( Maybe Id, Line, Column, x )
-
-
-withMeta : Parser s x -> Parser s (WithMeta x)
-withMeta p =
-    withLocation (\a -> (\x -> ( Nothing, a.line, a.column, x )) <$> p)
-
-
-dropMeta : WithMeta a -> a
-dropMeta ( _, _, _, e ) =
-    e
-
 
 reserved : List Name
 reserved =

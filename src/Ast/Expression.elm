@@ -1,6 +1,6 @@
 module Ast.Expression exposing
-    ( Expression(..), MExp, ExpressionSansMeta(..)
-    , expression, dropMExpMeta, dropExpressionMeta
+    ( Expression(..), MExp, ExpressionSansMeta(..), WithMeta, Id
+    , expression, dropMExpMeta, dropExpressionMeta, dropId, generateIds, getId
     , term
     )
 
@@ -9,12 +9,12 @@ module Ast.Expression exposing
 
 # Types
 
-@docs Expression, MExp, ExpressionSansMeta
+@docs Expression, MExp, ExpressionSansMeta, WithMeta, Id
 
 
 # rs
 
-@docs expression, dropMExpMeta, dropExpressionMeta
+@docs expression, dropMExpMeta, dropExpressionMeta, dropId, generateIds, getId
 
 
 # Expression
@@ -39,6 +39,59 @@ import String
 type Collect a
     = Cont a
     | Stop a
+
+
+type alias Line =
+    Int
+
+
+type alias Column =
+    Int
+
+
+{-| Unique identifier of an expression -}
+type alias Id =
+    Int
+
+
+{-| Add information about a node containing an optional id, line and column
+-}
+type alias WithMeta x =
+    ( Maybe Id, Line, Column, x )
+
+
+addMeta : Id -> Line -> Column -> x -> WithMeta x
+addMeta i l c e =
+    ( Just i, l, c, e )
+
+
+addMetaNoId : Line -> Column -> x -> WithMeta x
+addMetaNoId l c e =
+    ( Nothing, l, c, e )
+
+
+withMeta : Parser s x -> Parser s (WithMeta x)
+withMeta p =
+    withLocation (\a -> (\x -> ( Nothing, a.line, a.column, x )) <$> p)
+
+
+dropMeta : WithMeta a -> a
+dropMeta ( _, _, _, e ) =
+    e
+
+
+{-| Test only
+-}
+dropId : WithMeta x -> WithMeta x
+dropId ( _, l, c, x ) =
+    ( Nothing, l, c, x )
+
+
+{-| Extract Id from an expression enhanced with metadata
+-}
+getId : WithMeta x -> Maybe Id
+getId ( id, _, _, _ ) =
+    id
 
 
 {-| Representation for Elm's expression containing it's meta information
@@ -98,7 +151,7 @@ type ExpressionSansMeta
 {-| Test only
 -}
 dropMExpMeta : MExp -> ExpressionSansMeta
-dropMExpMeta { meta, e } =
+dropMExpMeta ( _, _, _, e ) =
     dropExpressionMeta e
 
 
@@ -169,46 +222,80 @@ dropExpressionMeta e =
             BinOpSM (dropMExpMeta e1) (dropMExpMeta e2) (dropMExpMeta e3)
 
 
+trivialId : Id -> Line -> Column -> Expression -> ( Id, MExp )
+trivialId i l c e =
+    ( i + 1, ( Just i, l, c, e ) )
+
+
+genNameListIds : Id -> List (WithMeta Name) -> ( Id, List (WithMeta Name) )
+genNameListIds newId =
+    List.foldr (\( _, l, c, n ) ( accId, acc ) -> ( accId + 1, ( Just accId, l, c, n ) :: acc )) ( newId + 1, [] )
+
+
+genListIds : Id -> List MExp -> ( Id, List MExp )
+genListIds newId =
+    List.foldr (\x ( accId, acc ) -> generateIds_ accId x |> (\( maxId, exp ) -> ( maxId, exp :: acc ))) ( newId + 1, [] )
+
+
+genCoupleIds : Id -> ( MExp, MExp ) -> ( Id, MExp, MExp )
+genCoupleIds newId ( e1, e2 ) =
+    let
+        ( newerId, newE1 ) =
+            generateIds_ newId e1
+
+        ( maxId, newE2 ) =
+            generateIds_ newerId e2
+    in
+    ( maxId, newE1, newE2 )
+
+
+genTripleIds : Id -> ( MExp, MExp, MExp ) -> ( Id, MExp, MExp, MExp )
+genTripleIds newId ( e1, e2, e3 ) =
+    let
+        ( newerId, newE1, newE2 ) =
+            genCoupleIds newId ( e1, e2 )
+
+        ( maxId, newE3 ) =
+            generateIds_ newerId e3
+    in
+    ( maxId, newE1, newE2, newE3 )
+
+
+genRecordsIds : Id -> List ( WithMeta Name, MExp ) -> ( Id, List ( WithMeta Name, MExp ) )
+genRecordsIds newId records =
+    let
+        ( names, exps ) =
+            List.unzip records
+
+        ( namesId, newNames ) =
+            genNameListIds newId names
+
+        ( expsId, newExps ) =
+            genListIds namesId exps
+    in
+    ( expsId, List.map2 (\x y -> ( x, y )) newNames newExps )
+
+
+genLetCase : Id -> List ( MExp, MExp ) -> MExp -> ( Id, List ( MExp, MExp ), MExp )
+genLetCase newId li exp =
+    let
+        ( newerId, newExp ) =
+            generateIds_ newId exp
+
+        ( li1, li2 ) =
+            List.unzip li
+
+        ( li1Id, newLi1 ) =
+            genListIds newerId li1
+
+        ( li2Id, newLi2 ) =
+            genListIds li1Id li2
+    in
+    ( li2Id, List.map2 (\x y -> ( x, y )) newLi1 newLi2, newExp )
+
+
 generateIds_ : Int -> MExp -> ( Int, MExp )
 generateIds_ newId ( _, l, c, e ) =
-    let
-        trivialId i l c e = (i + 1, (Just i, l, c, e))
-
-        genNameListIds newId =
-            List.foldr (\( _, l, c, n ) ( accId, acc ) -> ( accId + 1, ( accId, l, c, n ) :: acc )) ( newId + 1, [] )
-
-        genListIds newId =
-            List.foldr (\x ( accId, acc ) -> generateIds_ accId x |> (\( maxId, exp ) -> ( maxId, exp :: acc ))) ( newId + 1, [] )
-
-        genRecordsIds newId records =
-            let
-                ( names, exps ) =
-                    List.unzip records
-
-                ( namesId, newNames ) =
-                    genNameListIds newId names
-
-                ( expsId, newExps ) =
-                    genListIds namesId exps
-            in
-            ( expsId, List.map2 (\x y -> ( x, y )) newNames newExps )
-
-        genLetCase newId li exp =
-            let
-                ( newerId, newExp ) =
-                    generateIds_ newId exp
-
-                ( li1, li2 ) =
-                    List.unzip li
-
-                ( li1Id, newLi1 ) =
-                    genListIds newerId li1
-
-                ( li2Id, newLi2 ) =
-                    genListIds li1Id li2
-            in
-            ( li2Id, newExp, List.map2 (\x y -> ( x, y )) newLi1 newLi2 )
-    in
     case e of
         Character _ ->
             trivialId newId l c e
@@ -228,21 +315,24 @@ generateIds_ newId ( _, l, c, e ) =
         List li ->
             let
                 ( maxId, exp ) =
-                    genListIds ( newId + 1, li )
+                    genListIds (newId + 1) li
             in
             ( maxId, ( Just newId, l, c, List exp ) )
 
         Tuple li ->
             let
                 ( maxId, exp ) =
-                    genListIds ( newId + 1, li )
+                    genListIds (newId + 1) li
             in
             ( maxId, ( Just newId, l, c, Tuple exp ) )
 
         Access exp li ->
             let
-                ( maxId, newExp :: newLi ) =
-                    genListIds (newId + 1) (exp :: li)
+                ( listId, newLi ) =
+                    genNameListIds (newId + 1) li
+
+                ( maxId, newExp ) =
+                    generateIds_ listId exp
             in
             ( maxId, ( Just newId, l, c, Access newExp newLi ) )
 
@@ -265,7 +355,7 @@ generateIds_ newId ( _, l, c, e ) =
                     name
 
                 newName =
-                    ( recordsId, nameL, nameC, nameN )
+                    ( Just recordsId, nameL, nameC, nameN )
 
                 maxId =
                     recordsId + 1
@@ -274,50 +364,56 @@ generateIds_ newId ( _, l, c, e ) =
 
         If e1 e2 e3 ->
             let
-                ( maxId, newE1 :: newE2 :: newE3 :: _ ) =
-                    genListIds (newId + 1) [ e1, e2, e3 ]
+                ( maxId, newE1, newE2, newE3 ) =
+                    genTripleIds (newId + 1) ( e1, e2, e3 )
             in
             ( maxId, ( Just newId, l, c, If newE1 newE2 newE3 ) )
 
         Let li exp ->
             let
-                ( maxId, newExp, newLi ) =
+                ( maxId, newLi, newExp ) =
                     genLetCase (newId + 1) li exp
             in
             ( maxId, ( Just newId, l, c, Let newLi newExp ) )
 
         Case exp li ->
             let
-                ( maxId, newExp, newLi ) =
+                ( maxId, newLi, newExp ) =
                     genLetCase (newId + 1) li exp
             in
             ( maxId, ( Just newId, l, c, Case newExp newLi ) )
 
         Lambda li exp ->
             let
-                ( maxId, newExp :: newLi ) =
-                    genListIds (newId + 1) (exp :: li)
+                ( newerId, newExp ) =
+                    generateIds_ (newId + 1) exp
+
+                ( maxId, newLi ) =
+                    genListIds newerId li
             in
             ( maxId, ( Just newId, l, c, Lambda newLi newExp ) )
 
         Application e1 e2 ->
             let
-                ( maxId, newE1 :: newE2 :: _ ) =
-                    genListIds (newId + 1) [ e1, e2 ]
+                ( maxId, newE1, newE2 ) =
+                    genCoupleIds (newId + 1) ( e1, e2 )
             in
             ( maxId, ( Just newId, l, c, Application newE1 newE2 ) )
 
         BinOp e1 e2 e3 ->
             let
-                ( maxId, newE1 :: newE2 :: newE3 :: _ ) =
-                    genListIds (newId + 1) [ e1, e2, e3 ]
+                ( maxId, newE1, newE2, newE3 ) =
+                    genTripleIds (newId + 1) ( e1, e2, e3 )
             in
             ( maxId, ( Just newId, l, c, BinOp newE1 newE2 newE3 ) )
 
 
+{-| Generates Ids for nodes in MExp
+which are unique within the resulting tree
+-}
 generateIds : MExp -> MExp
 generateIds =
-    Tuple.second generateIds_ 0
+    Tuple.second << generateIds_ 0
 
 
 character : Parser s MExp
@@ -446,10 +542,12 @@ simplifiedRecord =
     let
         branch { line, column } =
             loName
-                |> map (\a -> ( WithMeta (Nothing, line, column, a), Ast.Helpers.WithMeta (Nothing, line, column, Variable [ a ]) ))
-
-                --  withLocation (\a -> (\x -> (Nothing, a.line, a.column, x)) <$> p)
-
+                |> map
+                    (\a ->
+                        ( addMetaNoId line column a
+                        , addMetaNoId line column (Variable [ a ])
+                        )
+                    )
     in
     lazy <|
         \() ->
@@ -544,7 +642,12 @@ application : OpTable -> Parser s MExp
 application ops =
     lazy <|
         \() ->
-            withLocation (\l -> chainl ((\a b -> WithMeta (Nothing, l.line, l.column, Application a b)) <$ spacesOrIndentedNewline (l.column + 1)) (term ops))
+            withLocation
+                (\l ->
+                    chainl
+                        ((\a b -> addMetaNoId l.line l.column (Application a b)) <$ spacesOrIndentedNewline (l.column + 1))
+                        (term ops)
+                )
 
 
 spacesOrIndentedNewline : Int -> Parser s ()
@@ -656,7 +759,7 @@ level ops n =
 
 hasLevel : OpTable -> Int -> ( Operator, MExp ) -> Bool
 hasLevel ops l ( n, _ ) =
-    level ops n.e == l
+    level ops (dropMeta n) == l
 
 
 split : OpTable -> Int -> MExp -> List ( Operator, MExp ) -> Parser s MExp
@@ -708,8 +811,14 @@ joinL es ops =
         ( [ e ], [] ) ->
             succeed e
 
-        ( a :: b :: remE, op :: remO ) ->
-            joinL (WithMeta op.meta (BinOp (WithMeta op.meta <| Variable [ op.e ]) a b) :: remE) remO
+        ( a :: b :: remE, ( _, l, c, e ) :: remO ) ->
+            joinL
+                (addMetaNoId l
+                    c
+                    (BinOp (addMetaNoId l c <| Variable [ e ]) a b)
+                    :: remE
+                )
+                remO
 
         _ ->
             fail ""
@@ -721,11 +830,14 @@ joinR es ops =
         ( [ e ], [] ) ->
             succeed e
 
-        ( a :: b :: remE, op :: remO ) ->
+        ( a :: b :: remE, ( _, l, c, e ) :: remO ) ->
             joinR (b :: remE) remO
                 |> andThen
-                    (\e ->
-                        succeed (WithMeta op.meta <| BinOp (WithMeta op.meta <| Variable [ op.e ]) a e)
+                    (\exp ->
+                        succeed
+                            (addMetaNoId l c <|
+                                BinOp (addMetaNoId l c (Variable [ e ])) a exp
+                            )
                     )
 
         _ ->
@@ -739,12 +851,12 @@ findAssoc ops l eops =
             List.filter (hasLevel ops l) eops
 
         assocs =
-            List.map (assoc ops << .e << Tuple.first) lops
+            List.map (assoc ops << dropMeta << Tuple.first) lops
 
         error issue =
             let
                 operators =
-                    List.map (Tuple.first >> .e) lops |> String.join " and "
+                    List.map (Tuple.first >> dropMeta) lops |> String.join " and "
             in
             "conflicting " ++ issue ++ " for operators " ++ operators
     in

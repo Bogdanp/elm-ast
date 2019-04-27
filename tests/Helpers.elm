@@ -6,6 +6,7 @@ module Helpers exposing
     , case_
     , fails
     , fakeMeta
+    , hasUniqueIds
     , integer
     , isApplicationSansMeta
     , isExpression
@@ -15,20 +16,23 @@ module Helpers exposing
     , list
     , record
     , recordUpdate
+    , simpleParse
     , tuple
     , var
     )
 
 import Ast exposing (parse, parseExpression, parseStatement)
 import Ast.BinOp exposing (operators)
-import Ast.Expression exposing (Expression(..), ExpressionSansMeta(..), MExp, dropExpressionMeta, dropMExpMeta)
-import Ast.Helpers exposing (WithMeta)
+import Ast.Expression exposing (Expression(..), ExpressionSansMeta(..), Id, MExp, WithMeta, dropExpressionMeta, dropId, dropMExpMeta, getId)
+import Ast.Helpers exposing (Name)
 import Ast.Statement exposing (ExportSet(..), Statement(..), Type(..), dropStatementMeta)
 import Expect exposing (..)
+import Set exposing (Set)
 
 
 
 -- Structures
+
 
 app : MExp -> MExp -> MExp
 app left right =
@@ -71,7 +75,7 @@ list =
 
 mvar : Int -> Int -> String -> MExp
 mvar line column name =
-    { meta = { line = line, column = column }, e = Variable [ name ] }
+    ( Nothing, line, column, Variable [ name ] )
 
 
 
@@ -88,11 +92,154 @@ fails s =
             Expect.fail (s ++ " expected to fail")
 
 
+checkListUniqueIds : List MExp -> Set Id -> Maybe (Set Id)
+checkListUniqueIds li ids =
+    List.foldl (\x acc -> Maybe.andThen (hasUniqueIds_ x) acc) (Just ids) li
+
+
+checkNameId : WithMeta Name -> Set Id -> Maybe (Set Id)
+checkNameId ( id, _, _, _ ) ids =
+    case id of
+        Nothing ->
+            Nothing
+
+        Just actualId ->
+            if Set.member actualId ids then
+                Nothing
+
+            else
+                Just <| Set.insert actualId ids
+
+
+checkNameListUniqueIds : List (WithMeta Name) -> Set Id -> Maybe (Set Id)
+checkNameListUniqueIds li ids =
+    case li of
+        [] ->
+            Just ids
+
+        n :: xs ->
+            checkNameId n ids |> Maybe.andThen (checkNameListUniqueIds xs)
+
+
+checkListAndExp : List MExp -> MExp -> Set Id -> Maybe (Set Id)
+checkListAndExp li ex ids =
+    hasUniqueIds_ ex ids |> Maybe.andThen (checkListUniqueIds li)
+
+
+checkRecordsIds : List ( WithMeta Name, MExp ) -> Set Id -> Maybe (Set Id)
+checkRecordsIds records ids =
+    List.unzip records
+        |> (\( names, exps ) ->
+                checkNameListUniqueIds names ids
+                    |> Maybe.andThen
+                        (\newIds -> checkListUniqueIds exps newIds)
+           )
+
+
+checkLetCase : List ( MExp, MExp ) -> MExp -> Set Id -> Maybe (Set Id)
+checkLetCase li exp ids =
+    let
+        ( li1, li2 ) =
+            List.unzip li
+    in
+    checkListUniqueIds li1 ids |> Maybe.andThen (checkListAndExp li2 exp)
+
+
+hasUniqueIds_ : MExp -> Set Id -> Maybe (Set Id)
+hasUniqueIds_ ( id, _, _, e ) ids =
+    case id of
+        Nothing ->
+            Nothing
+
+        Just actualId ->
+            if Set.member actualId ids then
+                Just (Set.insert actualId ids)
+
+            else
+                case e of
+                    Character _ ->
+                        Just (Set.insert actualId ids)
+
+                    String _ ->
+                        Just (Set.insert actualId ids)
+
+                    Integer _ ->
+                        Just (Set.insert actualId ids)
+
+                    Float _ ->
+                        Just (Set.insert actualId ids)
+
+                    Variable _ ->
+                        Just (Set.insert actualId ids)
+
+                    List li ->
+                        checkListUniqueIds li ids
+
+                    Tuple li ->
+                        checkListUniqueIds li ids
+
+                    Access exp li ->
+                        hasUniqueIds_ exp ids |> Maybe.andThen (checkNameListUniqueIds li)
+
+                    AccessFunction _ ->
+                        Just (Set.insert actualId ids)
+
+                    Record records ->
+                        checkRecordsIds records ids
+
+                    RecordUpdate n records ->
+                        checkNameId n ids
+                            |> Maybe.andThen (checkRecordsIds records)
+
+                    If e1 e2 e3 ->
+                        hasUniqueIds_ e1 ids
+                            |> Maybe.andThen (hasUniqueIds_ e2)
+                            |> Maybe.andThen (hasUniqueIds_ e3)
+
+                    Let li exp ->
+                        checkLetCase li exp ids
+
+                    Case exp li ->
+                        checkLetCase li exp ids
+
+                    Lambda li exp ->
+                        hasUniqueIds_ exp ids |> Maybe.andThen (checkListUniqueIds li)
+
+                    Application e1 e2 ->
+                        hasUniqueIds_ e1 ids
+                            |> Maybe.andThen (hasUniqueIds_ e2)
+
+                    BinOp e1 e2 e3 ->
+                        hasUniqueIds_ e1 ids
+                            |> Maybe.andThen (hasUniqueIds_ e2)
+                            |> Maybe.andThen (hasUniqueIds_ e3)
+
+
+simpleParse : String -> Result String MExp
+simpleParse i =
+    case parseExpression operators (String.trim i) of
+        Ok ( _, _, e ) ->
+            Ok e
+
+        Err ( _, { position }, es ) ->
+            Err ("failed to parse: " ++ i ++ " at position " ++ toString position ++ " with errors: " ++ toString es)
+
+
+hasUniqueIds : MExp -> Expectation
+hasUniqueIds exp =
+    case hasUniqueIds_ exp Set.empty of
+        Nothing ->
+            Expect.fail "Ids are not unique"
+
+        _ ->
+            Expect.pass
+
+
 isExpression : MExp -> String -> Expectation
 isExpression e i =
     case parseExpression operators (String.trim i) of
         Ok ( _, _, r ) ->
-            Expect.equal e.e r.e
+            Expect.equal (dropId e) (dropId r)
 
         Err ( _, { position }, es ) ->
             Expect.fail ("failed to parse: " ++ i ++ " at position " ++ toString position ++ " with errors: " ++ toString es)
@@ -169,4 +316,4 @@ areStatementsSansMeta s i =
 
 fakeMeta : a -> WithMeta a
 fakeMeta e =
-    { meta = { line = 1, column = 1 }, e = e }
+    ( Nothing, 1, 1, e )
