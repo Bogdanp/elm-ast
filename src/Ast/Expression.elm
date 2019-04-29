@@ -52,7 +52,7 @@ type alias Column =
 {-| Add line and column to a metadata record
 -}
 type alias Located x =
-    { x | line : Int, column : Int }
+    { x | line : Int, column : Int, source : String }
 
 
 {-| Tuple representing a node with its location
@@ -75,14 +75,14 @@ type alias MName =
 
 {-| Add metadata to an expression
 -}
-addMeta : Line -> Column -> x -> WithMeta x {}
-addMeta l c e =
-    ( e, { line = l, column = c } )
+addMeta : Line -> Column -> String -> x -> WithMeta x {}
+addMeta l c s e =
+    ( e, { line = l, column = c, source = s } )
 
 
 withMeta : Parser s x -> Parser s (WithMeta x {})
 withMeta p =
-    withLocation (\a -> (\x -> addMeta a.line a.column x) <$> p)
+    withLocation (\a -> (\x -> addMeta a.line a.column a.source x) <$> p)
 
 
 {-| Extract expression from an expression enhanced with metadata
@@ -242,12 +242,12 @@ record ops =
 simplifiedRecord : Parser s MExp
 simplifiedRecord =
     let
-        branch { line, column } =
+        branch { line, column, source } =
             loName
                 |> map
                     (\a ->
-                        ( addMeta line column a
-                        , addMeta line column (Variable [ a ])
+                        ( addMeta line column source a
+                        , addMeta line column source (Variable [ a ])
                         )
                     )
     in
@@ -347,7 +347,7 @@ application ops =
             withLocation
                 (\l ->
                     chainl
-                        ((\a b -> addMeta l.line l.column (Application a b)) <$ spacesOrIndentedNewline (l.column + 1))
+                        ((\a b -> addMeta l.line l.column l.source (Application a b)) <$ spacesOrIndentedNewline (l.column + 1))
                         (term ops)
                 )
 
@@ -513,11 +513,12 @@ joinL es ops =
         ( [ e ], [] ) ->
             succeed e
 
-        ( a :: b :: remE, ( e, { line, column } ) :: remO ) ->
+        ( a :: b :: remE, ( e, { line, column, source } ) :: remO ) ->
             joinL
                 (addMeta line
                     column
-                    (BinOp (addMeta line column <| Variable [ e ]) a b)
+                    source
+                    (BinOp (addMeta line column source <| Variable [ e ]) a b)
                     :: remE
                 )
                 remO
@@ -532,13 +533,13 @@ joinR es ops =
         ( [ e ], [] ) ->
             succeed e
 
-        ( a :: b :: remE, ( e, { line, column } ) :: remO ) ->
+        ( a :: b :: remE, ( e, { line, column, source } ) :: remO ) ->
             joinR (b :: remE) remO
                 |> andThen
                     (\exp ->
                         succeed
-                            (addMeta line column <|
-                                BinOp (addMeta line column (Variable [ e ])) a exp
+                            (addMeta line column source <|
+                                BinOp (addMeta line column source (Variable [ e ])) a exp
                             )
                     )
 
