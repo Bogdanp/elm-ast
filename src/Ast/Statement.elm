@@ -1,6 +1,6 @@
 module Ast.Statement exposing
-    ( ExportSet(..), Type(..), Statement(..), StatementSansMeta(..)
-    , statement, statements, infixStatements, opTable, dropStatementMeta
+    ( ExportSet(..), Type(..), Statement(..)
+    , statement, statements, infixStatements, opTable
     )
 
 {-| This module exposes parsers for Elm statements.
@@ -8,17 +8,17 @@ module Ast.Statement exposing
 
 # Types
 
-@docs ExportSet, Type, Statement, StatementSansMeta
+@docs ExportSet, Type, Statement
 
 
 # Parsers
 
-@docs statement, statements, infixStatements, opTable, dropStatementMeta
+@docs statement, statements, infixStatements, opTable
 
 -}
 
 import Ast.BinOp exposing (Assoc(..), OpTable)
-import Ast.Expression exposing (Expression, MExp, ExpressionSansMeta, expression, term, dropMExpMeta)
+import Ast.Expression exposing (Expression, MExp, expression, term)
 import Ast.Helpers exposing (..)
 import Combine exposing (..)
 import Combine.Char exposing (..)
@@ -62,64 +62,6 @@ type Statement
     | FunctionDeclaration Name (List MExp) MExp
     | InfixDeclaration Assoc Int Name
     | Comment String
-
-
-{-| Test only
--}
-type StatementSansMeta
-    = ModuleDeclarationSM ModuleName ExportSet
-    | PortModuleDeclarationSM ModuleName ExportSet
-    | EffectModuleDeclarationSM ModuleName (List ( Name, Name )) ExportSet
-    | ImportStatementSM ModuleName (Maybe Alias) (Maybe ExportSet)
-    | TypeAliasDeclarationSM Type Type
-    | TypeDeclarationSM Type (List Type)
-    | PortTypeDeclarationSM Name Type
-    | PortDeclarationSM Name (List Name) ExpressionSansMeta
-    | FunctionTypeDeclarationSM Name Type
-    | FunctionDeclarationSM Name (List ExpressionSansMeta) ExpressionSansMeta
-    | InfixDeclarationSM Assoc Int Name
-    | CommentSM String
-
-
-{-| Test only -}
-dropStatementMeta : Statement -> StatementSansMeta
-dropStatementMeta s =
-    case s of
-        ModuleDeclaration mn es ->
-            ModuleDeclarationSM mn es
-
-        PortModuleDeclaration mn es ->
-            PortModuleDeclarationSM mn es
-
-        EffectModuleDeclaration mn l es ->
-            EffectModuleDeclarationSM mn l es
-
-        ImportStatement mn a es ->
-            ImportStatementSM mn a es
-
-        TypeAliasDeclaration t1 t2 ->
-            TypeAliasDeclarationSM t1 t2
-
-        TypeDeclaration t l ->
-            TypeDeclarationSM t l
-
-        PortTypeDeclaration n t ->
-            PortTypeDeclarationSM n t
-
-        PortDeclaration n l e ->
-            PortDeclarationSM n l (dropMExpMeta e)
-
-        FunctionTypeDeclaration n t ->
-            FunctionTypeDeclarationSM n t
-
-        FunctionDeclaration n l e ->
-            FunctionDeclarationSM n (List.map dropMExpMeta l) (dropMExpMeta e)
-
-        InfixDeclaration a i n ->
-            InfixDeclarationSM a i n
-
-        Comment s ->
-            CommentSM s
 
 
 

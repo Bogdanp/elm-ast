@@ -13,8 +13,7 @@ module Expression exposing
     , tuples
     )
 
-import Ast.Expression exposing (..)
-import Helpers exposing (app, binOp, case_, fails, integer, isExpressionSansMeta, list, record, recordUpdate, tuple, var, fakeMeta)
+import Helpers exposing (..)
 import Test exposing (Test, describe, test)
 
 
@@ -22,11 +21,11 @@ characterLiterals : Test
 characterLiterals =
     describe "Character literals"
         [ test "character literal" <|
-            \() -> "'a'" |> isExpressionSansMeta (fakeMeta <| Character 'a')
+            \() -> "'a'" |> isExpressionSansMeta (character 'a')
         , test "newline literal" <|
-            \() -> "'\n'" |> isExpressionSansMeta (fakeMeta <| Character '\n')
+            \() -> "'\n'" |> isExpressionSansMeta (character '\n')
         , test "Charcode literals" <|
-            \() -> "'\\x23'" |> isExpressionSansMeta (fakeMeta <| Character '#')
+            \() -> "'\\x23'" |> isExpressionSansMeta (character '#')
         , test "character literals must contain one character" <|
             \() -> fails "''"
         ]
@@ -48,11 +47,11 @@ floatLiterals : Test
 floatLiterals =
     describe "Float literals"
         [ test "float literal" <|
-            \() -> "0.5" |> isExpressionSansMeta (fakeMeta <| Float 0.5)
+            \() -> "0.5" |> isExpressionSansMeta (float 0.5)
         , test "positive literal" <|
-            \() -> "+12.5" |> isExpressionSansMeta (fakeMeta <| Float 12.5)
+            \() -> "+12.5" |> isExpressionSansMeta (float 12.5)
         , test "negative literal" <|
-            \() -> "-12.5" |> isExpressionSansMeta (fakeMeta <| Float -12.5)
+            \() -> "-12.5" |> isExpressionSansMeta (float -12.5)
         ]
 
 
@@ -60,17 +59,17 @@ stringLiterals : Test
 stringLiterals =
     describe "String literals"
         [ test "empty string" <|
-            \() -> "\"\"" |> isExpressionSansMeta (fakeMeta <| String "")
+            \() -> "\"\"" |> isExpressionSansMeta (string "")
         , test "simple string" <|
-            \() -> "\"hello\"" |> isExpressionSansMeta (fakeMeta <| String "hello")
+            \() -> "\"hello\"" |> isExpressionSansMeta (string "hello")
         , test "escaped string" <|
-            \() -> "\"hello, \\\"world\\\"\"" |> isExpressionSansMeta (fakeMeta <| String "hello, \\\"world\\\"")
+            \() -> "\"hello, \\\"world\\\"\"" |> isExpressionSansMeta (string "hello, \\\"world\\\"")
         , test "triple-quoted string" <|
-            \() -> "\"\"\"\"\"\"" |> isExpressionSansMeta (fakeMeta <| String "")
+            \() -> "\"\"\"\"\"\"" |> isExpressionSansMeta (string "")
         , test "multi-line strings" <|
-            \() -> "\"\"\"hello\nworld\"\"\"" |> isExpressionSansMeta (fakeMeta <| String "hello\nworld")
+            \() -> "\"\"\"hello\nworld\"\"\"" |> isExpressionSansMeta (string "hello\nworld")
         , test "double escaped string" <|
-            \() -> "\"\\\\\"" |> isExpressionSansMeta (fakeMeta <| String "\\\\")
+            \() -> "\"\\\\\"" |> isExpressionSansMeta (string "\\\\")
         ]
 
 
@@ -91,28 +90,25 @@ letExpressions =
             \() ->
                 "let a = 42 in a"
                     |> isExpressionSansMeta
-                        (fakeMeta <|
-                            Let
-                                [ ( var "a", integer 42 ) ]
-                                (var "a")
+                        (let_
+                            [ ( var "a", integer 42 ) ]
+                            (var "a")
                         )
         , test "bind to _" <|
             \() ->
                 "let _ = 42 in 24"
                     |> isExpressionSansMeta
-                        (fakeMeta <|
-                            Let
-                                [ ( var "_", integer 42 ) ]
-                                (integer 24)
+                        (let_
+                            [ ( var "_", integer 42 ) ]
+                            (integer 24)
                         )
         , test "Can start with a tag name" <|
             \() ->
                 "let letter = 1 \n in letter"
                     |> isExpressionSansMeta
-                        (fakeMeta <|
-                            Let
-                                [ ( var "letter", integer 1 ) ]
-                                (var "letter")
+                        (let_
+                            [ ( var "letter", integer 1 ) ]
+                            (var "letter")
                         )
         , test "function 1" <|
             \() ->
@@ -123,10 +119,9 @@ in
   f 4
         """
                     |> isExpressionSansMeta
-                        (fakeMeta <|
-                            Let
-                                [ ( app (var "f") (var "x"), binOp (var "+") (var "x") (integer 1) ) ]
-                                (app (var "f") (integer 4))
+                        (let_
+                            [ ( app (var "f") (var "x"), binOp (var "+") (var "x") (integer 1) ) ]
+                            (app (var "f") (integer 4))
                         )
         , test "function 2" <|
             \() ->
@@ -138,16 +133,15 @@ in
   f 4
 """
                     |> isExpressionSansMeta
-                        (fakeMeta <|
-                            Let
-                                [ ( app (var "f") (var "x")
-                                  , binOp (var "+") (var "x") (integer 1)
-                                  )
-                                , ( app (var "g") (var "x")
-                                  , binOp (var "+") (var "x") (integer 1)
-                                  )
-                                ]
-                                (app (var "f") (integer 4))
+                        (let_
+                            [ ( app (var "f") (var "x")
+                              , binOp (var "+") (var "x") (integer 1)
+                              )
+                            , ( app (var "g") (var "x")
+                              , binOp (var "+") (var "x") (integer 1)
+                              )
+                            ]
+                            (app (var "f") (integer 4))
                         )
         , test "multiple bindings" <|
             \() ->
@@ -160,12 +154,11 @@ in
   b
             """
                     |> isExpressionSansMeta
-                        (fakeMeta <|
-                            Let
-                                [ ( var "a", integer 42 )
-                                , ( var "b", binOp (var "+") (var "a") (integer 1) )
-                                ]
-                                (var "b")
+                        (let_
+                            [ ( var "a", integer 42 )
+                            , ( var "b", binOp (var "+") (var "a") (integer 1) )
+                            ]
+                            (var "b")
                         )
         ]
 
@@ -282,7 +275,7 @@ application =
                     |> isExpressionSansMeta
                         (app
                             (var "f")
-                            (fakeMeta <| String "I like the symbol =")
+                            (StringSM "I like the symbol =")
                         )
         , test "constructor application" <|
             \() ->
@@ -302,7 +295,7 @@ application =
                         (app
                             (app
                                 (var "a")
-                                (recordUpdate "r" [ ( fakeMeta "f", integer 1 ) ])
+                                (recordUpdate "r" [ ( "f", integer 1 ) ])
                             )
                             (var "c")
                         )
@@ -366,14 +359,14 @@ records =
             \() ->
                 "{a = b}"
                     |> isExpressionSansMeta
-                        (record [ ( fakeMeta <| "a", var "b" ) ])
+                        (record [ ( "a", var "b" ) ])
         , test "Simple record with many fields" <|
             \() ->
                 "{a = b, b = 2}"
                     |> isExpressionSansMeta
                         (record
-                            [ ( fakeMeta "a", var "b" )
-                            , ( fakeMeta "b", integer 2 )
+                            [ ( "a", var "b" )
+                            , ( "b", integer 2 )
                             ]
                         )
         , test "Simple record with many tuple fields" <|
@@ -381,13 +374,13 @@ records =
                 "{a = (a, b), b = (a, b)}"
                     |> isExpressionSansMeta
                         (record
-                            [ ( fakeMeta "a"
+                            [ ( "a"
                               , tuple
                                     [ var "a"
                                     , var "b"
                                     ]
                               )
-                            , ( fakeMeta "b"
+                            , ( "b"
                               , tuple
                                     [ var "a"
                                     , var "b"
@@ -401,8 +394,8 @@ records =
                     |> isExpressionSansMeta
                         (recordUpdate
                             "a"
-                            [ ( fakeMeta "b", integer 2 )
-                            , ( fakeMeta "c", integer 3 )
+                            [ ( "b", integer 2 )
+                            , ( "c", integer 3 )
                             ]
                         )
         , test "Simple record with advanced field" <|
@@ -410,7 +403,7 @@ records =
                 "{a = Just 2}"
                     |> isExpressionSansMeta
                         (record
-                            [ ( fakeMeta "a"
+                            [ ( "a"
                               , app
                                     (var "Just")
                                     (integer 2)
@@ -423,7 +416,7 @@ records =
                     |> isExpressionSansMeta
                         (recordUpdate
                             "a"
-                            [ ( fakeMeta "a"
+                            [ ( "a"
                               , app
                                     (var "Just")
                                     (integer 2)
@@ -435,10 +428,10 @@ records =
                 "{a, b}"
                     |> isExpressionSansMeta
                         (record
-                            [ ( fakeMeta "a"
+                            [ ( "a"
                               , var "a"
                               )
-                            , ( fakeMeta "b"
+                            , ( "b"
                               , var "b"
                               )
                             ]
@@ -497,32 +490,31 @@ expressions =
                                 (var "a")
                                 (binOp (var "::") (var "b") (var "c"))
                             ]
-                        )
+                    )
         , test "Destructuring lambda" <|
             \() ->
                 "\\(a,b) acc -> 1"
                     |> isExpressionSansMeta
-                        (fakeMeta <| Lambda [ tuple [ var "a", var "b" ], var "acc" ] (integer 1))
+                        (lambda [ tuple [ var "a", var "b" ], var "acc" ] (integer 1))
         , test "Destructuring Let" <|
             \() ->
                 "let (a,b) = (1,2) in a"
                     |> isExpressionSansMeta
-                        (fakeMeta <|
-                            Let
-                                [ ( tuple [ var "a", var "b" ]
-                                  , tuple [ integer 1, integer 2 ]
-                                  )
-                                ]
-                                (var "a")
+                        (let_
+                            [ ( tuple [ var "a", var "b" ]
+                              , tuple [ integer 1, integer 2 ]
+                              )
+                            ]
+                            (var "a")
                         )
         , test "Access" <|
             \() ->
                 "Module.a"
                     |> isExpressionSansMeta
-                        (fakeMeta <| Access (var "Module") [ fakeMeta "a" ])
+                        (access (var "Module") [ "a" ])
         , test "AccessFunction" <|
             \() ->
                 "map .a list"
                     |> isExpressionSansMeta
-                        (app (app (var "map") (fakeMeta <| AccessFunction "a")) (var "list"))
+                        (app (app (var "map") (accessFun "a")) (var "list"))
         ]

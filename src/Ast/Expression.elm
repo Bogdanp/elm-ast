@@ -1,6 +1,6 @@
 module Ast.Expression exposing
-    ( Expression(..), MExp, ExpressionSansMeta(..), WithMeta, Id
-    , expression, dropMExpMeta, dropExpressionMeta, dropId, generateIds, getId
+    ( Expression(..), MExp, WithMeta
+    , expression, dropMeta, addMeta
     , term
     )
 
@@ -9,12 +9,12 @@ module Ast.Expression exposing
 
 # Types
 
-@docs Expression, MExp, ExpressionSansMeta, WithMeta, Id
+@docs Expression, MExp, WithMeta
 
 
 # rs
 
-@docs expression, dropMExpMeta, dropExpressionMeta, dropId, generateIds, getId
+@docs expression, dropMeta, addMeta
 
 
 # Expression
@@ -49,59 +49,51 @@ type alias Column =
     Int
 
 
-{-| Unique identifier of an expression -}
-type alias Id =
-    Int
-
-
-{-| Add information about a node containing an optional id, line and column
+{-| Add line and column to a metadata record
 -}
-type alias WithMeta x =
-    ( Maybe Id, Line, Column, x )
+type alias Located x =
+    { x | line : Int, column : Int }
 
 
-addMeta : Id -> Line -> Column -> x -> WithMeta x
-addMeta i l c e =
-    ( Just i, l, c, e )
-
-
-addMetaNoId : Line -> Column -> x -> WithMeta x
-addMetaNoId l c e =
-    ( Nothing, l, c, e )
-
-
-withMeta : Parser s x -> Parser s (WithMeta x)
-withMeta p =
-    withLocation (\a -> (\x -> ( Nothing, a.line, a.column, x )) <$> p)
-
-
-dropMeta : WithMeta a -> a
-dropMeta ( _, _, _, e ) =
-    e
-
-
-{-| Test only
+{-| Tuple representing a node with its location
 -}
-dropId : WithMeta x -> WithMeta x
-dropId ( _, l, c, x ) =
-    ( Nothing, l, c, x )
-
-
-{-| Extract Id from an expression enhanced with metadata
--}
-getId : WithMeta x -> Maybe Id
-getId ( id, _, _, _ ) =
-    id
+type alias WithMeta x m =
+    ( x, Located m )
 
 
 {-| Representation for Elm's expression containing it's meta information
 -}
 type alias MExp =
-    WithMeta Expression
+    WithMeta Expression {}
+
+
+{-| Representation of a name with metadata
+-}
+type alias MName =
+    WithMeta Name {}
+
+
+{-| Add metadata to an expression
+-}
+addMeta : Line -> Column -> x -> WithMeta x {}
+addMeta l c e =
+    ( e, { line = l, column = c } )
+
+
+withMeta : Parser s x -> Parser s (WithMeta x {})
+withMeta p =
+    withLocation (\a -> (\x -> addMeta a.line a.column x) <$> p)
+
+
+{-| Extract expression from an expression enhanced with metadata
+-}
+dropMeta : WithMeta a {} -> a
+dropMeta ( e, _ ) =
+    e
 
 
 type alias Operator =
-    WithMeta String
+    WithMeta String {}
 
 
 {-| Representations for Elm's expressions.
@@ -114,306 +106,16 @@ type Expression
     | Variable (List Name)
     | List (List MExp)
     | Tuple (List MExp)
-    | Access MExp (List (WithMeta Name))
+    | Access MExp (List MName)
     | AccessFunction Name
-    | Record (List ( WithMeta Name, MExp ))
-    | RecordUpdate (WithMeta Name) (List ( WithMeta Name, MExp ))
+    | Record (List ( MName, MExp ))
+    | RecordUpdate MName (List ( MName, MExp ))
     | If MExp MExp MExp
     | Let (List ( MExp, MExp )) MExp
     | Case MExp (List ( MExp, MExp ))
     | Lambda (List MExp) MExp
     | Application MExp MExp
     | BinOp MExp MExp MExp
-
-
-{-| Test only
--}
-type ExpressionSansMeta
-    = CharacterSM Char
-    | StringSM String
-    | IntegerSM Int
-    | FloatSM Float
-    | VariableSM (List Name)
-    | ListSM (List ExpressionSansMeta)
-    | TupleSM (List ExpressionSansMeta)
-    | AccessSM ExpressionSansMeta (List Name)
-    | AccessFunctionSM Name
-    | RecordSM (List ( Name, ExpressionSansMeta ))
-    | RecordUpdateSM Name (List ( Name, ExpressionSansMeta ))
-    | IfSM ExpressionSansMeta ExpressionSansMeta ExpressionSansMeta
-    | LetSM (List ( ExpressionSansMeta, ExpressionSansMeta )) ExpressionSansMeta
-    | CaseSM ExpressionSansMeta (List ( ExpressionSansMeta, ExpressionSansMeta ))
-    | LambdaSM (List ExpressionSansMeta) ExpressionSansMeta
-    | ApplicationSM ExpressionSansMeta ExpressionSansMeta
-    | BinOpSM ExpressionSansMeta ExpressionSansMeta ExpressionSansMeta
-
-
-{-| Test only
--}
-dropMExpMeta : MExp -> ExpressionSansMeta
-dropMExpMeta ( _, _, _, e ) =
-    dropExpressionMeta e
-
-
-dropWithMetaMExp : ( WithMeta a, MExp ) -> ( a, ExpressionSansMeta )
-dropWithMetaMExp ( a, b ) =
-    ( dropMeta a, dropMExpMeta b )
-
-
-dropDoubleMExp : ( MExp, MExp ) -> ( ExpressionSansMeta, ExpressionSansMeta )
-dropDoubleMExp ( a, b ) =
-    ( dropMExpMeta a, dropMExpMeta b )
-
-
-{-| Test only
--}
-dropExpressionMeta : Expression -> ExpressionSansMeta
-dropExpressionMeta e =
-    case e of
-        Character c ->
-            CharacterSM c
-
-        String s ->
-            StringSM s
-
-        Integer i ->
-            IntegerSM i
-
-        Float f ->
-            FloatSM f
-
-        Variable l ->
-            VariableSM l
-
-        List l ->
-            ListSM (List.map dropMExpMeta l)
-
-        Tuple l ->
-            TupleSM (List.map dropMExpMeta l)
-
-        Access ex l ->
-            AccessSM (dropMExpMeta ex) (List.map dropMeta l)
-
-        AccessFunction n ->
-            AccessFunctionSM n
-
-        Record l ->
-            RecordSM (List.map dropWithMetaMExp l)
-
-        RecordUpdate n l ->
-            RecordUpdateSM (dropMeta n) (List.map dropWithMetaMExp l)
-
-        If e1 e2 e3 ->
-            IfSM (dropMExpMeta e1) (dropMExpMeta e2) (dropMExpMeta e3)
-
-        Let l e ->
-            LetSM (List.map dropDoubleMExp l) (dropMExpMeta e)
-
-        Case e l ->
-            CaseSM (dropMExpMeta e) (List.map dropDoubleMExp l)
-
-        Lambda l e ->
-            LambdaSM (List.map dropMExpMeta l) (dropMExpMeta e)
-
-        Application e1 e2 ->
-            ApplicationSM (dropMExpMeta e1) (dropMExpMeta e2)
-
-        BinOp e1 e2 e3 ->
-            BinOpSM (dropMExpMeta e1) (dropMExpMeta e2) (dropMExpMeta e3)
-
-
-trivialId : Id -> Line -> Column -> Expression -> ( Id, MExp )
-trivialId i l c e =
-    ( i + 1, ( Just i, l, c, e ) )
-
-
-genNameListIds : Id -> List (WithMeta Name) -> ( Id, List (WithMeta Name) )
-genNameListIds newId =
-    List.foldr (\( _, l, c, n ) ( accId, acc ) -> ( accId + 1, ( Just accId, l, c, n ) :: acc )) ( newId + 1, [] )
-
-
-genListIds : Id -> List MExp -> ( Id, List MExp )
-genListIds newId =
-    List.foldr (\x ( accId, acc ) -> generateIds_ accId x |> (\( maxId, exp ) -> ( maxId, exp :: acc ))) ( newId + 1, [] )
-
-
-genCoupleIds : Id -> ( MExp, MExp ) -> ( Id, MExp, MExp )
-genCoupleIds newId ( e1, e2 ) =
-    let
-        ( newerId, newE1 ) =
-            generateIds_ newId e1
-
-        ( maxId, newE2 ) =
-            generateIds_ newerId e2
-    in
-    ( maxId, newE1, newE2 )
-
-
-genTripleIds : Id -> ( MExp, MExp, MExp ) -> ( Id, MExp, MExp, MExp )
-genTripleIds newId ( e1, e2, e3 ) =
-    let
-        ( newerId, newE1, newE2 ) =
-            genCoupleIds newId ( e1, e2 )
-
-        ( maxId, newE3 ) =
-            generateIds_ newerId e3
-    in
-    ( maxId, newE1, newE2, newE3 )
-
-
-genRecordsIds : Id -> List ( WithMeta Name, MExp ) -> ( Id, List ( WithMeta Name, MExp ) )
-genRecordsIds newId records =
-    let
-        ( names, exps ) =
-            List.unzip records
-
-        ( namesId, newNames ) =
-            genNameListIds newId names
-
-        ( expsId, newExps ) =
-            genListIds namesId exps
-    in
-    ( expsId, List.map2 (\x y -> ( x, y )) newNames newExps )
-
-
-genLetCase : Id -> List ( MExp, MExp ) -> MExp -> ( Id, List ( MExp, MExp ), MExp )
-genLetCase newId li exp =
-    let
-        ( newerId, newExp ) =
-            generateIds_ newId exp
-
-        ( li1, li2 ) =
-            List.unzip li
-
-        ( li1Id, newLi1 ) =
-            genListIds newerId li1
-
-        ( li2Id, newLi2 ) =
-            genListIds li1Id li2
-    in
-    ( li2Id, List.map2 (\x y -> ( x, y )) newLi1 newLi2, newExp )
-
-
-generateIds_ : Int -> MExp -> ( Int, MExp )
-generateIds_ newId ( _, l, c, e ) =
-    case e of
-        Character _ ->
-            trivialId newId l c e
-
-        String _ ->
-            trivialId newId l c e
-
-        Integer _ ->
-            trivialId newId l c e
-
-        Float _ ->
-            trivialId newId l c e
-
-        Variable _ ->
-            trivialId newId l c e
-
-        List li ->
-            let
-                ( maxId, exp ) =
-                    genListIds (newId + 1) li
-            in
-            ( maxId, ( Just newId, l, c, List exp ) )
-
-        Tuple li ->
-            let
-                ( maxId, exp ) =
-                    genListIds (newId + 1) li
-            in
-            ( maxId, ( Just newId, l, c, Tuple exp ) )
-
-        Access exp li ->
-            let
-                ( listId, newLi ) =
-                    genNameListIds (newId + 1) li
-
-                ( maxId, newExp ) =
-                    generateIds_ listId exp
-            in
-            ( maxId, ( Just newId, l, c, Access newExp newLi ) )
-
-        AccessFunction _ ->
-            trivialId newId l c e
-
-        Record records ->
-            let
-                ( maxId, newRecords ) =
-                    genRecordsIds (newId + 1) records
-            in
-            ( maxId, ( Just newId, l, c, Record newRecords ) )
-
-        RecordUpdate name records ->
-            let
-                ( recordsId, newRecords ) =
-                    genRecordsIds (newId + 1) records
-
-                ( _, nameL, nameC, nameN ) =
-                    name
-
-                newName =
-                    ( Just recordsId, nameL, nameC, nameN )
-
-                maxId =
-                    recordsId + 1
-            in
-            ( maxId, ( Just newId, l, c, RecordUpdate newName newRecords ) )
-
-        If e1 e2 e3 ->
-            let
-                ( maxId, newE1, newE2, newE3 ) =
-                    genTripleIds (newId + 1) ( e1, e2, e3 )
-            in
-            ( maxId, ( Just newId, l, c, If newE1 newE2 newE3 ) )
-
-        Let li exp ->
-            let
-                ( maxId, newLi, newExp ) =
-                    genLetCase (newId + 1) li exp
-            in
-            ( maxId, ( Just newId, l, c, Let newLi newExp ) )
-
-        Case exp li ->
-            let
-                ( maxId, newLi, newExp ) =
-                    genLetCase (newId + 1) li exp
-            in
-            ( maxId, ( Just newId, l, c, Case newExp newLi ) )
-
-        Lambda li exp ->
-            let
-                ( newerId, newExp ) =
-                    generateIds_ (newId + 1) exp
-
-                ( maxId, newLi ) =
-                    genListIds newerId li
-            in
-            ( maxId, ( Just newId, l, c, Lambda newLi newExp ) )
-
-        Application e1 e2 ->
-            let
-                ( maxId, newE1, newE2 ) =
-                    genCoupleIds (newId + 1) ( e1, e2 )
-            in
-            ( maxId, ( Just newId, l, c, Application newE1 newE2 ) )
-
-        BinOp e1 e2 e3 ->
-            let
-                ( maxId, newE1, newE2, newE3 ) =
-                    genTripleIds (newId + 1) ( e1, e2, e3 )
-            in
-            ( maxId, ( Just newId, l, c, BinOp newE1 newE2 newE3 ) )
-
-
-{-| Generates Ids for nodes in MExp
-which are unique within the resulting tree
--}
-generateIds : MExp -> MExp
-generateIds =
-    Tuple.second << generateIds_ 0
 
 
 character : Parser s MExp
@@ -544,8 +246,8 @@ simplifiedRecord =
             loName
                 |> map
                     (\a ->
-                        ( addMetaNoId line column a
-                        , addMetaNoId line column (Variable [ a ])
+                        ( addMeta line column a
+                        , addMeta line column (Variable [ a ])
                         )
                     )
     in
@@ -645,7 +347,7 @@ application ops =
             withLocation
                 (\l ->
                     chainl
-                        ((\a b -> addMetaNoId l.line l.column (Application a b)) <$ spacesOrIndentedNewline (l.column + 1))
+                        ((\a b -> addMeta l.line l.column (Application a b)) <$ spacesOrIndentedNewline (l.column + 1))
                         (term ops)
                 )
 
@@ -666,7 +368,7 @@ spacesOrIndentedNewline indentation =
                 )
 
 
-operatorOrAsBetween : Parser s (WithMeta String)
+operatorOrAsBetween : Parser s (WithMeta String {})
 operatorOrAsBetween =
     lazy <|
         \() ->
@@ -811,11 +513,11 @@ joinL es ops =
         ( [ e ], [] ) ->
             succeed e
 
-        ( a :: b :: remE, ( _, l, c, e ) :: remO ) ->
+        ( a :: b :: remE, ( e, { line, column } ) :: remO ) ->
             joinL
-                (addMetaNoId l
-                    c
-                    (BinOp (addMetaNoId l c <| Variable [ e ]) a b)
+                (addMeta line
+                    column
+                    (BinOp (addMeta line column <| Variable [ e ]) a b)
                     :: remE
                 )
                 remO
@@ -830,13 +532,13 @@ joinR es ops =
         ( [ e ], [] ) ->
             succeed e
 
-        ( a :: b :: remE, ( _, l, c, e ) :: remO ) ->
+        ( a :: b :: remE, ( e, { line, column } ) :: remO ) ->
             joinR (b :: remE) remO
                 |> andThen
                     (\exp ->
                         succeed
-                            (addMetaNoId l c <|
-                                BinOp (addMetaNoId l c (Variable [ e ])) a exp
+                            (addMeta line column <|
+                                BinOp (addMeta line column (Variable [ e ])) a exp
                             )
                     )
 

@@ -24,8 +24,8 @@ wrongWhitespace =
             \() ->
                 wrongWhitespaceInput
                     |> areStatementsSansMeta
-                        [ Comment " Empty line with spaces at the end here"
-                        , FunctionDeclaration "b" [] (integer 2)
-                        , FunctionDeclaration "a" [] (integer 1)
+                        [ comment " Empty line with spaces at the end here"
+                        , functionDeclaration "b" [] (integer 2)
+                        , functionDeclaration "a" [] (integer 1)
                         ]
         ]

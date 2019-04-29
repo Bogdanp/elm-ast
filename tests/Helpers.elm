@@ -1,81 +1,319 @@
-module Helpers exposing
-    ( app
-    , areStatements
-    , areStatementsSansMeta
-    , binOp
-    , case_
-    , fails
-    , fakeMeta
-    , hasUniqueIds
-    , integer
-    , isApplicationSansMeta
-    , isExpression
-    , isExpressionSansMeta
-    , isStatement
-    , isStatementSansMeta
-    , list
-    , record
-    , recordUpdate
-    , simpleParse
-    , tuple
-    , var
-    )
+module Helpers exposing (..)
 
 import Ast exposing (parse, parseExpression, parseStatement)
-import Ast.BinOp exposing (operators)
-import Ast.Expression exposing (Expression(..), ExpressionSansMeta(..), Id, MExp, WithMeta, dropExpressionMeta, dropId, dropMExpMeta, getId)
-import Ast.Helpers exposing (Name)
-import Ast.Statement exposing (ExportSet(..), Statement(..), Type(..), dropStatementMeta)
+import Ast.BinOp exposing (Assoc, operators)
+import Ast.Expression exposing (Expression(..), MExp, WithMeta, dropMeta)
+import Ast.Helpers exposing (Alias, ModuleName, Name)
+import Ast.Statement exposing (ExportSet(..), Statement(..), Type(..))
 import Expect exposing (..)
-import Set exposing (Set)
 
 
 
 -- Structures
 
 
-app : MExp -> MExp -> MExp
+type ExpressionSansMeta
+    = CharacterSM Char
+    | StringSM String
+    | IntegerSM Int
+    | FloatSM Float
+    | VariableSM (List Name)
+    | ListSM (List ExpressionSansMeta)
+    | TupleSM (List ExpressionSansMeta)
+    | AccessSM ExpressionSansMeta (List Name)
+    | AccessFunctionSM Name
+    | RecordSM (List ( Name, ExpressionSansMeta ))
+    | RecordUpdateSM Name (List ( Name, ExpressionSansMeta ))
+    | IfSM ExpressionSansMeta ExpressionSansMeta ExpressionSansMeta
+    | LetSM (List ( ExpressionSansMeta, ExpressionSansMeta )) ExpressionSansMeta
+    | CaseSM ExpressionSansMeta (List ( ExpressionSansMeta, ExpressionSansMeta ))
+    | LambdaSM (List ExpressionSansMeta) ExpressionSansMeta
+    | ApplicationSM ExpressionSansMeta ExpressionSansMeta
+    | BinOpSM ExpressionSansMeta ExpressionSansMeta ExpressionSansMeta
+
+
+type StatementSansMeta
+    = ModuleDeclarationSM ModuleName ExportSet
+    | PortModuleDeclarationSM ModuleName ExportSet
+    | EffectModuleDeclarationSM ModuleName (List ( Name, Name )) ExportSet
+    | ImportStatementSM ModuleName (Maybe Alias) (Maybe ExportSet)
+    | TypeAliasDeclarationSM Type Type
+    | TypeDeclarationSM Type (List Type)
+    | PortTypeDeclarationSM Name Type
+    | PortDeclarationSM Name (List Name) ExpressionSansMeta
+    | FunctionTypeDeclarationSM Name Type
+    | FunctionDeclarationSM Name (List ExpressionSansMeta) ExpressionSansMeta
+    | InfixDeclarationSM Assoc Int Name
+    | CommentSM String
+
+
+dropStatementMeta : Statement -> StatementSansMeta
+dropStatementMeta s =
+    case s of
+        ModuleDeclaration mn es ->
+            ModuleDeclarationSM mn es
+
+        PortModuleDeclaration mn es ->
+            PortModuleDeclarationSM mn es
+
+        EffectModuleDeclaration mn l es ->
+            EffectModuleDeclarationSM mn l es
+
+        ImportStatement mn a es ->
+            ImportStatementSM mn a es
+
+        TypeAliasDeclaration t1 t2 ->
+            TypeAliasDeclarationSM t1 t2
+
+        TypeDeclaration t l ->
+            TypeDeclarationSM t l
+
+        PortTypeDeclaration n t ->
+            PortTypeDeclarationSM n t
+
+        PortDeclaration n l e ->
+            PortDeclarationSM n l (dropMExpMeta e)
+
+        FunctionTypeDeclaration n t ->
+            FunctionTypeDeclarationSM n t
+
+        FunctionDeclaration n l e ->
+            FunctionDeclarationSM n (List.map dropMExpMeta l) (dropMExpMeta e)
+
+        InfixDeclaration a i n ->
+            InfixDeclarationSM a i n
+
+        Comment s ->
+            CommentSM s
+
+
+dropMExpMeta : MExp -> ExpressionSansMeta
+dropMExpMeta ( e, _ ) =
+    dropExpressionMeta e
+
+
+dropWithMetaMExp : ( WithMeta a {}, MExp ) -> ( a, ExpressionSansMeta )
+dropWithMetaMExp ( a, b ) =
+    ( dropMeta a, dropMExpMeta b )
+
+
+dropDoubleMExp : ( MExp, MExp ) -> ( ExpressionSansMeta, ExpressionSansMeta )
+dropDoubleMExp ( a, b ) =
+    ( dropMExpMeta a, dropMExpMeta b )
+
+
+dropExpressionMeta : Expression -> ExpressionSansMeta
+dropExpressionMeta e =
+    case e of
+        Character c ->
+            CharacterSM c
+
+        String s ->
+            StringSM s
+
+        Integer i ->
+            IntegerSM i
+
+        Float f ->
+            FloatSM f
+
+        Variable l ->
+            VariableSM l
+
+        List l ->
+            ListSM (List.map dropMExpMeta l)
+
+        Tuple l ->
+            TupleSM (List.map dropMExpMeta l)
+
+        Access ex l ->
+            AccessSM (dropMExpMeta ex) (List.map dropMeta l)
+
+        AccessFunction n ->
+            AccessFunctionSM n
+
+        Record l ->
+            RecordSM (List.map dropWithMetaMExp l)
+
+        RecordUpdate n l ->
+            RecordUpdateSM (dropMeta n) (List.map dropWithMetaMExp l)
+
+        If e1 e2 e3 ->
+            IfSM (dropMExpMeta e1) (dropMExpMeta e2) (dropMExpMeta e3)
+
+        Let l e ->
+            LetSM (List.map dropDoubleMExp l) (dropMExpMeta e)
+
+        Case e l ->
+            CaseSM (dropMExpMeta e) (List.map dropDoubleMExp l)
+
+        Lambda l e ->
+            LambdaSM (List.map dropMExpMeta l) (dropMExpMeta e)
+
+        Application e1 e2 ->
+            ApplicationSM (dropMExpMeta e1) (dropMExpMeta e2)
+
+        BinOp e1 e2 e3 ->
+            BinOpSM (dropMExpMeta e1) (dropMExpMeta e2) (dropMExpMeta e3)
+
+
+access : ExpressionSansMeta -> List Name -> ExpressionSansMeta
+access =
+    AccessSM
+
+
+accessFun : Name -> ExpressionSansMeta
+accessFun =
+    AccessFunctionSM
+
+
+app : ExpressionSansMeta -> ExpressionSansMeta -> ExpressionSansMeta
 app left right =
-    fakeMeta (Application left right)
+    ApplicationSM left right
 
 
+lambda : List ExpressionSansMeta -> ExpressionSansMeta -> ExpressionSansMeta
+lambda =
+    LambdaSM
+
+
+record : List ( Name, ExpressionSansMeta ) -> ExpressionSansMeta
 record =
-    fakeMeta << Record
+    RecordSM
 
 
-recordUpdate : String -> List ( WithMeta String, MExp ) -> MExp
+recordUpdate : String -> List ( String, ExpressionSansMeta ) -> ExpressionSansMeta
 recordUpdate name =
-    fakeMeta << RecordUpdate (fakeMeta name)
+    RecordUpdateSM name
 
 
-var : String -> MExp
+var : String -> ExpressionSansMeta
 var name =
-    mvar 0 0 name
+    VariableSM [ name ]
 
 
+integer : Int -> ExpressionSansMeta
 integer =
-    fakeMeta << Integer
+    IntegerSM
 
 
+float : Float -> ExpressionSansMeta
+float =
+    FloatSM
+
+
+character : Char -> ExpressionSansMeta
+character =
+    CharacterSM
+
+
+string : String -> ExpressionSansMeta
+string =
+    StringSM
+
+
+binOp :
+    ExpressionSansMeta
+    -> ExpressionSansMeta
+    -> ExpressionSansMeta
+    -> ExpressionSansMeta
 binOp name l r =
-    fakeMeta <| BinOp name l r
+    BinOpSM name l r
 
 
+let_ : List ( ExpressionSansMeta, ExpressionSansMeta ) -> ExpressionSansMeta -> ExpressionSansMeta
+let_ =
+    LetSM
+
+
+tuple : List ExpressionSansMeta -> ExpressionSansMeta
 tuple =
-    fakeMeta << Tuple
+    TupleSM
 
 
-case_ mexp cases =
-    fakeMeta <| Case mexp cases
+case_ :
+    ExpressionSansMeta
+    -> List ( ExpressionSansMeta, ExpressionSansMeta )
+    -> ExpressionSansMeta
+case_ =
+    CaseSM
 
 
+list : List ExpressionSansMeta -> ExpressionSansMeta
 list =
-    fakeMeta << List
+    ListSM
 
 
-mvar : Int -> Int -> String -> MExp
-mvar line column name =
-    ( Nothing, line, column, Variable [ name ] )
+moduleDeclaration : ModuleName -> ExportSet -> StatementSansMeta
+moduleDeclaration =
+    ModuleDeclarationSM
+
+
+portModuleDeclaration : ModuleName -> ExportSet -> StatementSansMeta
+portModuleDeclaration =
+    PortModuleDeclarationSM
+
+
+effectModuleDeclaration :
+    ModuleName
+    -> List ( Name, Name )
+    -> ExportSet
+    -> StatementSansMeta
+effectModuleDeclaration =
+    EffectModuleDeclarationSM
+
+
+importStatement :
+    ModuleName
+    -> Maybe Alias
+    -> Maybe ExportSet
+    -> StatementSansMeta
+importStatement =
+    ImportStatementSM
+
+
+typeAliasDeclaration : Type -> Type -> StatementSansMeta
+typeAliasDeclaration =
+    TypeAliasDeclarationSM
+
+
+typeDeclaration : Type -> List Type -> StatementSansMeta
+typeDeclaration =
+    TypeDeclarationSM
+
+
+portTypeDeclaration : Name -> Type -> StatementSansMeta
+portTypeDeclaration =
+    PortTypeDeclarationSM
+
+
+portDeclaration : Name -> List Name -> ExpressionSansMeta -> StatementSansMeta
+portDeclaration =
+    PortDeclarationSM
+
+
+functionTypeDeclaration : Name -> Type -> StatementSansMeta
+functionTypeDeclaration =
+    FunctionTypeDeclarationSM
+
+
+functionDeclaration :
+    Name
+    -> List ExpressionSansMeta
+    -> ExpressionSansMeta
+    -> StatementSansMeta
+functionDeclaration =
+    FunctionDeclarationSM
+
+
+infixDeclaration : Assoc -> Int -> Name -> StatementSansMeta
+infixDeclaration =
+    InfixDeclarationSM
+
+
+comment : String -> StatementSansMeta
+comment =
+    CommentSM
 
 
 
@@ -92,129 +330,6 @@ fails s =
             Expect.fail (s ++ " expected to fail")
 
 
-checkListUniqueIds : List MExp -> Set Id -> Maybe (Set Id)
-checkListUniqueIds li ids =
-    List.foldl (\x acc -> Maybe.andThen (hasUniqueIds_ x) acc) (Just ids) li
-
-
-checkNameId : WithMeta Name -> Set Id -> Maybe (Set Id)
-checkNameId ( id, _, _, _ ) ids =
-    case id of
-        Nothing ->
-            Nothing
-
-        Just actualId ->
-            if Set.member actualId ids then
-                Nothing
-
-            else
-                Just <| Set.insert actualId ids
-
-
-checkNameListUniqueIds : List (WithMeta Name) -> Set Id -> Maybe (Set Id)
-checkNameListUniqueIds li ids =
-    case li of
-        [] ->
-            Just ids
-
-        n :: xs ->
-            checkNameId n ids |> Maybe.andThen (checkNameListUniqueIds xs)
-
-
-checkListAndExp : List MExp -> MExp -> Set Id -> Maybe (Set Id)
-checkListAndExp li ex ids =
-    hasUniqueIds_ ex ids |> Maybe.andThen (checkListUniqueIds li)
-
-
-checkRecordsIds : List ( WithMeta Name, MExp ) -> Set Id -> Maybe (Set Id)
-checkRecordsIds records ids =
-    List.unzip records
-        |> (\( names, exps ) ->
-                checkNameListUniqueIds names ids
-                    |> Maybe.andThen
-                        (\newIds -> checkListUniqueIds exps newIds)
-           )
-
-
-checkLetCase : List ( MExp, MExp ) -> MExp -> Set Id -> Maybe (Set Id)
-checkLetCase li exp ids =
-    let
-        ( li1, li2 ) =
-            List.unzip li
-    in
-    checkListUniqueIds li1 ids |> Maybe.andThen (checkListAndExp li2 exp)
-
-
-hasUniqueIds_ : MExp -> Set Id -> Maybe (Set Id)
-hasUniqueIds_ ( id, _, _, e ) ids =
-    case id of
-        Nothing ->
-            Nothing
-
-        Just actualId ->
-            if Set.member actualId ids then
-                Just (Set.insert actualId ids)
-
-            else
-                case e of
-                    Character _ ->
-                        Just (Set.insert actualId ids)
-
-                    String _ ->
-                        Just (Set.insert actualId ids)
-
-                    Integer _ ->
-                        Just (Set.insert actualId ids)
-
-                    Float _ ->
-                        Just (Set.insert actualId ids)
-
-                    Variable _ ->
-                        Just (Set.insert actualId ids)
-
-                    List li ->
-                        checkListUniqueIds li ids
-
-                    Tuple li ->
-                        checkListUniqueIds li ids
-
-                    Access exp li ->
-                        hasUniqueIds_ exp ids |> Maybe.andThen (checkNameListUniqueIds li)
-
-                    AccessFunction _ ->
-                        Just (Set.insert actualId ids)
-
-                    Record records ->
-                        checkRecordsIds records ids
-
-                    RecordUpdate n records ->
-                        checkNameId n ids
-                            |> Maybe.andThen (checkRecordsIds records)
-
-                    If e1 e2 e3 ->
-                        hasUniqueIds_ e1 ids
-                            |> Maybe.andThen (hasUniqueIds_ e2)
-                            |> Maybe.andThen (hasUniqueIds_ e3)
-
-                    Let li exp ->
-                        checkLetCase li exp ids
-
-                    Case exp li ->
-                        checkLetCase li exp ids
-
-                    Lambda li exp ->
-                        hasUniqueIds_ exp ids |> Maybe.andThen (checkListUniqueIds li)
-
-                    Application e1 e2 ->
-                        hasUniqueIds_ e1 ids
-                            |> Maybe.andThen (hasUniqueIds_ e2)
-
-                    BinOp e1 e2 e3 ->
-                        hasUniqueIds_ e1 ids
-                            |> Maybe.andThen (hasUniqueIds_ e2)
-                            |> Maybe.andThen (hasUniqueIds_ e3)
-
-
 simpleParse : String -> Result String MExp
 simpleParse i =
     case parseExpression operators (String.trim i) of
@@ -225,45 +340,33 @@ simpleParse i =
             Err ("failed to parse: " ++ i ++ " at position " ++ toString position ++ " with errors: " ++ toString es)
 
 
-hasUniqueIds : MExp -> Expectation
-hasUniqueIds exp =
-    case hasUniqueIds_ exp Set.empty of
-        Nothing ->
-            Expect.fail "Ids are not unique"
-
-        _ ->
-            Expect.pass
-
-
 isExpression : MExp -> String -> Expectation
 isExpression e i =
     case parseExpression operators (String.trim i) of
         Ok ( _, _, r ) ->
-            Expect.equal (dropId e) (dropId r)
+            Expect.equal e r
 
         Err ( _, { position }, es ) ->
             Expect.fail ("failed to parse: " ++ i ++ " at position " ++ toString position ++ " with errors: " ++ toString es)
 
 
-isExpressionSansMeta : MExp -> String -> Expectation
+isExpressionSansMeta : ExpressionSansMeta -> String -> Expectation
 isExpressionSansMeta e i =
     case parseExpression operators (String.trim i) of
         Ok ( _, _, r ) ->
-            Expect.equal (dropMExpMeta e) (dropMExpMeta r)
+            Expect.equal e (dropMExpMeta r)
 
         Err ( _, a, es ) ->
             Expect.fail ("failed to parse: " ++ i ++ " at position " ++ toString a.position ++ " rest: |" ++ a.input ++ "| with errors: " ++ toString es)
 
 
-isApplicationSansMeta : MExp -> List MExp -> String -> Expectation
+isApplicationSansMeta : ExpressionSansMeta -> List ExpressionSansMeta -> String -> Expectation
 isApplicationSansMeta fn args i =
     case parseExpression operators (String.trim i) of
         Ok ( _, _, app ) ->
             let
                 l =
-                    List.foldl (flip ApplicationSM)
-                        (dropMExpMeta fn)
-                        (List.map dropMExpMeta args)
+                    List.foldl (flip ApplicationSM) fn args
 
                 r =
                     dropMExpMeta app
@@ -284,11 +387,11 @@ isStatement s i =
             Expect.fail ("failed to parse: " ++ i ++ " at position " ++ toString position ++ " with errors: " ++ toString es)
 
 
-isStatementSansMeta : Statement -> String -> Expectation
+isStatementSansMeta : StatementSansMeta -> String -> Expectation
 isStatementSansMeta s i =
     case parseStatement operators i of
         Ok ( _, _, r ) ->
-            Expect.equal (dropStatementMeta r) (dropStatementMeta s)
+            Expect.equal (dropStatementMeta r) s
 
         Err ( _, { position }, es ) ->
             Expect.fail ("failed to parse: " ++ i ++ " at position " ++ toString position ++ " with errors: " ++ toString es)
@@ -304,16 +407,11 @@ areStatements s i =
             Expect.fail ("failed to parse: " ++ i ++ " at position " ++ toString position ++ " with errors: " ++ toString es)
 
 
-areStatementsSansMeta : List Statement -> String -> Expectation
+areStatementsSansMeta : List StatementSansMeta -> String -> Expectation
 areStatementsSansMeta s i =
     case parse i of
         Ok ( _, _, r ) ->
-            Expect.equal (List.map dropStatementMeta r) (List.map dropStatementMeta s)
+            Expect.equal (List.map dropStatementMeta r) s
 
         Err ( _, { position }, es ) ->
             Expect.fail ("failed to parse: " ++ i ++ " at position " ++ toString position ++ " with errors: " ++ toString es)
-
-
-fakeMeta : a -> WithMeta a
-fakeMeta e =
-    ( Nothing, 1, 1, e )
