@@ -1,5 +1,5 @@
 module Ast.Statement exposing
-    ( ExportSet(..), Type(..), Statement(..)
+    ( ExportSet(..), Type(..), Statement, StatementBase(..)
     , statement, statements, infixStatements, opTable
     )
 
@@ -49,7 +49,7 @@ type Type
 
 {-| Representations for Elm's statements.
 -}
-type Statement
+type StatementBase
     = ModuleDeclaration ModuleName ExportSet
     | PortModuleDeclaration ModuleName ExportSet
     | EffectModuleDeclaration ModuleName (List ( Name, Name )) ExportSet
@@ -62,6 +62,10 @@ type Statement
     | FunctionDeclaration Name (List MExp) MExp
     | InfixDeclaration Assoc Int Name
     | Comment String
+
+
+type alias Statement =
+    WithMeta StatementBase {}
 
 
 
@@ -221,21 +225,24 @@ typeAnnotation =
 
 portModuleDeclaration : Parser s Statement
 portModuleDeclaration =
-    PortModuleDeclaration
-        <$> (initialSymbol "port" *> symbol "module" *> moduleName)
-        <*> (symbol "exposing" *> exports)
+    withMeta <|
+        PortModuleDeclaration
+            <$> (initialSymbol "port" *> symbol "module" *> moduleName)
+            <*> (symbol "exposing" *> exports)
 
 
 effectModuleDeclaration : Parser s Statement
 effectModuleDeclaration =
-    EffectModuleDeclaration
-        <$> (initialSymbol "effect" *> symbol "module" *> moduleName)
-        <*> (symbol "where" *> braces (commaSeparated ((,) <$> loName <*> (symbol "=" *> upName))))
-        <*> (symbol "exposing" *> exports)
+    withMeta <|
+        EffectModuleDeclaration
+            <$> (initialSymbol "effect" *> symbol "module" *> moduleName)
+            <*> (symbol "where" *> braces (commaSeparated ((,) <$> loName <*> (symbol "=" *> upName))))
+            <*> (symbol "exposing" *> exports)
 
 
 moduleDeclaration : Parser s Statement
 moduleDeclaration =
+    withMeta <|
     ModuleDeclaration
         <$> (initialSymbol "module" *> moduleName)
         <*> (symbol "exposing" *> exports)
@@ -248,6 +255,7 @@ moduleDeclaration =
 
 importStatement : Parser s Statement
 importStatement =
+    withMeta <|
     ImportStatement
         <$> (initialSymbol "import" *> moduleName)
         <*> maybe (symbol "as" *> upName)
@@ -261,6 +269,7 @@ importStatement =
 
 typeAliasDeclaration : Parser s Statement
 typeAliasDeclaration =
+    withMeta <|
     TypeAliasDeclaration
         <$> (initialSymbol "type" *> symbol "alias" *> type_)
         <*> (whitespace *> symbol "=" *> typeAnnotation)
@@ -268,6 +277,7 @@ typeAliasDeclaration =
 
 typeDeclaration : Parser s Statement
 typeDeclaration =
+    withMeta <|
     TypeDeclaration
         <$> (initialSymbol "type" *> type_)
         <*> (whitespace *> symbol "=" *> sepBy1 (symbol "|") (between_ whitespace typeConstructor))
@@ -280,6 +290,7 @@ typeDeclaration =
 
 portTypeDeclaration : Parser s Statement
 portTypeDeclaration =
+    withMeta <|
     PortTypeDeclaration
         <$> (initialSymbol "port" *> loName)
         <*> (symbol ":" *> typeAnnotation)
@@ -287,6 +298,7 @@ portTypeDeclaration =
 
 portDeclaration : OpTable -> Parser s Statement
 portDeclaration ops =
+    withMeta <|
     PortDeclaration
         <$> (initialSymbol "port" *> loName)
         <*> (many <| between_ spaces loName)
@@ -300,11 +312,13 @@ portDeclaration ops =
 
 functionTypeDeclaration : Parser s Statement
 functionTypeDeclaration =
+    withMeta <|
     FunctionTypeDeclaration <$> (choice [ loName, parens operator ] <* symbol ":") <*> typeAnnotation
 
 
 functionDeclaration : OpTable -> Parser s Statement
 functionDeclaration ops =
+    withMeta <|
     FunctionDeclaration
         <$> choice [ loName, parens operator ]
         <*> many (between_ whitespace <| term ops)
@@ -318,6 +332,7 @@ functionDeclaration ops =
 
 infixDeclaration : Parser s Statement
 infixDeclaration =
+    withMeta <|
     InfixDeclaration
         <$> choice
                 [ L <$ initialSymbol "infixl"
@@ -335,11 +350,13 @@ infixDeclaration =
 
 singleLineComment : Parser s Statement
 singleLineComment =
+    withMeta <|
     Comment <$> (string "--" *> regex ".*" <* whitespace)
 
 
 multiLineComment : Parser s Statement
 multiLineComment =
+    withMeta <|
     (Comment << String.fromList) <$> (string "{-" *> manyTill anyChar (string "-}"))
 
 
@@ -405,7 +422,7 @@ declarations in the input.
 opTable : OpTable -> Parser s OpTable
 opTable ops =
     let
-        collect s d =
+        collect (s, _) d =
             case s of
                 InfixDeclaration a l n ->
                     Dict.insert n ( a, l ) d

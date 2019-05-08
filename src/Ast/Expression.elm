@@ -1,6 +1,6 @@
 module Ast.Expression exposing
-    ( Expression(..), MExp, WithMeta
-    , expression, dropMeta, addMeta
+    ( Expression(..), MExp
+    , expression
     , term
     )
 
@@ -9,12 +9,12 @@ module Ast.Expression exposing
 
 # Types
 
-@docs Expression, MExp, WithMeta
+@docs Expression, MExp
 
 
 # rs
 
-@docs expression, dropMeta, addMeta
+@docs expression
 
 
 # Expression
@@ -41,55 +41,10 @@ type Collect a
     | Stop a
 
 
-type alias Line =
-    Int
-
-
-type alias Column =
-    Int
-
-
-{-| Add line and column to a metadata record
--}
-type alias Located x =
-    { x | line : Int, column : Int, source : String }
-
-
-{-| Tuple representing a node with its location
--}
-type alias WithMeta x m =
-    ( x, Located m )
-
-
 {-| Representation for Elm's expression containing it's meta information
 -}
 type alias MExp =
     WithMeta Expression {}
-
-
-{-| Representation of a name with metadata
--}
-type alias MName =
-    WithMeta Name {}
-
-
-{-| Add metadata to an expression
--}
-addMeta : Line -> Column -> String -> x -> WithMeta x {}
-addMeta l c s e =
-    ( e, { line = l, column = c, source = s } )
-
-
-withMeta : Parser s x -> Parser s (WithMeta x {})
-withMeta p =
-    withLocation (\a -> (\x -> addMeta a.line a.column a.source x) <$> p)
-
-
-{-| Extract expression from an expression enhanced with metadata
--}
-dropMeta : WithMeta a {} -> a
-dropMeta ( e, _ ) =
-    e
 
 
 type alias Operator =
@@ -242,12 +197,12 @@ record ops =
 simplifiedRecord : Parser s MExp
 simplifiedRecord =
     let
-        branch { line, column, source } =
+        branch { line, column } =
             loName
                 |> map
                     (\a ->
-                        ( addMeta line column source a
-                        , addMeta line column source (Variable [ a ])
+                        ( addMeta line column a
+                        , addMeta line column (Variable [ a ])
                         )
                     )
     in
@@ -347,7 +302,7 @@ application ops =
             withLocation
                 (\l ->
                     chainl
-                        ((\a b -> addMeta l.line l.column l.source (Application a b)) <$ spacesOrIndentedNewline (l.column + 1))
+                        ((\a b -> addMeta l.line l.column (Application a b)) <$ spacesOrIndentedNewline (l.column + 1))
                         (term ops)
                 )
 
@@ -513,12 +468,11 @@ joinL es ops =
         ( [ e ], [] ) ->
             succeed e
 
-        ( a :: b :: remE, ( e, { line, column, source } ) :: remO ) ->
+        ( a :: b :: remE, ( e, { line, column } ) :: remO ) ->
             joinL
                 (addMeta line
                     column
-                    source
-                    (BinOp (addMeta line column source <| Variable [ e ]) a b)
+                    (BinOp (addMeta line column <| Variable [ e ]) a b)
                     :: remE
                 )
                 remO
@@ -533,13 +487,13 @@ joinR es ops =
         ( [ e ], [] ) ->
             succeed e
 
-        ( a :: b :: remE, ( e, { line, column, source } ) :: remO ) ->
+        ( a :: b :: remE, ( e, { line, column } ) :: remO ) ->
             joinR (b :: remE) remO
                 |> andThen
                     (\exp ->
                         succeed
-                            (addMeta line column source <|
-                                BinOp (addMeta line column source (Variable [ e ])) a exp
+                            (addMeta line column <|
+                                BinOp (addMeta line column (Variable [ e ])) a exp
                             )
                     )
 
