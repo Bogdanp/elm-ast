@@ -58,7 +58,7 @@ expression e =
 
 
 statement : Statement -> Html Msg
-statement s =
+statement (s, _) =
     case s of
         FunctionDeclaration _ _ e ->
             withChild s [ expression e ]

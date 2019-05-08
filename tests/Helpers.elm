@@ -2,9 +2,9 @@ module Helpers exposing (..)
 
 import Ast exposing (parse, parseExpression, parseStatement)
 import Ast.BinOp exposing (Assoc, operators)
-import Ast.Expression exposing (Expression(..), MExp, WithMeta, dropMeta)
-import Ast.Helpers exposing (Alias, ModuleName, Name)
-import Ast.Statement exposing (ExportSet(..), Statement(..), Type(..))
+import Ast.Expression exposing (Expression(..), MExp)
+import Ast.Helpers exposing (..)
+import Ast.Statement exposing (ExportSet(..), StatementBase(..), Statement, Type(..))
 import Expect exposing (..)
 
 
@@ -48,7 +48,7 @@ type StatementSansMeta
 
 
 dropStatementMeta : Statement -> StatementSansMeta
-dropStatementMeta s =
+dropStatementMeta (s, _) =
     case s of
         ModuleDeclaration mn es ->
             ModuleDeclarationSM mn es

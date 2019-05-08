@@ -1,6 +1,6 @@
 module Parsing exposing (wrongWhitespace)
 
-import Ast.Statement exposing (ExportSet(..), Statement(..), Type(..))
+import Ast.Statement exposing (..)
 import Helpers exposing (..)
 import Test exposing (Test, describe, test)
 

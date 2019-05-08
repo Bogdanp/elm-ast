@@ -11,7 +11,7 @@ module Statement exposing
     )
 
 import Ast.BinOp exposing (Assoc(..))
-import Ast.Statement exposing (ExportSet(..), Statement(..), Type(..))
+import Ast.Statement exposing (..)
 import Helpers exposing (..)
 import Test exposing (Test, describe, test)
 
