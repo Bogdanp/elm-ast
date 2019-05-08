@@ -1,5 +1,7 @@
 module Ast.Helpers exposing
     ( Alias
+    , Column
+    , Line
     , MName
     , ModuleName
     , Name
