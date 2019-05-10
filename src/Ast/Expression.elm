@@ -24,6 +24,7 @@ module Ast.Expression exposing
 -}
 
 import Ast.BinOp exposing (..)
+import Ast.Common exposing (..)
 import Ast.Helpers exposing (..)
 import Char
 import Combine exposing (..)
