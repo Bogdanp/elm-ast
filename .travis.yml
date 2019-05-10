@@ -19,7 +19,7 @@ before_install:
 install:
   - node --version
   - npm --version
-  - npm install -g elm@$ELM_VERSION elm-test@0.18.13-beta
+  - npm install -g elm@$ELM_VERSION elm-test@0.18.7
   - npm install -g elm-github-install
   - git clone https://github.com/NoRedInk/elm-ops-tooling
   - elm-ops-tooling/with_retry.rb elm package install --yes
