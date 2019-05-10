@@ -11,7 +11,8 @@
         "Ast",
         "Ast.BinOp",
         "Ast.Expression",
-        "Ast.Statement"
+        "Ast.Statement",
+        "Ast.Common"
     ],
     "dependencies": {
         "elm-community/list-extra": "7.0.0 <= v < 8.0.0",

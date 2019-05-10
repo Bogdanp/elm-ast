@@ -18,6 +18,7 @@ module Ast.Statement exposing
 -}
 
 import Ast.BinOp exposing (Assoc(..), OpTable)
+import Ast.Common exposing (..)
 import Ast.Expression exposing (Expression, MExp, expression, term)
 import Ast.Helpers exposing (..)
 import Combine exposing (..)

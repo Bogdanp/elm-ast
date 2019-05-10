@@ -1,9 +1,7 @@
-module Ast.BinOp
-    exposing
-        ( Assoc(..)
-        , OpTable
-        , operators
-        )
+module Ast.BinOp exposing
+    ( Assoc(..), OpTable
+    , operators
+    )
 
 {-| This module exposes functions and types for working with operator
 precedence tables.
@@ -20,8 +18,8 @@ precedence tables.
 
 -}
 
+import Ast.Common exposing (Name)
 import Dict exposing (Dict)
-import Ast.Helpers exposing (Name)
 
 
 {-| FIXME

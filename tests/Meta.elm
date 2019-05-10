@@ -1,7 +1,7 @@
 module Meta exposing (multiline, oneLine, statements)
 
 import Ast.Expression exposing (Expression(..))
-import Ast.Helpers exposing (..)
+import Ast.Common exposing (..)
 import Ast.Statement exposing (..)
 import Helpers exposing (..)
 import Test exposing (Test, describe, test)
