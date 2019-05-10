@@ -20,7 +20,7 @@
         "rtfeldman/hex": "1.0.0 <= v < 2.0.0"
     },
     "dependency-sources": {
-        "elm-community/parser-combinators": "git@github.com:MajronMan/elm-combine.git"
+        "elm-community/parser-combinators": "https://github.com/MajronMan/elm-combine.git"
     },
     "elm-version": "0.18.0 <= v < 0.19.0"
 }
