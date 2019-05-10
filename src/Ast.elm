@@ -1,11 +1,4 @@
-module Ast
-    exposing
-        ( parseExpression
-        , parseStatement
-        , parseOpTable
-        , parseModule
-        , parse
-        )
+module Ast exposing (parseExpression, parseStatement, parseOpTable, parseModule, parse)
 
 {-| This module exposes functions for parsing Elm code.
 
@@ -16,15 +9,15 @@ module Ast
 
 -}
 
-import Combine exposing (end, (<*))
 import Ast.BinOp exposing (OpTable, operators)
-import Ast.Expression exposing (Expression, expression)
-import Ast.Statement exposing (Statement, statement, statements, opTable)
+import Ast.Expression exposing (MExp, expression)
+import Ast.Statement exposing (Statement, opTable, statement, statements)
+import Combine exposing ((<*), end)
 
 
 {-| Parse an Elm expression.
 -}
-parseExpression : OpTable -> String -> Result (Combine.ParseErr ()) (Combine.ParseOk () Expression)
+parseExpression : OpTable -> String -> Result (Combine.ParseErr ()) (Combine.ParseOk () MExp)
 parseExpression ops =
     Combine.parse (expression ops <* end)
 
@@ -59,4 +52,4 @@ parse input =
             parseModule ops input
 
         Err e ->
-            (Err e)
+            Err e

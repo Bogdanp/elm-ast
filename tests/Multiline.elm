@@ -1,7 +1,7 @@
 module Multiline exposing (application)
 
 import Test exposing (describe, test, Test)
-import Helpers exposing (isApplication, var)
+import Helpers exposing (isApplicationSansMeta, var)
 
 
 application : Test
@@ -10,7 +10,7 @@ application =
         [ test "Application" <|
             \() ->
                 "fn\n  a\n  b\n  c\n  d\n  e\n  f\n  g\n  h\n  i\n  j\n  k\n   i"
-                    |> isApplication (var "fn")
+                    |> isApplicationSansMeta (var "fn")
                         [ var "a"
                         , var "b"
                         , var "c"

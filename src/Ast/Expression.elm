@@ -1,5 +1,5 @@
 module Ast.Expression exposing
-    ( Expression(..)
+    ( Expression(..), MExp
     , expression
     , term
     )
@@ -9,10 +9,10 @@ module Ast.Expression exposing
 
 # Types
 
-@docs Expression
+@docs Expression, MExp
 
 
-# Parsers
+# rs
 
 @docs expression
 
@@ -41,6 +41,16 @@ type Collect a
     | Stop a
 
 
+{-| Representation for Elm's expression containing it's meta information
+-}
+type alias MExp =
+    WithMeta Expression {}
+
+
+type alias Operator =
+    WithMeta String {}
+
+
 {-| Representations for Elm's expressions.
 -}
 type Expression
@@ -49,62 +59,63 @@ type Expression
     | Integer Int
     | Float Float
     | Variable (List Name)
-    | List (List Expression)
-    | Tuple (List Expression)
-    | Access Expression (List Name)
+    | List (List MExp)
+    | Tuple (List MExp)
+    | Access MExp (List MName)
     | AccessFunction Name
-    | Record (List ( Name, Expression ))
-    | RecordUpdate Name (List ( Name, Expression ))
-    | If Expression Expression Expression
-    | Let (List ( Expression, Expression )) Expression
-    | Case Expression (List ( Expression, Expression ))
-    | Lambda (List Expression) Expression
-    | Application Expression Expression
-    | BinOp Expression Expression Expression
+    | Record (List ( MName, MExp ))
+    | RecordUpdate MName (List ( MName, MExp ))
+    | If MExp MExp MExp
+    | Let (List ( MExp, MExp )) MExp
+    | Case MExp (List ( MExp, MExp ))
+    | Lambda (List MExp) MExp
+    | Application MExp MExp
+    | BinOp MExp MExp MExp
 
 
-character : Parser s Expression
+character : Parser s MExp
 character =
-    Character
-        <$> between_ (Combine.string "'")
-                (((Combine.string "\\" *> regex "(n|t|r|\\\\|x..)")
-                    >>= (\a ->
-                            case String.uncons a of
-                                Just ( 'n', "" ) ->
-                                    succeed '\n'
+    withMeta <|
+        Character
+            <$> between_ (Combine.string "'")
+                    (((Combine.string "\\" *> regex "(n|t|r|\\\\|x..)")
+                        >>= (\a ->
+                                case String.uncons a of
+                                    Just ( 'n', "" ) ->
+                                        succeed '\n'
 
-                                Just ( 't', "" ) ->
-                                    succeed '\t'
+                                    Just ( 't', "" ) ->
+                                        succeed '\t'
 
-                                Just ( 'r', "" ) ->
-                                    succeed '\x0D'
+                                    Just ( 'r', "" ) ->
+                                        succeed '\x0D'
 
-                                Just ( '\\', "" ) ->
-                                    succeed '\\'
+                                    Just ( '\\', "" ) ->
+                                        succeed '\\'
 
-                                Just ( '0', "" ) ->
-                                    succeed '\x00'
+                                    Just ( '0', "" ) ->
+                                        succeed '\x00'
 
-                                Just ( 'x', hex ) ->
-                                    hex
-                                        |> String.toLower
-                                        |> Hex.fromString
-                                        |> Result.map Char.fromCode
-                                        |> Result.map succeed
-                                        |> Result.withDefault (fail "Invalid charcode")
+                                    Just ( 'x', hex ) ->
+                                        hex
+                                            |> String.toLower
+                                            |> Hex.fromString
+                                            |> Result.map Char.fromCode
+                                            |> Result.map succeed
+                                            |> Result.withDefault (fail "Invalid charcode")
 
-                                Just other ->
-                                    fail ("No such character as \\" ++ toString other)
+                                    Just other ->
+                                        fail ("No such character as \\" ++ toString other)
 
-                                Nothing ->
-                                    fail "No character"
-                        )
-                 )
-                    <|> anyChar
-                )
+                                    Nothing ->
+                                        fail "No character"
+                            )
+                     )
+                        <|> anyChar
+                    )
 
 
-string : Parser s Expression
+string : Parser s MExp
 string =
     let
         singleString =
@@ -115,101 +126,117 @@ string =
             (String << String.concat)
                 <$> (Combine.string "\"\"\"" *> many (regex "[^\"]*") <* Combine.string "\"\"\"")
     in
-    multiString <|> singleString
+    withMeta <| multiString <|> singleString
 
 
-integer : Parser s Expression
+integer : Parser s MExp
 integer =
-    Integer <$> Combine.Num.int
+    withMeta <| Integer <$> Combine.Num.int
 
 
-float : Parser s Expression
+float : Parser s MExp
 float =
-    Float <$> Combine.Num.float
+    withMeta <| Float <$> Combine.Num.float
 
 
-access : Parser s Expression
+access : Parser s MExp
 access =
-    Access <$> variable <*> many1 (Combine.string "." *> loName)
+    withMeta <| Access <$> variable <*> many1 (Combine.string "." *> withMeta loName)
 
 
-accessFunction : Parser s Expression
+accessFunction : Parser s MExp
 accessFunction =
-    AccessFunction <$> (Combine.string "." *> loName)
+    withMeta <| AccessFunction <$> (Combine.string "." *> loName)
 
 
-variable : Parser s Expression
+variable : Parser s MExp
 variable =
-    Variable
-        <$> choice
-                [ singleton <$> loName
-                , sepBy1 (Combine.string ".") upName
-                , singleton <$> parens operator
-                , singleton <$> parens (Combine.regex ",+")
-                , singleton <$> emptyTuple
-                ]
+    withMeta <|
+        Variable
+            <$> choice
+                    [ singleton <$> loName
+                    , sepBy1 (Combine.string ".") upName
+                    , singleton <$> parens operator
+                    , singleton <$> parens (Combine.regex ",+")
+                    , singleton <$> emptyTuple
+                    ]
 
 
-list : OpTable -> Parser s Expression
+list : OpTable -> Parser s MExp
 list ops =
     lazy <|
         \() ->
-            List <$> brackets (commaSeparated_ <| expression ops)
+            withMeta <| List <$> brackets (commaSeparated_ <| expression ops)
 
 
-tuple : OpTable -> Parser s Expression
+tuple : OpTable -> Parser s MExp
 tuple ops =
     lazy <|
         \() ->
-            Tuple
-                <$> (parens (commaSeparated_ <| expression ops)
-                        >>= (\a ->
-                                case a of
-                                    [ _ ] ->
-                                        fail "No single tuples"
+            withMeta <|
+                Tuple
+                    <$> (parens (commaSeparated_ <| expression ops)
+                            >>= (\a ->
+                                    case a of
+                                        [ _ ] ->
+                                            fail "No single tuples"
 
-                                    anyOther ->
-                                        succeed anyOther
-                            )
-                    )
+                                        anyOther ->
+                                            succeed anyOther
+                                )
+                        )
 
 
-record : OpTable -> Parser s Expression
+record : OpTable -> Parser s MExp
 record ops =
     lazy <|
         \() ->
-            Record <$> braces (commaSeparated ((,) <$> loName <*> (symbol "=" *> expression ops)))
+            withMeta <| Record <$> braces (commaSeparated ((,) <$> withMeta loName <*> (symbol "=" *> expression ops)))
 
 
-simplifiedRecord : Parser s Expression
+simplifiedRecord : Parser s MExp
 simplifiedRecord =
+    let
+        branch { line, column } =
+            loName
+                |> map
+                    (\a ->
+                        ( addMeta line column a
+                        , addMeta line column (Variable [ a ])
+                        )
+                    )
+    in
     lazy <|
         \() ->
-            Record <$> braces (commaSeparated ((\a -> ( a, Variable [ a ] )) <$> loName))
+            withMeta <|
+                Record
+                    <$> braces (commaSeparated (withLocation branch))
 
 
-recordUpdate : OpTable -> Parser s Expression
+recordUpdate : OpTable -> Parser s MExp
 recordUpdate ops =
     lazy <|
         \() ->
-            RecordUpdate
-                <$> (symbol "{" *> loName)
-                <*> (symbol "|"
-                        *> commaSeparated ((,) <$> loName <*> (symbol "=" *> expression ops))
-                        <* Combine.string "}"
-                    )
+            withMeta <|
+                RecordUpdate
+                    <$> (symbol "{" *> withMeta loName)
+                    <*> (symbol "|"
+                            *> commaSeparated ((,) <$> withMeta loName <*> (symbol "=" *> expression ops))
+                            <* Combine.string "}"
+                        )
 
 
-letExpression : OpTable -> Parser s Expression
+letExpression : OpTable -> Parser s MExp
 letExpression ops =
     lazy <|
         \() ->
-            Let
-                <$> (symbol_ "let" *> many1 (letBinding ops))
-                <*> (symbol "in" *> expression ops)
+            withMeta <|
+                Let
+                    <$> (symbol_ "let" *> many1 (letBinding ops))
+                    <*> (symbol "in" *> expression ops)
 
 
-letBinding : OpTable -> Parser s ( Expression, Expression )
+letBinding : OpTable -> Parser s ( MExp, MExp )
 letBinding ops =
     lazy <|
         \() ->
@@ -218,17 +245,18 @@ letBinding ops =
                 <*> (symbol "=" *> expression ops)
 
 
-ifExpression : OpTable -> Parser s Expression
+ifExpression : OpTable -> Parser s MExp
 ifExpression ops =
     lazy <|
         \() ->
-            If
-                <$> (symbol "if" *> expression ops)
-                <*> (symbol "then" *> expression ops)
-                <*> (symbol "else" *> expression ops)
+            withMeta <|
+                If
+                    <$> (symbol "if" *> expression ops)
+                    <*> (symbol "then" *> expression ops)
+                    <*> (symbol "else" *> expression ops)
 
 
-caseExpression : OpTable -> Parser s Expression
+caseExpression : OpTable -> Parser s MExp
 caseExpression ops =
     let
         binding indent =
@@ -240,15 +268,16 @@ caseExpression ops =
     in
     lazy <|
         \() ->
-            Case
-                <$> (symbol "case" *> expression ops)
-                <*> (whitespace
-                        *> Combine.string "of"
-                        *> lookAhead countIndent
-                        >>= (\indent ->
-                                many1 (binding indent)
-                            )
-                    )
+            withMeta <|
+                Case
+                    <$> (symbol "case" *> expression ops)
+                    <*> (whitespace
+                            *> Combine.string "of"
+                            *> lookAhead countIndent
+                            >>= (\indent ->
+                                    many1 (binding indent)
+                                )
+                        )
 
 
 countIndent : Parser s Int
@@ -256,20 +285,26 @@ countIndent =
     newline *> spaces >>= (String.filter (\char -> char == ' ') >> String.length >> succeed)
 
 
-lambda : OpTable -> Parser s Expression
+lambda : OpTable -> Parser s MExp
 lambda ops =
     lazy <|
         \() ->
-            Lambda
-                <$> (symbol "\\" *> many (between_ spaces <| term ops))
-                <*> (symbol "->" *> expression ops)
+            withMeta <|
+                Lambda
+                    <$> (symbol "\\" *> many (between_ spaces <| term ops))
+                    <*> (symbol "->" *> expression ops)
 
 
-application : OpTable -> Parser s Expression
+application : OpTable -> Parser s MExp
 application ops =
     lazy <|
         \() ->
-            withColumn (\l -> chainl (Application <$ spacesOrIndentedNewline (l + 1)) (term ops))
+            withLocation
+                (\l ->
+                    chainl
+                        ((\a b -> addMeta l.line l.column (Application a b)) <$ spacesOrIndentedNewline (l.column + 1))
+                        (term ops)
+                )
 
 
 spacesOrIndentedNewline : Int -> Parser s ()
@@ -288,11 +323,11 @@ spacesOrIndentedNewline indentation =
                 )
 
 
-operatorOrAsBetween : Parser s String
+operatorOrAsBetween : Parser s (WithMeta String {})
 operatorOrAsBetween =
     lazy <|
         \() ->
-            between_ whitespace <| operator <|> symbol_ "as"
+            withMeta <| between_ whitespace <| operator <|> symbol_ "as"
 
 
 successOrEmptyList : Parser s (List a) -> Parser s (List a)
@@ -300,7 +335,7 @@ successOrEmptyList p =
     lazy <| \() -> choice [ p, succeed [] ]
 
 
-binary : OpTable -> Parser s Expression
+binary : OpTable -> Parser s MExp
 binary ops =
     lazy <|
         \() ->
@@ -327,7 +362,7 @@ binary ops =
 
 {-| A parses for term
 -}
-term : OpTable -> Parser s Expression
+term : OpTable -> Parser s MExp
 term ops =
     lazy <|
         \() ->
@@ -350,7 +385,7 @@ term ops =
 
 {-| A parser for Elm expressions.
 -}
-expression : OpTable -> Parser s Expression
+expression : OpTable -> Parser s MExp
 expression ops =
     lazy <|
         \() ->
@@ -379,12 +414,12 @@ level ops n =
     Tuple.second <| op ops n
 
 
-hasLevel : OpTable -> Int -> ( String, Expression ) -> Bool
+hasLevel : OpTable -> Int -> ( Operator, MExp ) -> Bool
 hasLevel ops l ( n, _ ) =
-    level ops n == l
+    level ops (dropMeta n) == l
 
 
-split : OpTable -> Int -> Expression -> List ( String, Expression ) -> Parser s Expression
+split : OpTable -> Int -> MExp -> List ( Operator, MExp ) -> Parser s MExp
 split ops l e eops =
     case eops of
         [] ->
@@ -417,7 +452,7 @@ split ops l e eops =
                     )
 
 
-splitLevel : OpTable -> Int -> Expression -> List ( String, Expression ) -> List (Parser s Expression)
+splitLevel : OpTable -> Int -> MExp -> List ( Operator, MExp ) -> List (Parser s MExp)
 splitLevel ops l e eops =
     case break (hasLevel ops l) eops of
         ( lops, ( _, e_ ) :: rops ) ->
@@ -427,49 +462,58 @@ splitLevel ops l e eops =
             [ split ops (l + 1) e lops ]
 
 
-joinL : List Expression -> List String -> Parser s Expression
+joinL : List MExp -> List Operator -> Parser s MExp
 joinL es ops =
     case ( es, ops ) of
         ( [ e ], [] ) ->
             succeed e
 
-        ( a :: b :: remE, op :: remO ) ->
-            joinL (BinOp (Variable [ op ]) a b :: remE) remO
+        ( a :: b :: remE, ( e, { line, column } ) :: remO ) ->
+            joinL
+                (addMeta line
+                    column
+                    (BinOp (addMeta line column <| Variable [ e ]) a b)
+                    :: remE
+                )
+                remO
 
         _ ->
             fail ""
 
 
-joinR : List Expression -> List String -> Parser s Expression
+joinR : List MExp -> List Operator -> Parser s MExp
 joinR es ops =
     case ( es, ops ) of
         ( [ e ], [] ) ->
             succeed e
 
-        ( a :: b :: remE, op :: remO ) ->
+        ( a :: b :: remE, ( e, { line, column } ) :: remO ) ->
             joinR (b :: remE) remO
                 |> andThen
-                    (\e ->
-                        succeed (BinOp (Variable [ op ]) a e)
+                    (\exp ->
+                        succeed
+                            (addMeta line column <|
+                                BinOp (addMeta line column (Variable [ e ])) a exp
+                            )
                     )
 
         _ ->
             fail ""
 
 
-findAssoc : OpTable -> Int -> List ( String, Expression ) -> Parser s Assoc
+findAssoc : OpTable -> Int -> List ( Operator, MExp ) -> Parser s Assoc
 findAssoc ops l eops =
     let
         lops =
             List.filter (hasLevel ops l) eops
 
         assocs =
-            List.map (assoc ops << Tuple.first) lops
+            List.map (assoc ops << dropMeta << Tuple.first) lops
 
         error issue =
             let
                 operators =
-                    List.map Tuple.first lops |> String.join " and "
+                    List.map (Tuple.first >> dropMeta) lops |> String.join " and "
             in
             "conflicting " ++ issue ++ " for operators " ++ operators
     in

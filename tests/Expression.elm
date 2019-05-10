@@ -1,33 +1,31 @@
-module Expression
-    exposing
-        ( application
-        , caseExpressions
-        , characterLiterals
-        , expressions
-        , floatLiterals
-        , intLiterals
-        , letExpressions
-        , list
-        , literals
-        , record
-        , stringLiterals
-        , tuple
-        )
+module Expression exposing
+    ( application
+    , caseExpressions
+    , characterLiterals
+    , expressions
+    , floatLiterals
+    , intLiterals
+    , letExpressions
+    , lists
+    , literals
+    , records
+    , stringLiterals
+    , tuples
+    )
 
-import Ast.Expression exposing (..)
-import Test exposing (describe, test, Test)
-import Helpers exposing (var, fails, isExpression)
+import Helpers exposing (..)
+import Test exposing (Test, describe, test)
 
 
 characterLiterals : Test
 characterLiterals =
     describe "Character literals"
         [ test "character literal" <|
-            \() -> "'a'" |> isExpression (Character 'a')
+            \() -> "'a'" |> isExpressionSansMeta (character 'a')
         , test "newline literal" <|
-            \() -> "'\n'" |> isExpression (Character '\n')
+            \() -> "'\n'" |> isExpressionSansMeta (character '\n')
         , test "Charcode literals" <|
-            \() -> "'\\x23'" |> isExpression (Character '#')
+            \() -> "'\\x23'" |> isExpressionSansMeta (character '#')
         , test "character literals must contain one character" <|
             \() -> fails "''"
         ]
@@ -37,11 +35,11 @@ intLiterals : Test
 intLiterals =
     describe "Integer literals"
         [ test "integer literal" <|
-            \() -> "0" |> isExpression (Integer 0)
+            \() -> "0" |> isExpressionSansMeta (integer 0)
         , test "positive literal" <|
-            \() -> "+12" |> isExpression (Integer 12)
+            \() -> "+12" |> isExpressionSansMeta (integer 12)
         , test "negative literal" <|
-            \() -> "-12" |> isExpression (Integer -12)
+            \() -> "-12" |> isExpressionSansMeta (integer -12)
         ]
 
 
@@ -49,11 +47,11 @@ floatLiterals : Test
 floatLiterals =
     describe "Float literals"
         [ test "float literal" <|
-            \() -> "0.5" |> isExpression (Float 0.5)
+            \() -> "0.5" |> isExpressionSansMeta (float 0.5)
         , test "positive literal" <|
-            \() -> "+12.5" |> isExpression (Float 12.5)
+            \() -> "+12.5" |> isExpressionSansMeta (float 12.5)
         , test "negative literal" <|
-            \() -> "-12.5" |> isExpression (Float -12.5)
+            \() -> "-12.5" |> isExpressionSansMeta (float -12.5)
         ]
 
 
@@ -61,17 +59,17 @@ stringLiterals : Test
 stringLiterals =
     describe "String literals"
         [ test "empty string" <|
-            \() -> "\"\"" |> isExpression (String "")
+            \() -> "\"\"" |> isExpressionSansMeta (string "")
         , test "simple string" <|
-            \() -> "\"hello\"" |> isExpression (String "hello")
+            \() -> "\"hello\"" |> isExpressionSansMeta (string "hello")
         , test "escaped string" <|
-            \() -> "\"hello, \\\"world\\\"\"" |> isExpression (String "hello, \\\"world\\\"")
+            \() -> "\"hello, \\\"world\\\"\"" |> isExpressionSansMeta (string "hello, \\\"world\\\"")
         , test "triple-quoted string" <|
-            \() -> "\"\"\"\"\"\"" |> isExpression (String "")
+            \() -> "\"\"\"\"\"\"" |> isExpressionSansMeta (string "")
         , test "multi-line strings" <|
-            \() -> "\"\"\"hello\nworld\"\"\"" |> isExpression (String "hello\nworld")
+            \() -> "\"\"\"hello\nworld\"\"\"" |> isExpressionSansMeta (string "hello\nworld")
         , test "double escaped string" <|
-            \() -> "\"\\\\\"" |> isExpression (String "\\\\")
+            \() -> "\"\\\\\"" |> isExpressionSansMeta (string "\\\\")
         ]
 
 
@@ -91,25 +89,25 @@ letExpressions =
         [ test "single binding" <|
             \() ->
                 "let a = 42 in a"
-                    |> isExpression
-                        (Let
-                            [ ( var "a", Integer 42 ) ]
+                    |> isExpressionSansMeta
+                        (let_
+                            [ ( var "a", integer 42 ) ]
                             (var "a")
                         )
         , test "bind to _" <|
             \() ->
                 "let _ = 42 in 24"
-                    |> isExpression
-                        (Let
-                            [ ( var "_", Integer 42 ) ]
-                            (Integer 24)
+                    |> isExpressionSansMeta
+                        (let_
+                            [ ( var "_", integer 42 ) ]
+                            (integer 24)
                         )
         , test "Can start with a tag name" <|
             \() ->
                 "let letter = 1 \n in letter"
-                    |> isExpression
-                        (Let
-                            [ ( var "letter", Integer 1 ) ]
+                    |> isExpressionSansMeta
+                        (let_
+                            [ ( var "letter", integer 1 ) ]
                             (var "letter")
                         )
         , test "function 1" <|
@@ -120,10 +118,10 @@ let
 in
   f 4
         """
-                    |> isExpression
-                        (Let
-                            [ ( Application (var "f") (var "x"), (BinOp (var "+") (var "x") (Integer 1)) ) ]
-                            (Application (var "f") (Integer 4))
+                    |> isExpressionSansMeta
+                        (let_
+                            [ ( app (var "f") (var "x"), binOp (var "+") (var "x") (integer 1) ) ]
+                            (app (var "f") (integer 4))
                         )
         , test "function 2" <|
             \() ->
@@ -133,17 +131,17 @@ let
   g x = x + 1
 in
   f 4
-        """
-                    |> isExpression
-                        (Let
-                            [ ( (Application (var "f") (var "x"))
-                              , (BinOp (var "+") (var "x") (Integer 1))
+"""
+                    |> isExpressionSansMeta
+                        (let_
+                            [ ( app (var "f") (var "x")
+                              , binOp (var "+") (var "x") (integer 1)
                               )
-                            , ( Application (var "g") (var "x")
-                              , (BinOp (var "+") (var "x") (Integer 1))
+                            , ( app (var "g") (var "x")
+                              , binOp (var "+") (var "x") (integer 1)
                               )
                             ]
-                            (Application (var "f") (Integer 4))
+                            (app (var "f") (integer 4))
                         )
         , test "multiple bindings" <|
             \() ->
@@ -155,10 +153,10 @@ let
 in
   b
             """
-                    |> isExpression
-                        (Let
-                            [ ( var "a", Integer 42 )
-                            , ( var "b", (BinOp (var "+") (var "a") (Integer 1)) )
+                    |> isExpressionSansMeta
+                        (let_
+                            [ ( var "a", integer 42 )
+                            , ( var "b", binOp (var "+") (var "a") (integer 1) )
                             ]
                             (var "b")
                         )
@@ -167,7 +165,7 @@ in
 
 caseExpressions : Test
 caseExpressions =
-    describe "Case"
+    describe "case_"
         [ test "simple statement" <|
             \() ->
                 """
@@ -178,11 +176,11 @@ case x of
   Just y ->
     y
           """
-                    |> isExpression
-                        (Case
+                    |> isExpressionSansMeta
+                        (case_
                             (var "x")
-                            [ ( var "Nothing", Integer 0 )
-                            , ( Application (var "Just") (var "y"), (var "y") )
+                            [ ( var "Nothing", integer 0 )
+                            , ( app (var "Just") (var "y"), var "y" )
                             ]
                         )
         , test "binding to underscore" <|
@@ -192,10 +190,10 @@ case x of
   _ ->
     42
           """
-                    |> isExpression
-                        (Case
+                    |> isExpressionSansMeta
+                        (case_
                             (var "x")
-                            [ ( var "_", Integer 42 ) ]
+                            [ ( var "_", integer 42 ) ]
                         )
         , test "Nested case" <|
             \() ->
@@ -208,11 +206,11 @@ case x of
       b1 -> b1
   c -> c
             """
-                    |> isExpression
-                        (Case
+                    |> isExpressionSansMeta
+                        (case_
                             (var "x")
                             [ ( var "a", var "a" )
-                            , ( var "b", Case (var "y") [ ( var "a1", var "a1" ), ( var "b1", var "b1" ) ] )
+                            , ( var "b", case_ (var "y") [ ( var "a1", var "a1" ), ( var "b1", var "b1" ) ] )
                             , ( var "c", var "c" )
                             ]
                         )
@@ -221,21 +219,21 @@ case x of
 
 application : Test
 application =
-    describe "Application"
+    describe "app"
         [ test "simple application" <|
             \() ->
                 "f a"
-                    |> isExpression
-                        (Application
+                    |> isExpressionSansMeta
+                        (app
                             (var "f")
                             (var "a")
                         )
         , test "curried application" <|
             \() ->
                 "f a b"
-                    |> isExpression
-                        (Application
-                            (Application
+                    |> isExpressionSansMeta
+                        (app
+                            (app
                                 (var "f")
                                 (var "a")
                             )
@@ -244,9 +242,9 @@ application =
         , test "curried application with parens" <|
             \() ->
                 "(f a) b"
-                    |> isExpression
-                        (Application
-                            (Application
+                    |> isExpressionSansMeta
+                        (app
+                            (app
                                 (var "f")
                                 (var "a")
                             )
@@ -255,9 +253,9 @@ application =
         , test "multiline application" <|
             \() ->
                 "  f\n   a\n b"
-                    |> isExpression
-                        (Application
-                            (Application
+                    |> isExpressionSansMeta
+                        (app
+                            (app
                                 (var "f")
                                 (var "a")
                             )
@@ -266,176 +264,170 @@ application =
         , test "multiline bug" <|
             \() ->
                 "f\n (==)"
-                    |> isExpression
-                        (Application
+                    |> isExpressionSansMeta
+                        (app
                             (var "f")
                             (var "==")
                         )
         , test "same multiline bug" <|
             \() ->
                 "f\n \"I like the symbol =\""
-                    |> isExpression
-                        (Application
+                    |> isExpressionSansMeta
+                        (app
                             (var "f")
-                            (String "I like the symbol =")
+                            (StringSM "I like the symbol =")
                         )
         , test "constructor application" <|
             \() ->
                 "Cons a Nil"
-                    |> isExpression
-                        (Application
-                            (Application
+                    |> isExpressionSansMeta
+                        (app
+                            (app
                                 (var "Cons")
                                 (var "a")
                             )
                             (var "Nil")
                         )
-        , test "Application with record update" <|
+        , test "app with record update" <|
             \() ->
                 "a  { r | f = 1 } c"
-                    |> isExpression
-                        (Application
-                            (Application
+                    |> isExpressionSansMeta
+                        (app
+                            (app
                                 (var "a")
-                                (RecordUpdate "r" [ ( "f", Integer 1 ) ])
+                                (recordUpdate "r" [ ( "f", integer 1 ) ])
                             )
                             (var "c")
                         )
         ]
 
 
-tuple : Test
-tuple =
-    describe "Tuples"
+tuples : Test
+tuples =
+    describe "tuples"
         [ test "Empty tuple" <|
-            \() -> "()" |> isExpression (var "()")
+            \() -> "()" |> isExpressionSansMeta (var "()")
         , test "Simple tuple" <|
             \() ->
                 "(a, b)"
-                    |> isExpression
-                        (Tuple
-                            [ (var "a")
-                            , (var "b")
+                    |> isExpressionSansMeta
+                        (tuple
+                            [ var "a"
+                            , var "b"
                             ]
                         )
         , test "Simple tuple with format" <|
             \() ->
                 "( a, b )"
-                    |> isExpression
-                        (Tuple
-                            [ (var "a")
-                            , (var "b")
+                    |> isExpressionSansMeta
+                        (tuple
+                            [ var "a"
+                            , var "b"
                             ]
                         )
         ]
 
 
-list : Test
-list =
+lists : Test
+lists =
     describe "Lists"
-        [ test "Empty list" <| \() -> "[]" |> isExpression (List [])
+        [ test "Empty list" <| \() -> "[]" |> isExpressionSansMeta (list [])
         , test "Simple list" <|
-            \() -> "[1, 2]" |> isExpression (List [ Integer 1, Integer 2 ])
-        , test "Tuple list" <|
+            \() -> "[1, 2]" |> isExpressionSansMeta (list [ integer 1, integer 2 ])
+        , test "tuple list" <|
             \() ->
                 "[(a, b), (a, b)]"
-                    |> isExpression
-                        (List
-                            [ (Tuple
-                                [ (var "a")
-                                , (var "b")
+                    |> isExpressionSansMeta
+                        (list
+                            [ tuple
+                                [ var "a"
+                                , var "b"
                                 ]
-                              )
-                            , (Tuple
-                                [ (var "a")
-                                , (var "b")
+                            , tuple
+                                [ var "a"
+                                , var "b"
                                 ]
-                              )
                             ]
                         )
         ]
 
 
-record : Test
-record =
+records : Test
+records =
     describe "Record"
         [ test "Simple record" <|
             \() ->
                 "{a = b}"
-                    |> isExpression
-                        (Record [ ( "a", (var "b") ) ])
+                    |> isExpressionSansMeta
+                        (record [ ( "a", var "b" ) ])
         , test "Simple record with many fields" <|
             \() ->
                 "{a = b, b = 2}"
-                    |> isExpression
-                        (Record
-                            [ ( "a", (var "b") )
-                            , ( "b", (Integer 2) )
+                    |> isExpressionSansMeta
+                        (record
+                            [ ( "a", var "b" )
+                            , ( "b", integer 2 )
                             ]
                         )
         , test "Simple record with many tuple fields" <|
             \() ->
                 "{a = (a, b), b = (a, b)}"
-                    |> isExpression
-                        (Record
+                    |> isExpressionSansMeta
+                        (record
                             [ ( "a"
-                              , (Tuple
-                                    [ (var "a")
-                                    , (var "b")
+                              , tuple
+                                    [ var "a"
+                                    , var "b"
                                     ]
-                                )
                               )
                             , ( "b"
-                              , (Tuple
-                                    [ (var "a")
-                                    , (var "b")
+                              , tuple
+                                    [ var "a"
+                                    , var "b"
                                     ]
-                                )
                               )
                             ]
                         )
         , test "Simple record with updated field" <|
             \() ->
                 "{a | b = 2, c = 3}"
-                    |> isExpression
-                        (RecordUpdate
+                    |> isExpressionSansMeta
+                        (recordUpdate
                             "a"
-                            [ ( "b", (Integer 2) )
-                            , ( "c", (Integer 3) )
+                            [ ( "b", integer 2 )
+                            , ( "c", integer 3 )
                             ]
                         )
         , test "Simple record with advanced field" <|
             \() ->
                 "{a = Just 2}"
-                    |> isExpression
-                        (Record
+                    |> isExpressionSansMeta
+                        (record
                             [ ( "a"
-                              , (Application
+                              , app
                                     (var "Just")
-                                    (Integer 2)
-                                )
+                                    (integer 2)
                               )
                             ]
                         )
         , test "Simple update record with advanced field" <|
             \() ->
                 "{a | a = Just 2}"
-                    |> isExpression
-                        (RecordUpdate
+                    |> isExpressionSansMeta
+                        (recordUpdate
                             "a"
                             [ ( "a"
-                              , (Application
+                              , app
                                     (var "Just")
-                                    (Integer 2)
-                                )
+                                    (integer 2)
                               )
                             ]
                         )
         , test "Simplified record destructuring pattern" <|
             \() ->
                 "{a, b}"
-                    |> isExpression
-                        (Record
+                    |> isExpressionSansMeta
+                        (record
                             [ ( "a"
                               , var "a"
                               )
@@ -451,67 +443,66 @@ expressions : Test
 expressions =
     describe "Expressions"
         [ test "Operator in parens" <|
-            \() -> "(+)" |> isExpression (var "+")
+            \() -> "(+)" |> isExpressionSansMeta (var "+")
         , test "Operators passed to map" <|
             \() ->
                 "reduce (+) list"
-                    |> isExpression
-                        (Application
-                            (Application
+                    |> isExpressionSansMeta
+                        (app
+                            (app
                                 (var "reduce")
                                 (var "+")
                             )
                             (var "list")
                         )
         , test "partial application" <|
-            \() -> "(+) 2" |> isExpression (Application (var "+") (Integer 2))
-        , test "Case with as" <|
+            \() -> "(+) 2" |> isExpressionSansMeta (app (var "+") (integer 2))
+        , test "case_ with as" <|
             \() ->
                 "case a of\n  T _ as x -> 1"
-                    |> isExpression
-                        (Case
+                    |> isExpressionSansMeta
+                        (case_
                             (var "a")
-                            ([ ( BinOp (var "as")
-                                    (Application (var "T")
+                            [ ( binOp (var "as")
+                                    (app (var "T")
                                         (var "_")
                                     )
                                     (var "x")
-                               , Integer 1
-                               )
-                             ]
-                            )
+                              , integer 1
+                              )
+                            ]
                         )
         , test "cons has right assoc" <|
             \() ->
                 "a :: b :: c"
-                    |> isExpression
-                        (BinOp (var "::")
+                    |> isExpressionSansMeta
+                        (binOp (var "::")
                             (var "a")
-                            (BinOp (var "::") (var "b") (var "c"))
+                            (binOp (var "::") (var "b") (var "c"))
                         )
         , test "cons has right assoc with tuple" <|
             \() ->
                 "(a, a :: b :: c)"
-                    |> isExpression
-                        (Tuple
-                            [ (var "a")
-                            , ((BinOp (var "::") (var "a"))
-                                (BinOp (var "::") (var "b") (var "c"))
-                              )
+                    |> isExpressionSansMeta
+                        (tuple
+                            [ var "a"
+                            , binOp (var "::")
+                                (var "a")
+                                (binOp (var "::") (var "b") (var "c"))
                             ]
-                        )
+                    )
         , test "Destructuring lambda" <|
             \() ->
                 "\\(a,b) acc -> 1"
-                    |> isExpression
-                        (Lambda [ (Tuple [ (var "a"), (var "b") ]), (var "acc") ] (Integer 1))
+                    |> isExpressionSansMeta
+                        (lambda [ tuple [ var "a", var "b" ], var "acc" ] (integer 1))
         , test "Destructuring Let" <|
             \() ->
                 "let (a,b) = (1,2) in a"
-                    |> isExpression
-                        (Let
-                            [ ( (Tuple [ (var "a"), (var "b") ])
-                              , (Tuple [ Integer 1, Integer 2 ])
+                    |> isExpressionSansMeta
+                        (let_
+                            [ ( tuple [ var "a", var "b" ]
+                              , tuple [ integer 1, integer 2 ]
                               )
                             ]
                             (var "a")
@@ -519,11 +510,11 @@ expressions =
         , test "Access" <|
             \() ->
                 "Module.a"
-                    |> isExpression
-                        (Access (var "Module") [ "a" ])
+                    |> isExpressionSansMeta
+                        (access (var "Module") [ "a" ])
         , test "AccessFunction" <|
             \() ->
                 "map .a list"
-                    |> isExpression
-                        (Application (Application (var "map") (AccessFunction "a")) (var "list"))
+                    |> isExpressionSansMeta
+                        (app (app (var "map") (accessFun "a")) (var "list"))
         ]
