@@ -20,6 +20,7 @@ install:
   - node --version
   - npm --version
   - npm install -g elm@$ELM_VERSION elm-test@0.18.13-beta
+  - npm install -g elm-github-install
   - git clone https://github.com/NoRedInk/elm-ops-tooling
   - elm-ops-tooling/with_retry.rb elm package install --yes
   # Faster compile on Travis.
@@ -34,7 +35,7 @@ install:
     fi
 
 before_script:
-  - cd tests && $TRAVIS_BUILD_DIR/sysconfcpus/bin/sysconfcpus -n 2 elm-make --yes && cd ..
+  - cd tests && elm-github-install && $TRAVIS_BUILD_DIR/sysconfcpus/bin/sysconfcpus -n 2 elm-make --yes && cd ..
 
 script:
   - $TRAVIS_BUILD_DIR/sysconfcpus/bin/sysconfcpus -n 2 elm-test
