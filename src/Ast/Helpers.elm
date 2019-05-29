@@ -11,6 +11,7 @@ module Ast.Helpers exposing
     , moduleName
     , name
     , operator
+    , optionalParens
     , reserved
     , reservedOperators
     , spaces
@@ -18,6 +19,8 @@ module Ast.Helpers exposing
     , symbol
     , symbol_
     , upName
+    , varName
+    , wild
     )
 
 import Ast.Common exposing (..)
@@ -50,6 +53,9 @@ reservedOperators : List Name
 reservedOperators =
     [ "=", ".", "..", "->", "--", "|", ":" ]
 
+
+optionalParens : Parser s a -> Parser s a
+optionalParens p = p <|> parens p
 
 between_ : Parser s a -> Parser s res -> Parser s res
 between_ p =
@@ -108,18 +114,24 @@ name p =
 
 loName : Parser s String
 loName =
-    let
-        loName_ =
-            name lower
-                >>= (\n ->
-                        if List.member n reserved then
-                            fail <| "name '" ++ n ++ "' is reserved"
+    wild <|> varName
 
-                        else
-                            succeed n
-                    )
-    in
-    string "_" <|> loName_
+
+wild : Parser s String
+wild =
+    string "_"
+
+
+varName : Parser s String
+varName =
+    name lower
+        >>= (\n ->
+                if List.member n reserved then
+                    fail <| "name '" ++ n ++ "' is reserved"
+
+                else
+                    succeed n
+            )
 
 
 upName : Parser s String

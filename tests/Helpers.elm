@@ -1,10 +1,10 @@
 module Helpers exposing (..)
 
-import Ast exposing (parse, parseExpression, parseStatement)
+import Ast exposing (parse, parseExpression, parsePattern, parseStatement)
 import Ast.BinOp exposing (Assoc, operators)
 import Ast.Common exposing (..)
-import Ast.Expression exposing (Expression(..), MExp)
-import Ast.Statement exposing (ExportSet(..), StatementBase(..), Statement, Type(..))
+import Ast.Expression exposing (Expression(..), Literal(..), MExp, Pattern(..))
+import Ast.Statement exposing (ExportSet(..), Statement, StatementBase(..), Type(..))
 import Expect exposing (..)
 
 
@@ -13,11 +13,8 @@ import Expect exposing (..)
 
 
 type ExpressionSansMeta
-    = CharacterSM Char
-    | StringSM String
-    | IntegerSM Int
-    | FloatSM Float
-    | VariableSM (List Name)
+    = LiteralSM Literal
+    | VariableSM Name
     | ListSM (List ExpressionSansMeta)
     | TupleSM (List ExpressionSansMeta)
     | AccessSM ExpressionSansMeta (List Name)
@@ -48,7 +45,7 @@ type StatementSansMeta
 
 
 dropStatementMeta : Statement -> StatementSansMeta
-dropStatementMeta (s, _) =
+dropStatementMeta ( s, _ ) =
     case s of
         ModuleDeclaration mn es ->
             ModuleDeclarationSM mn es
@@ -105,17 +102,8 @@ dropDoubleMExp ( a, b ) =
 dropExpressionMeta : Expression -> ExpressionSansMeta
 dropExpressionMeta e =
     case e of
-        Character c ->
-            CharacterSM c
-
-        String s ->
-            StringSM s
-
-        Integer i ->
-            IntegerSM i
-
-        Float f ->
-            FloatSM f
+        Literal l ->
+            LiteralSM l
 
         Variable l ->
             VariableSM l
@@ -188,28 +176,49 @@ recordUpdate name =
 
 
 var : String -> ExpressionSansMeta
-var name =
-    VariableSM [ name ]
+var =
+    VariableSM
+
 
 
 integer : Int -> ExpressionSansMeta
 integer =
-    IntegerSM
+    LiteralSM << Integer
+
+
+integerPattern : Int -> Pattern
+integerPattern =
+    PLiteral << Integer
 
 
 float : Float -> ExpressionSansMeta
 float =
-    FloatSM
+    LiteralSM << Float
+
+
+floatPattern : Float -> Pattern
+floatPattern =
+    PLiteral << Float
 
 
 character : Char -> ExpressionSansMeta
 character =
-    CharacterSM
+    LiteralSM << Character
+
+
+characterPattern : Char -> Pattern
+characterPattern =
+    PLiteral << Character
 
 
 string : String -> ExpressionSansMeta
 string =
-    StringSM
+    LiteralSM << String
+
+
+stringPattern : String -> Pattern
+stringPattern =
+    PLiteral << String
 
 
 binOp :
@@ -330,6 +339,16 @@ fails s =
             Expect.fail (s ++ " expected to fail")
 
 
+failsPattern : String -> Expectation
+failsPattern s =
+    case parsePattern s of
+        Err _ ->
+            Expect.pass
+
+        _ ->
+            Expect.fail (s ++ " expected to fail")
+
+
 simpleParse : String -> Result String MExp
 simpleParse i =
     case parseExpression operators (String.trim i) of
@@ -412,6 +431,16 @@ areStatementsSansMeta s i =
     case parse i of
         Ok ( _, _, r ) ->
             Expect.equal (List.map dropStatementMeta r) s
+
+        Err ( _, { position }, es ) ->
+            Expect.fail ("failed to parse: " ++ i ++ " at position " ++ toString position ++ " with errors: " ++ toString es)
+
+
+isPattern : Ast.Expression.Pattern -> String -> Expectation
+isPattern p i =
+    case parsePattern i of
+        Ok ( _, _, r ) ->
+            Expect.equal r p
 
         Err ( _, { position }, es ) ->
             Expect.fail ("failed to parse: " ++ i ++ " at position " ++ toString position ++ " with errors: " ++ toString es)
