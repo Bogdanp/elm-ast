@@ -179,8 +179,8 @@ case x of
                     |> isExpressionSansMeta
                         (case_
                             (var "x")
-                            [ ( var "Nothing", integer 0 )
-                            , ( app (var "Just") (var "y"), var "y" )
+                            [ ( ConstructorSM "Nothing", integer 0 )
+                            , ( app (ConstructorSM "Just") (var "y"), var "y" )
                             ]
                         )
         , test "binding to underscore" <|
@@ -275,7 +275,7 @@ application =
                     |> isExpressionSansMeta
                         (app
                             (var "f")
-                            (StringSM "I like the symbol =")
+                            (string "I like the symbol =")
                         )
         , test "constructor application" <|
             \() ->
@@ -283,10 +283,10 @@ application =
                     |> isExpressionSansMeta
                         (app
                             (app
-                                (var "Cons")
+                                (ConstructorSM "Cons")
                                 (var "a")
                             )
-                            (var "Nil")
+                            (ConstructorSM "Nil")
                         )
         , test "app with record update" <|
             \() ->
@@ -405,7 +405,7 @@ records =
                         (record
                             [ ( "a"
                               , app
-                                    (var "Just")
+                                    (ConstructorSM "Just")
                                     (integer 2)
                               )
                             ]
@@ -418,7 +418,7 @@ records =
                             "a"
                             [ ( "a"
                               , app
-                                    (var "Just")
+                                    (ConstructorSM "Just")
                                     (integer 2)
                               )
                             ]
@@ -464,7 +464,7 @@ expressions =
                         (case_
                             (var "a")
                             [ ( binOp (var "as")
-                                    (app (var "T")
+                                    (app (ConstructorSM "T")
                                         (var "_")
                                     )
                                     (var "x")
@@ -490,7 +490,7 @@ expressions =
                                 (var "a")
                                 (binOp (var "::") (var "b") (var "c"))
                             ]
-                    )
+                        )
         , test "Destructuring lambda" <|
             \() ->
                 "\\(a,b) acc -> 1"
@@ -511,7 +511,7 @@ expressions =
             \() ->
                 "Module.a"
                     |> isExpressionSansMeta
-                        (access (var "Module") [ "a" ])
+                        (ExternalSM [ "Module" ] (var "a"))
         , test "AccessFunction" <|
             \() ->
                 "map .a list"

@@ -57,6 +57,8 @@ type alias Operator =
 type Expression
     = Literal Literal
     | Variable Name
+    | Constructor Name
+    | External (List Name) MExp
     | List (List MExp)
     | Tuple (List MExp)
     | Access MExp (List MName)
@@ -102,7 +104,7 @@ type Literal
 -}
 pattern : Parser s Pattern
 pattern =
-    nonLeftRecursive >>= leftRecursive
+    optionalParens <| lazy <| \() -> nonLeftRecursive >>= leftRecursive
 
 
 
@@ -115,23 +117,23 @@ pattern =
 
 leftRecursive : Pattern -> Parser s Pattern
 leftRecursive p =
-    optionalParens <|
-        lazy <|
-            \() ->
-                choice
-                    [ (PAs p <$> (symbol "as" *> varName)) >>= leftRecursive
-
-                    -- , ((PCons p) <$> (symbol "::" *> pattern)) >>= leftRecursive
-                    , succeed p -- epsilon
-                    ]
+    lazy <|
+        \() ->
+            choice
+                [ optionalParens (PAs p <$> (symbol "as" *> varName))
+                    >>= leftRecursive
+                , optionalParens (symbol "::" *> (PCons p <$> pattern))
+                    >>= leftRecursive
+                , succeed p -- epsilon
+                ]
 
 
 nonLeftRecursive : Parser s Pattern
 nonLeftRecursive =
-    optionalParens <|
-        lazy <|
-            \() ->
-                choice
+    lazy <|
+        \() ->
+            choice <|
+                List.map optionalParens
                     [ wildPattern
                     , varPattern
                     , PConstructor <$> upName <*> many (between_ spaces pattern)
@@ -268,12 +270,17 @@ float =
 
 access : Parser s MExp
 access =
-    withMeta <| Access <$> variable <*> many1 (Combine.string "." *> withMeta loName)
+    withMeta <| Access <$> variable <*> many1 (Combine.string "." *> withMeta varName)
 
 
 accessFunction : Parser s MExp
 accessFunction =
     withMeta <| AccessFunction <$> (Combine.string "." *> loName)
+
+
+external : Parser s MExp
+external =
+    withMeta <| External <$> many1 (upName <* Combine.string ".") <*> (variable <|> constructor)
 
 
 variable : Parser s MExp
@@ -286,6 +293,11 @@ variable =
                     , parens (Combine.regex ",+")
                     , emptyTuple
                     ]
+
+
+constructor : Parser s MExp
+constructor =
+    withMeta <| Constructor <$> upName
 
 
 list : OpTable -> Parser s MExp
@@ -484,8 +496,10 @@ term ops =
     lazy <|
         \() ->
             choice
-                [ access
+                [ external
+                , access
                 , variable
+                , constructor
                 , accessFunction
                 , string
                 , float

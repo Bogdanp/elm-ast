@@ -1,12 +1,6 @@
-module Pattern exposing (aliases, characterLiterals, constructor, floatLiterals, intLiterals, stringLiterals, variable, wildcard)
+module Pattern exposing (aliases, characterLiterals, cons, constructor, floatLiterals, intLiterals, stringLiterals, variable, wildcard)
 
-import Ast.Common exposing (..)
 import Ast.Expression exposing (Literal(..), Pattern(..), pattern)
-import Ast.Statement exposing (..)
-import Combine exposing (..)
-import Combine.Char exposing (..)
-import Debug exposing (log)
-import Expect
 import Helpers exposing (..)
 import Test exposing (Test, describe, test)
 
@@ -114,6 +108,27 @@ aliases =
                             )
                             "y"
                         )
+        , test "recursive" <|
+            \() ->
+                "x as y as z"
+                    |> isPattern (PAs (PAs (PVariable "x") "y") "z")
+        , test "recursive 2" <|
+            \() ->
+                "(Nothing as x) as y"
+                    |> isPattern
+                        (PAs (PAs (PConstructor "Nothing" []) "x") "y")
+        ]
+
+
+cons : Test
+cons =
+    describe "Cons"
+        [ test "multiple" <|
+            \() ->
+                "1 :: x :: []" |> isPattern (PCons (PLiteral (Integer 1)) (PCons (PVariable "x") (PList [])))
+        , test "mixed" <|
+            \() ->
+                "(Nothing as x) :: y" |> isPattern (PVariable "X")
         ]
 
 
