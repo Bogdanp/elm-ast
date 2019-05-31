@@ -17,7 +17,9 @@ type ExpressionSansMeta
     | StringSM String
     | IntegerSM Int
     | FloatSM Float
-    | VariableSM (List Name)
+    | VariableSM Name
+    | ConstructorSM Name
+    | ExternalSM (List Name) ExpressionSansMeta
     | ListSM (List ExpressionSansMeta)
     | TupleSM (List ExpressionSansMeta)
     | AccessSM ExpressionSansMeta (List Name)
@@ -120,6 +122,12 @@ dropExpressionMeta e =
         Variable l ->
             VariableSM l
 
+        Constructor n ->
+            ConstructorSM n
+
+        External l e ->
+            ExternalSM l (dropMExpMeta e)
+
         List l ->
             ListSM (List.map dropMExpMeta l)
 
@@ -189,7 +197,7 @@ recordUpdate name =
 
 var : String -> ExpressionSansMeta
 var name =
-    VariableSM [ name ]
+    VariableSM name
 
 
 integer : Int -> ExpressionSansMeta
@@ -347,7 +355,7 @@ isExpression e i =
             Expect.equal e r
 
         Err ( _, { position }, es ) ->
-            Expect.fail ("failed to parse: " ++ i ++ " at position " ++ toString position ++ " with errors: " ++ toString es)
+            Expect.fail <| failure i position es
 
 
 isExpressionSansMeta : ExpressionSansMeta -> String -> Expectation
@@ -374,7 +382,7 @@ isApplicationSansMeta fn args i =
             Expect.equal l r
 
         Err ( _, { position }, es ) ->
-            Expect.fail ("failed to parse: " ++ i ++ " at position " ++ toString position ++ " with errors: " ++ toString es)
+            Expect.fail <| failure i position es
 
 
 isStatement : Statement -> String -> Expectation
@@ -384,7 +392,7 @@ isStatement s i =
             Expect.equal r s
 
         Err ( _, { position }, es ) ->
-            Expect.fail ("failed to parse: " ++ i ++ " at position " ++ toString position ++ " with errors: " ++ toString es)
+            Expect.fail <| failure i position es
 
 
 isStatementSansMeta : StatementSansMeta -> String -> Expectation
@@ -394,7 +402,7 @@ isStatementSansMeta s i =
             Expect.equal (dropStatementMeta r) s
 
         Err ( _, { position }, es ) ->
-            Expect.fail ("failed to parse: " ++ i ++ " at position " ++ toString position ++ " with errors: " ++ toString es)
+            Expect.fail <| failure i position es
 
 
 areStatements : List Statement -> String -> Expectation
@@ -404,7 +412,7 @@ areStatements s i =
             Expect.equal r s
 
         Err ( _, { position }, es ) ->
-            Expect.fail ("failed to parse: " ++ i ++ " at position " ++ toString position ++ " with errors: " ++ toString es)
+            Expect.fail <| failure i position es
 
 
 areStatementsSansMeta : List StatementSansMeta -> String -> Expectation
@@ -414,4 +422,9 @@ areStatementsSansMeta s i =
             Expect.equal (List.map dropStatementMeta r) s
 
         Err ( _, { position }, es ) ->
-            Expect.fail ("failed to parse: " ++ i ++ " at position " ++ toString position ++ " with errors: " ++ toString es)
+            Expect.fail <| failure i position es
+
+
+failure : String -> Int -> List String -> String
+failure i position es =
+    "failed to parse: " ++ i ++ " at position " ++ toString position ++ " (" ++ String.slice position (position + 1) i ++ ") with errors: " ++ toString es

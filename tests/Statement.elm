@@ -236,9 +236,9 @@ portStatements =
                     |> isStatementSansMeta
                         (portDeclaration "focus"
                             []
-                            (access
-                                (var "Cmd")
-                                [ "none" ]
+                            (ExternalSM
+                                ["Cmd"]
+                                (var "none")
                             )
                         )
         ]

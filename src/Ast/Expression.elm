@@ -59,7 +59,9 @@ type Expression
     | String String
     | Integer Int
     | Float Float
-    | Variable (List Name)
+    | Variable Name
+    | Constructor Name
+    | External (List Name) MExp
     | List (List MExp)
     | Tuple (List MExp)
     | Access MExp (List MName)
@@ -142,7 +144,7 @@ float =
 
 access : Parser s MExp
 access =
-    withMeta <| Access <$> variable <*> many1 (Combine.string "." *> withMeta loName)
+    withMeta <| Access <$> variable <*> many1 (Combine.string "." *> withMeta varName)
 
 
 accessFunction : Parser s MExp
@@ -150,17 +152,26 @@ accessFunction =
     withMeta <| AccessFunction <$> (Combine.string "." *> loName)
 
 
+external : Parser s MExp
+external =
+    withMeta <| External <$> many1 (upName <* Combine.string ".") <*> (variable <|> constructor)
+
+
 variable : Parser s MExp
 variable =
     withMeta <|
         Variable
             <$> choice
-                    [ singleton <$> loName
-                    , sepBy1 (Combine.string ".") upName
-                    , singleton <$> parens operator
-                    , singleton <$> parens (Combine.regex ",+")
-                    , singleton <$> emptyTuple
+                    [ loName
+                    , parens operator
+                    , parens (Combine.regex ",+")
+                    , emptyTuple
                     ]
+
+
+constructor : Parser s MExp
+constructor =
+    withMeta <| Constructor <$> upName
 
 
 list : OpTable -> Parser s MExp
@@ -203,7 +214,7 @@ simplifiedRecord =
                 |> map
                     (\a ->
                         ( addMeta line column a
-                        , addMeta line column (Variable [ a ])
+                        , addMeta line column (Variable a)
                         )
                     )
     in
@@ -368,8 +379,10 @@ term ops =
     lazy <|
         \() ->
             choice
-                [ access
+                [ external
+                , access
                 , variable
+                , constructor
                 , accessFunction
                 , string
                 , float
@@ -473,7 +486,7 @@ joinL es ops =
             joinL
                 (addMeta line
                     column
-                    (BinOp (addMeta line column <| Variable [ e ]) a b)
+                    (BinOp (addMeta line column <| Variable e) a b)
                     :: remE
                 )
                 remO
@@ -494,7 +507,7 @@ joinR es ops =
                     (\exp ->
                         succeed
                             (addMeta line column <|
-                                BinOp (addMeta line column (Variable [ e ])) a exp
+                                BinOp (addMeta line column (Variable e)) a exp
                             )
                     )
 
