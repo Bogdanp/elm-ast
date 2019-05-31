@@ -1,5 +1,5 @@
 module Ast.Expression exposing
-    ( Expression(..), MExp
+    ( Expression(..), MExp, Literal(..)
     , expression
     , term
     )
@@ -9,7 +9,7 @@ module Ast.Expression exposing
 
 # Types
 
-@docs Expression, MExp
+@docs Expression, MExp, Literal
 
 
 # rs
@@ -55,10 +55,7 @@ type alias Operator =
 {-| Representations for Elm's expressions.
 -}
 type Expression
-    = Character Char
-    | String String
-    | Integer Int
-    | Float Float
+    = Literal Literal
     | Variable Name
     | Constructor Name
     | External (List Name) MExp
@@ -76,70 +73,128 @@ type Expression
     | BinOp MExp MExp MExp
 
 
+
+{-| Simple literal patterns
+-}
+type Literal
+    = Character Char
+    | String String
+    | Integer Int
+    | Float Float
+
+
+listParser : Parser s a -> Parser s (List a)
+listParser el =
+    brackets <| commaSeparated_ el
+
+
+tupleParser : Parser s a -> Parser s (List a)
+tupleParser el =
+    parens (commaSeparated_ <| el)
+        >>= (\a ->
+                case a of
+                    [ _ ] ->
+                        fail "No single tuples"
+
+                    anyOther ->
+                        succeed anyOther
+            )
+
+
+literalParser : Parser s Literal
+literalParser =
+    choice
+        [ Float <$> floatParser
+        , Integer <$> intParser
+        , Character <$> characterParser
+        , String <$> stringParser
+        ]
+
+
+characterParser : Parser s Char
+characterParser =
+    between_ (Combine.string "'")
+        (((Combine.string "\\" *> regex "(n|t|r|\\\\|x..)")
+            >>= (\a ->
+                    case String.uncons a of
+                        Just ( 'n', "" ) ->
+                            succeed '\n'
+
+                        Just ( 't', "" ) ->
+                            succeed '\t'
+
+                        Just ( 'r', "" ) ->
+                            succeed '\x0D'
+
+                        Just ( '\\', "" ) ->
+                            succeed '\\'
+
+                        Just ( '0', "" ) ->
+                            succeed '\x00'
+
+                        Just ( 'x', hex ) ->
+                            hex
+                                |> String.toLower
+                                |> Hex.fromString
+                                |> Result.map Char.fromCode
+                                |> Result.map succeed
+                                |> Result.withDefault (fail "Invalid charcode")
+
+                        Just other ->
+                            fail ("No such character as \\" ++ toString other)
+
+                        Nothing ->
+                            fail "No character"
+                )
+         )
+            <|> anyChar
+        )
+
+
+stringParser : Parser s String
+stringParser =
+    let
+        singleString =
+            Combine.string "\"" *> regex "(\\\\\\\\|\\\\\"|[^\"\n])*" <* Combine.string "\""
+
+        multiString =
+            String.concat <$> (Combine.string "\"\"\"" *> many (regex "[^\"]*") <* Combine.string "\"\"\"")
+    in
+    multiString <|> singleString
+
+
+intParser : Parser s Int
+intParser =
+    Combine.Num.int
+
+
+floatParser : Parser s Float
+floatParser =
+    Combine.Num.float
+
+
 character : Parser s MExp
 character =
     withMeta <|
-        Character
-            <$> between_ (Combine.string "'")
-                    (((Combine.string "\\" *> regex "(n|t|r|\\\\|x..)")
-                        >>= (\a ->
-                                case String.uncons a of
-                                    Just ( 'n', "" ) ->
-                                        succeed '\n'
-
-                                    Just ( 't', "" ) ->
-                                        succeed '\t'
-
-                                    Just ( 'r', "" ) ->
-                                        succeed '\x0D'
-
-                                    Just ( '\\', "" ) ->
-                                        succeed '\\'
-
-                                    Just ( '0', "" ) ->
-                                        succeed '\x00'
-
-                                    Just ( 'x', hex ) ->
-                                        hex
-                                            |> String.toLower
-                                            |> Hex.fromString
-                                            |> Result.map Char.fromCode
-                                            |> Result.map succeed
-                                            |> Result.withDefault (fail "Invalid charcode")
-
-                                    Just other ->
-                                        fail ("No such character as \\" ++ toString other)
-
-                                    Nothing ->
-                                        fail "No character"
-                            )
-                     )
-                        <|> anyChar
-                    )
+        Literal
+            << Character
+            <$> characterParser
 
 
 string : Parser s MExp
 string =
-    let
-        singleString =
-            String
-                <$> (Combine.string "\"" *> regex "(\\\\\\\\|\\\\\"|[^\"\n])*" <* Combine.string "\"")
-
-        multiString =
-            (String << String.concat)
-                <$> (Combine.string "\"\"\"" *> many (regex "[^\"]*") <* Combine.string "\"\"\"")
-    in
-    withMeta <| multiString <|> singleString
+    withMeta <|
+        (Literal << String <$> stringParser)
 
 
 integer : Parser s MExp
 integer =
-    withMeta <| Integer <$> Combine.Num.int
+    withMeta <| Literal << Integer <$> intParser
 
 
 float : Parser s MExp
 float =
-    withMeta <| Float <$> Combine.Num.float
+    withMeta <| Literal << Float <$> floatParser
 
 
 access : Parser s MExp
@@ -178,7 +233,7 @@ list : OpTable -> Parser s MExp
 list ops =
     lazy <|
         \() ->
-            withMeta <| List <$> brackets (commaSeparated_ <| expression ops)
+            withMeta <| List <$> (listParser <| expression ops)
 
 
 tuple : OpTable -> Parser s MExp
@@ -187,16 +242,7 @@ tuple ops =
         \() ->
             withMeta <|
                 Tuple
-                    <$> (parens (commaSeparated_ <| expression ops)
-                            >>= (\a ->
-                                    case a of
-                                        [ _ ] ->
-                                            fail "No single tuples"
-
-                                        anyOther ->
-                                            succeed anyOther
-                                )
-                        )
+                    <$> tupleParser (expression ops)
 
 
 record : OpTable -> Parser s MExp

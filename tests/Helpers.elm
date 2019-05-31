@@ -3,8 +3,8 @@ module Helpers exposing (..)
 import Ast exposing (parse, parseExpression, parseStatement)
 import Ast.BinOp exposing (Assoc, operators)
 import Ast.Common exposing (..)
-import Ast.Expression exposing (Expression(..), MExp)
-import Ast.Statement exposing (ExportSet(..), StatementBase(..), Statement, Type(..))
+import Ast.Expression exposing (Expression(..), Literal(..), MExp)
+import Ast.Statement exposing (ExportSet(..), Statement, StatementBase(..), Type(..))
 import Expect exposing (..)
 
 
@@ -13,10 +13,7 @@ import Expect exposing (..)
 
 
 type ExpressionSansMeta
-    = CharacterSM Char
-    | StringSM String
-    | IntegerSM Int
-    | FloatSM Float
+    = LiteralSM Literal
     | VariableSM Name
     | ConstructorSM Name
     | ExternalSM (List Name) ExpressionSansMeta
@@ -50,7 +47,7 @@ type StatementSansMeta
 
 
 dropStatementMeta : Statement -> StatementSansMeta
-dropStatementMeta (s, _) =
+dropStatementMeta ( s, _ ) =
     case s of
         ModuleDeclaration mn es ->
             ModuleDeclarationSM mn es
@@ -107,17 +104,8 @@ dropDoubleMExp ( a, b ) =
 dropExpressionMeta : Expression -> ExpressionSansMeta
 dropExpressionMeta e =
     case e of
-        Character c ->
-            CharacterSM c
-
-        String s ->
-            StringSM s
-
-        Integer i ->
-            IntegerSM i
-
-        Float f ->
-            FloatSM f
+        Literal l ->
+            LiteralSM l
 
         Variable l ->
             VariableSM l
@@ -196,28 +184,28 @@ recordUpdate name =
 
 
 var : String -> ExpressionSansMeta
-var name =
-    VariableSM name
+var =
+    VariableSM
 
 
 integer : Int -> ExpressionSansMeta
 integer =
-    IntegerSM
+    LiteralSM << Integer
 
 
 float : Float -> ExpressionSansMeta
 float =
-    FloatSM
+    LiteralSM << Float
 
 
 character : Char -> ExpressionSansMeta
 character =
-    CharacterSM
+    LiteralSM << Character
 
 
 string : String -> ExpressionSansMeta
 string =
-    StringSM
+    LiteralSM << String
 
 
 binOp :
@@ -345,7 +333,7 @@ simpleParse i =
             Ok e
 
         Err ( _, { position }, es ) ->
-            Err ("failed to parse: " ++ i ++ " at position " ++ toString position ++ " with errors: " ++ toString es)
+            Err <| failure i position es
 
 
 isExpression : MExp -> String -> Expectation
@@ -364,8 +352,8 @@ isExpressionSansMeta e i =
         Ok ( _, _, r ) ->
             Expect.equal e (dropMExpMeta r)
 
-        Err ( _, a, es ) ->
-            Expect.fail ("failed to parse: " ++ i ++ " at position " ++ toString a.position ++ " rest: |" ++ a.input ++ "| with errors: " ++ toString es)
+        Err ( _, { position }, es ) ->
+            Expect.fail <| failure i position es
 
 
 isApplicationSansMeta : ExpressionSansMeta -> List ExpressionSansMeta -> String -> Expectation

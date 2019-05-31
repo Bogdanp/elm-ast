@@ -1,7 +1,7 @@
 module Meta exposing (multiline, oneLine, statements)
 
-import Ast.Expression exposing (Expression(..))
 import Ast.Common exposing (..)
+import Ast.Expression exposing (Expression(..), Literal(..))
 import Ast.Statement exposing (..)
 import Helpers exposing (..)
 import Test exposing (Test, describe, test)
@@ -11,15 +11,15 @@ oneLine : Test
 oneLine =
     let
         cases =
-            [ ( "a", addMeta 0 0 <| Variable  "a"  )
+            [ ( "a", addMeta 0 0 <| Variable "a" )
             , ( "{a = Just 2}"
               , addMeta 0 0 <|
                     Record
                         [ ( addMeta 0 1 "a"
                           , addMeta 0 5 <|
                                 Application
-                                    (addMeta 0 5 <| Constructor  "Just" )
-                                    (addMeta 0 10 <| Integer 2)
+                                    (addMeta 0 5 <| Constructor "Just")
+                                    (addMeta 0 10 <| Literal <| Integer 2)
                           )
                         ]
               )
@@ -27,33 +27,43 @@ oneLine =
               , addMeta 0 0 <|
                     Let
                         [ ( addMeta 0 4 <|
-                                Application (addMeta 0 4 <| Variable  "f" )
-                                    (addMeta 0 6 <| Variable  "x" )
+                                Application (addMeta 0 4 <| Variable "f")
+                                    (addMeta 0 6 <| Variable "x")
                           , addMeta 0 11 <|
-                                BinOp (addMeta 0 11 <| Variable  "+" )
-                                    (addMeta 0 10 <| Variable  "x" )
-                                    (addMeta 0 14 <| Float 1.2)
+                                BinOp (addMeta 0 11 <| Variable "+")
+                                    (addMeta 0 10 <| Variable "x")
+                                    (addMeta 0 14 <| Literal <| Float 1.2)
                           )
                         ]
-                        (addMeta 0 21 <| Application (addMeta 0 21 <| Variable  "f" ) (addMeta 0 23 <| Float 4.5))
+                        (addMeta 0 21 <| Application (addMeta 0 21 <| Variable "f") (addMeta 0 23 <| Literal <| Float 4.5))
               )
             , ( "\\(x, y) -> x ++ \":\" ++ y"
               , addMeta 0 0 <|
                     Lambda
                         [ addMeta 0 1 <|
                             Tuple
-                                [ addMeta 0 2 <| Variable  "x"
-                                , addMeta 0 5 <| Variable  "y"
+                                [ addMeta 0 2 <| Variable "x"
+                                , addMeta 0 5 <| Variable "y"
                                 ]
                         ]
                         (addMeta 0 12 <|
-                            BinOp (addMeta 0 12 <| Variable  "++" )
-                                (addMeta 0 11 <| Variable  "x" )
+                            BinOp (addMeta 0 12 <| Variable "++")
+                                (addMeta 0 11 <| Variable "x")
                                 (addMeta 0 19 <|
-                                    BinOp (addMeta 0 19 <| Variable  "++" )
-                                        (addMeta 0 16 <| String ":")
-                                        (addMeta 0 23 <| Variable  "y" )
+                                    BinOp (addMeta 0 19 <| Variable "++")
+                                        (addMeta 0 16 <| Literal <| String ":")
+                                        (addMeta 0 23 <| Variable "y")
                                 )
+                        )
+              )
+            , ( "Maybe.Just (A.B.C x)"
+              , addMeta 0 0 <|
+                    Application
+                        (addMeta 0 0 <| External [ "Maybe" ] (addMeta 0 6 <| Constructor "Just"))
+                        (addMeta 0 12 <|
+                            Application
+                                (addMeta 0 12 <| External [ "A", "B" ] (addMeta 0 16 <| Constructor "C"))
+                                (addMeta 0 18 <| Variable "x")
                         )
               )
             ]
@@ -82,33 +92,33 @@ in
         expectation =
             addMeta 0 0 <|
                 Let
-                    [ ( addMeta 1 4 <| Variable  "a"
+                    [ ( addMeta 1 4 <| Variable "a"
                       , addMeta 1 8 <|
                             Record
                                 [ ( addMeta 1 10 <| "b"
-                                  , addMeta 1 14 <| Integer 2
+                                  , addMeta 1 14 <| Literal <| Integer 2
                                   )
                                 , ( addMeta 1 17 <| "c"
-                                  , addMeta 1 21 <| Integer 3
+                                  , addMeta 1 21 <| Literal <| Integer 3
                                   )
                                 ]
                       )
                     , ( addMeta 2 4 <|
                             Application
-                                (addMeta 2 4 <| Variable  "f" )
-                                (addMeta 2 6 <| Variable  "x" )
+                                (addMeta 2 4 <| Variable "f")
+                                (addMeta 2 6 <| Variable "x")
                       , addMeta 3 8 <|
                             RecordUpdate (addMeta 3 10 <| "a")
                                 [ ( addMeta 3 14 <| "b"
-                                  , addMeta 3 18 <| Variable  "x"
+                                  , addMeta 3 18 <| Variable "x"
                                   )
                                 ]
                       )
                     ]
                     (addMeta 5 4 <|
                         Application
-                            (addMeta 5 4 <| Variable  "f" )
-                            (addMeta 5 6 <| Integer 12)
+                            (addMeta 5 4 <| Variable "f")
+                            (addMeta 5 6 <| Literal <| Integer 12)
                     )
     in
     describe "Multiline location"
@@ -144,16 +154,16 @@ f s = text <| s ++ s
                         (TypeConstructor [ "Html" ] [ TypeVariable "msg" ])
             , addMeta 5 0 <|
                 FunctionDeclaration "f"
-                    [ addMeta 5 2 <| Variable  "s" ]
+                    [ addMeta 5 2 <| Variable "s" ]
                 <|
                     addMeta 5 10 <|
-                        BinOp (addMeta 5 10 <| Variable  "<|" )
-                            (addMeta 5 6 <| Variable  "text" )
+                        BinOp (addMeta 5 10 <| Variable "<|")
+                            (addMeta 5 6 <| Variable "text")
                         <|
                             addMeta 5 15 <|
-                                BinOp (addMeta 5 15 <| Variable  "++" )
-                                    (addMeta 5 14 <| Variable  "s" )
-                                    (addMeta 5 19 <| Variable  "s" )
+                                BinOp (addMeta 5 15 <| Variable "++")
+                                    (addMeta 5 14 <| Variable "s")
+                                    (addMeta 5 19 <| Variable "s")
             ]
     in
     describe "Statements location"
