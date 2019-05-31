@@ -1,6 +1,6 @@
 module Ast.Expression exposing
-    ( Expression(..), MExp, Literal(..)
-    , expression
+    ( Expression(..), MExp, Literal(..), Pattern(..)
+    , expression, pattern
     , term
     )
 
@@ -9,12 +9,12 @@ module Ast.Expression exposing
 
 # Types
 
-@docs Expression, MExp, Literal
+@docs Expression, MExp, Literal, Pattern
 
 
 # rs
 
-@docs expression
+@docs expression, pattern
 
 
 # Expression
@@ -73,6 +73,23 @@ type Expression
     | BinOp MExp MExp MExp
 
 
+{-| Pattern to match
+-}
+type Pattern
+    = PWild
+    | PVariable Name
+    | PConstructor Name (List Pattern)
+    | PLiteral Literal
+    | PTuple (List Pattern)
+    | PCons Pattern Pattern
+    | PList (List Pattern)
+    | PRecord (List Name)
+    | PAs Pattern Name
+
+
+type alias Match =
+    { pattern : List Pattern, body : Expression }
+
 
 {-| Simple literal patterns
 -}
@@ -81,6 +98,75 @@ type Literal
     | String String
     | Integer Int
     | Float Float
+
+
+
+-- Our grammar is
+-- pattern -> terminal | constructor | tuple | list | cons | as | (pattern)
+-- terminal -> wild | var | literal | record
+-- constructor -> name constructorPatterns
+-- constructorPatterns -> pattern constructorPatterns | epsilon
+-- tuple -> (tupleElems)
+-- tupleElems -> pattern, tupleElems | epsilon
+-- list -> [listElems]
+-- listElems -> pattern, listElems | epsilon
+-- cons -> pattern :: pattern
+-- as -> pattern as varName
+-- included helpers starting with other letters to enforce precedence and associativity
+-- in case of left associativity, there is an unparsable left recursion, therefore I used
+-- -- Elimination of left recursion:
+-- -- A -> A a | b
+-- -- ------------
+-- -- A -> b A'
+-- -- A' -> a A' | epsilon
+
+
+{-| Parse a pattern
+-}
+pattern : Parser s Pattern
+pattern =
+    lazy <|
+        \() ->
+            (PCons <$> tattern <* symbol "::" <*> pattern)
+                <|> tattern
+
+
+tattern : Parser s Pattern
+tattern =
+    lazy <| \() -> fattern >>= tattern_
+
+
+tattern_ : Pattern -> Parser s Pattern
+tattern_ a =
+    lazy <|
+        \() ->
+            ((PAs a <$> (symbol "as" *> varName)) >>= tattern_) <|> succeed a
+
+
+fattern : Parser s Pattern
+fattern =
+    lazy <|
+        \() ->
+            choice
+                [ PConstructor <$> upName <*> many (between_ spaces pattern)
+                , wildPattern
+                , varPattern
+                , PLiteral <$> literalParser
+                , PRecord <$> (braces <| commaSeparated_ loName)
+                , PTuple <$> tupleParser pattern
+                , PList <$> listParser pattern
+                , parens pattern
+                ]
+
+
+varPattern : Parser s Pattern
+varPattern =
+    PVariable <$> varName
+
+
+wildPattern : Parser s Pattern
+wildPattern =
+    always PWild <$> wild
 
 
 listParser : Parser s a -> Parser s (List a)
