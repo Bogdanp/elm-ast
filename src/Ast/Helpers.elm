@@ -55,7 +55,9 @@ reservedOperators =
 
 
 optionalParens : Parser s a -> Parser s a
-optionalParens p = p <|> parens p
+optionalParens p =
+    lazy <| \() -> p <|> (parens <| optionalParens p)
+
 
 between_ : Parser s a -> Parser s res -> Parser s res
 between_ p =

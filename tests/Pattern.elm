@@ -1,4 +1,5 @@
-module Pattern exposing (aliases, characterLiterals, cons, constructor, floatLiterals, intLiterals, stringLiterals, variable, wildcard)
+module Pattern exposing (..)
+
 
 import Ast.Expression exposing (Literal(..), Pattern(..), pattern)
 import Helpers exposing (..)
@@ -125,10 +126,10 @@ cons =
     describe "Cons"
         [ test "multiple" <|
             \() ->
-                "1 :: x :: []" |> isPattern (PCons (PLiteral (Integer 1)) (PCons (PVariable "x") (PList [])))
+                "1 :: (((x))) :: []" |> isPattern (PCons (PLiteral (Integer 1)) (PCons (PVariable "x") (PList [])))
         , test "mixed" <|
             \() ->
-                "(Nothing as x) :: y" |> isPattern (PVariable "X")
+                "Nothing :: (x as y)" |> isPattern (PCons (PConstructor "Nothing" []) (PAs (PVariable "x") "y"))
         ]
 
 

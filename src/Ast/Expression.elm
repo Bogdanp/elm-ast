@@ -100,48 +100,63 @@ type Literal
     | Float Float
 
 
+
+-- Our grammar is
+-- pattern -> terminal | constructor | tuple | list | cons | as | (pattern)
+-- terminal -> wild | var | literal | record
+-- constructor -> name constructorPatterns
+-- constructorPatterns -> pattern constructorPatterns | epsilon
+-- tuple -> (tupleElems)
+-- tupleElems -> pattern, tupleElems | epsilon
+-- list -> [listElems]
+-- listElems -> pattern, listElems | epsilon
+-- cons -> pattern :: pattern
+-- as -> pattern as varName
+-- included helpers starting with other letters to enforce precedence and associativity
+-- in case of left associativity, there is an unparsable left recursion, therefore I used
+-- -- Elimination of left recursion:
+-- -- A -> A a | b
+-- -- ------------
+-- -- A -> b A'
+-- -- A' -> a A' | epsilon
+
+
 {-| Parse a pattern
 -}
 pattern : Parser s Pattern
 pattern =
-    optionalParens <| lazy <| \() -> nonLeftRecursive >>= leftRecursive
+    lazy <|
+        \() ->
+            (PCons <$> tattern <* symbol "::" <*> pattern)
+                <|> tattern
 
 
-
--- Eliminating left recursion:
--- A -> A a | b
--- ------------
--- A -> b A'
--- A' -> a A' | epsilon
+tattern : Parser s Pattern
+tattern =
+    lazy <| \() -> fattern >>= tattern_
 
 
-leftRecursive : Pattern -> Parser s Pattern
-leftRecursive p =
+tattern_ : Pattern -> Parser s Pattern
+tattern_ a =
+    lazy <|
+        \() ->
+            ((PAs a <$> (symbol "as" *> varName)) >>= tattern_) <|> succeed a
+
+
+fattern : Parser s Pattern
+fattern =
     lazy <|
         \() ->
             choice
-                [ optionalParens (PAs p <$> (symbol "as" *> varName))
-                    >>= leftRecursive
-                , optionalParens (symbol "::" *> (PCons p <$> pattern))
-                    >>= leftRecursive
-                , succeed p -- epsilon
+                [ PConstructor <$> upName <*> many (between_ spaces pattern)
+                , wildPattern
+                , varPattern
+                , PLiteral <$> literalParser
+                , PRecord <$> (braces <| commaSeparated_ loName)
+                , PTuple <$> tupleParser pattern
+                , PList <$> listParser pattern
+                , parens pattern
                 ]
-
-
-nonLeftRecursive : Parser s Pattern
-nonLeftRecursive =
-    lazy <|
-        \() ->
-            choice <|
-                List.map optionalParens
-                    [ wildPattern
-                    , varPattern
-                    , PConstructor <$> upName <*> many (between_ spaces pattern)
-                    , PLiteral <$> literalParser
-                    , PTuple <$> tupleParser pattern
-                    , PList <$> listParser pattern
-                    , PRecord <$> (braces <| commaSeparated_ loName)
-                    ]
 
 
 varPattern : Parser s Pattern
