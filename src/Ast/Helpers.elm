@@ -18,6 +18,8 @@ module Ast.Helpers exposing
     , symbol
     , symbol_
     , upName
+    , varName
+    , wild
     )
 
 import Ast.Common exposing (..)
@@ -108,23 +110,29 @@ name p =
 
 loName : Parser s String
 loName =
-    let
-        loName_ =
-            name lower
-                >>= (\n ->
-                        if List.member n reserved then
-                            fail <| "name '" ++ n ++ "' is reserved"
-
-                        else
-                            succeed n
-                    )
-    in
-    string "_" <|> loName_
+    wild <|> varName
 
 
 upName : Parser s String
 upName =
     name upper
+
+
+wild : Parser s String
+wild =
+    string "_"
+
+
+varName : Parser s String
+varName =
+    name lower
+        >>= (\n ->
+                if List.member n reserved then
+                    fail <| "name '" ++ n ++ "' is reserved"
+
+                else
+                    succeed n
+            )
 
 
 emptyTuple : Parser s String
