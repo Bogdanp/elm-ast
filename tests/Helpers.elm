@@ -1,9 +1,9 @@
-module Helpers exposing (..)
+module Helpers exposing (ExpressionSansMeta(..), StatementSansMeta(..), access, accessFun, app, areStatements, areStatementsSansMeta, binOp, case_, character, characterPattern, comment, dropDoubleMExp, dropExpressionMeta, dropMExpMeta, dropStatementMeta, dropWithMetaMExp, effectModuleDeclaration, fails, failsPattern, failure, float, floatPattern, functionDeclaration, functionTypeDeclaration, importStatement, infixDeclaration, integer, integerPattern, isApplicationSansMeta, isExpression, isExpressionSansMeta, isPattern, isStatement, isStatementSansMeta, lambda, let_, list, moduleDeclaration, portDeclaration, portModuleDeclaration, portTypeDeclaration, record, recordUpdate, simpleParse, string, stringPattern, tuple, typeAliasDeclaration, typeDeclaration, var)
 
-import Ast exposing (parse, parseExpression, parseStatement)
+import Ast exposing (parse, parseExpression, parsePattern, parseStatement)
 import Ast.BinOp exposing (Assoc, operators)
 import Ast.Common exposing (..)
-import Ast.Expression exposing (Expression(..), Literal(..), MExp)
+import Ast.Expression exposing (Expression(..), Literal(..), MExp, Pattern(..))
 import Ast.Statement exposing (ExportSet(..), Statement, StatementBase(..), Type(..))
 import Expect exposing (..)
 
@@ -193,9 +193,19 @@ integer =
     LiteralSM << Integer
 
 
+integerPattern : Int -> Pattern
+integerPattern =
+    PLiteral << Integer
+
+
 float : Float -> ExpressionSansMeta
 float =
     LiteralSM << Float
+
+
+floatPattern : Float -> Pattern
+floatPattern =
+    PLiteral << Float
 
 
 character : Char -> ExpressionSansMeta
@@ -203,9 +213,19 @@ character =
     LiteralSM << Character
 
 
+characterPattern : Char -> Pattern
+characterPattern =
+    PLiteral << Character
+
+
 string : String -> ExpressionSansMeta
 string =
     LiteralSM << String
+
+
+stringPattern : String -> Pattern
+stringPattern =
+    PLiteral << String
 
 
 binOp :
@@ -326,6 +346,16 @@ fails s =
             Expect.fail (s ++ " expected to fail")
 
 
+failsPattern : String -> Expectation
+failsPattern s =
+    case parsePattern s of
+        Err _ ->
+            Expect.pass
+
+        _ ->
+            Expect.fail (s ++ " expected to fail")
+
+
 simpleParse : String -> Result String MExp
 simpleParse i =
     case parseExpression operators (String.trim i) of
@@ -408,6 +438,16 @@ areStatementsSansMeta s i =
     case parse i of
         Ok ( _, _, r ) ->
             Expect.equal (List.map dropStatementMeta r) s
+
+        Err ( _, { position }, es ) ->
+            Expect.fail <| failure i position es
+
+
+isPattern : Ast.Expression.Pattern -> String -> Expectation
+isPattern p i =
+    case parsePattern i of
+        Ok ( _, _, r ) ->
+            Expect.equal r p
 
         Err ( _, { position }, es ) ->
             Expect.fail <| failure i position es

@@ -11,6 +11,7 @@ module Ast.Helpers exposing
     , moduleName
     , name
     , operator
+    , optionalParens
     , reserved
     , reservedOperators
     , spaces
@@ -51,6 +52,11 @@ reserved =
 reservedOperators : List Name
 reservedOperators =
     [ "=", ".", "..", "->", "--", "|", ":" ]
+
+
+optionalParens : Parser s a -> Parser s a
+optionalParens p =
+    lazy <| \() -> p <|> (parens <| optionalParens p)
 
 
 between_ : Parser s a -> Parser s res -> Parser s res
@@ -113,11 +119,6 @@ loName =
     wild <|> varName
 
 
-upName : Parser s String
-upName =
-    name upper
-
-
 wild : Parser s String
 wild =
     string "_"
@@ -133,6 +134,11 @@ varName =
                 else
                     succeed n
             )
+
+
+upName : Parser s String
+upName =
+    name upper
 
 
 emptyTuple : Parser s String
