@@ -237,7 +237,7 @@ portStatements =
                         (portDeclaration "focus"
                             []
                             (ExternalSM
-                                ["Cmd"]
+                                [ "Cmd" ]
                                 (var "none")
                             )
                         )
@@ -282,8 +282,10 @@ singleDeclaration =
                             (TypeConstructor [ "Int" ] [])
                             (TypeConstructor [ "Int" ] [])
                         )
-                    , functionDeclaration "f"
-                        [ var "x" ]
+                    , functionDeclaration
+                        (functionPattern "f"
+                            [ variablePattern "x" ]
+                        )
                         (app
                             (app
                                 (var "a")
@@ -327,8 +329,10 @@ multipleDeclarations =
                             (TypeConstructor [ "Int" ] [])
                             (TypeConstructor [ "Int" ] [])
                         )
-                    , functionDeclaration "f"
-                        [ var "x" ]
+                    , functionDeclaration
+                        (functionPattern "f"
+                            [ variablePattern "x" ]
+                        )
                         (binOp
                             (var "+")
                             (var "x")
@@ -339,8 +343,10 @@ multipleDeclarations =
                             (TypeConstructor [ "Int" ] [])
                             (TypeConstructor [ "Int" ] [])
                         )
-                    , functionDeclaration "g"
-                        [ var "x" ]
+                    , functionDeclaration
+                        (functionPattern "g"
+                            [ variablePattern "x" ]
+                        )
                         (binOp
                             (var "+")
                             (app
@@ -354,8 +360,10 @@ multipleDeclarations =
                             (TypeTuple [ TypeConstructor [ "Int" ] [], TypeConstructor [ "Int" ] [] ])
                             (TypeConstructor [ "Int" ] [])
                         )
-                    , functionDeclaration "h"
-                        [ tuple [ var "a", var "b" ] ]
+                    , functionDeclaration
+                        (functionPattern "h"
+                            [ tuplePattern [ variablePattern "a", variablePattern "b" ] ]
+                        )
                         (binOp
                             (var "+")
                             (var "a")
@@ -366,7 +374,7 @@ multipleDeclarations =
                             (TypeConstructor [ "Int" ] [])
                             (TypeConstructor [ "Int" ] [])
                         )
-                    , functionDeclaration "+" [ var "a", var "b" ] (integer 1)
+                    , functionDeclaration (functionPattern "+" [ variablePattern "a", variablePattern "b" ]) (integer 1)
                     ]
 
 
@@ -389,16 +397,20 @@ moduleFixityDeclarations =
         \() ->
             moduleFixityInput
                 |> areStatementsSansMeta
-                    [ functionDeclaration "f"
-                        []
+                    [ functionDeclaration
+                        (functionPattern "f"
+                            []
+                        )
                         (binOp
                             (var "++")
                             (binOp (var "++") (var "a") (var "b"))
                             (var "c")
                         )
                     , infixDeclaration L 1 "++"
-                    , functionDeclaration "g"
-                        []
+                    , functionDeclaration
+                        (functionPattern "g"
+                            []
+                        )
                         (binOp
                             (var "**")
                             (var "a")

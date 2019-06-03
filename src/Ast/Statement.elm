@@ -19,7 +19,7 @@ module Ast.Statement exposing
 
 import Ast.BinOp exposing (Assoc(..), OpTable)
 import Ast.Common exposing (..)
-import Ast.Expression exposing (Expression, MExp, expression, term)
+import Ast.Expression exposing (Expression, MExp, Pattern, expression, pattern, term)
 import Ast.Helpers exposing (..)
 import Combine exposing (..)
 import Combine.Char exposing (..)
@@ -60,7 +60,7 @@ type StatementBase
     | PortTypeDeclaration Name Type
     | PortDeclaration Name (List Name) MExp
     | FunctionTypeDeclaration Name Type
-    | FunctionDeclaration Name (List MExp) MExp
+    | FunctionDeclaration Pattern MExp
     | InfixDeclaration Assoc Int Name
     | Comment String
 
@@ -323,11 +323,19 @@ functionTypeDeclaration =
 
 functionDeclaration : OpTable -> Parser s Statement
 functionDeclaration ops =
-    withMeta <|
+    (withMeta <|
         FunctionDeclaration
-            <$> choice [ loName, parens operator ]
-            <*> many (between_ whitespace <| term ops)
+            <$> pattern
             <*> (symbol "=" *> whitespace *> expression ops)
+    )
+        >>= (\(( decl, _ ) as full) ->
+                case decl of
+                    FunctionDeclaration (Ast.Expression.PFunction _ _) _ ->
+                        succeed full
+
+                    _ ->
+                        fail "wrong pattern in function declaration"
+            )
 
 
 

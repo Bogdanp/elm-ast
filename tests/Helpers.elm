@@ -1,4 +1,4 @@
-module Helpers exposing (ExpressionSansMeta(..), StatementSansMeta(..), access, accessFun, app, areStatements, areStatementsSansMeta, binOp, case_, character, characterPattern, comment, dropDoubleMExp, dropExpressionMeta, dropMExpMeta, dropStatementMeta, dropWithMetaMExp, effectModuleDeclaration, fails, failsPattern, failure, float, floatPattern, functionDeclaration, functionTypeDeclaration, importStatement, infixDeclaration, integer, integerPattern, isApplicationSansMeta, isExpression, isExpressionSansMeta, isPattern, isStatement, isStatementSansMeta, lambda, let_, list, moduleDeclaration, portDeclaration, portModuleDeclaration, portTypeDeclaration, record, recordUpdate, simpleParse, string, stringPattern, tuple, typeAliasDeclaration, typeDeclaration, var)
+module Helpers exposing (ExpressionSansMeta(..), StatementSansMeta(..), access, accessFun, app, areStatements, areStatementsSansMeta, asPattern, binOp, case_, character, characterPattern, comment, constructorPattern, dropDoubleMExp, dropExpressionMeta, dropMExpMeta, dropPatternMatches, dropStatementMeta, dropWithMetaMExp, effectModuleDeclaration, fails, failsPattern, failure, float, floatPattern, functionDeclaration, functionPattern, functionTypeDeclaration, importStatement, infixDeclaration, integer, integerPattern, isApplicationSansMeta, isExpression, isExpressionSansMeta, isPattern, isStatement, isStatementSansMeta, lambda, let_, list, moduleDeclaration, portDeclaration, portModuleDeclaration, portTypeDeclaration, record, recordUpdate, simpleParse, string, stringPattern, tuple, tuplePattern, typeAliasDeclaration, typeDeclaration, var, variablePattern, wild)
 
 import Ast exposing (parse, parseExpression, parsePattern, parseStatement)
 import Ast.BinOp exposing (Assoc, operators)
@@ -24,9 +24,9 @@ type ExpressionSansMeta
     | RecordSM (List ( Name, ExpressionSansMeta ))
     | RecordUpdateSM Name (List ( Name, ExpressionSansMeta ))
     | IfSM ExpressionSansMeta ExpressionSansMeta ExpressionSansMeta
-    | LetSM (List ( ExpressionSansMeta, ExpressionSansMeta )) ExpressionSansMeta
-    | CaseSM ExpressionSansMeta (List ( ExpressionSansMeta, ExpressionSansMeta ))
-    | LambdaSM (List ExpressionSansMeta) ExpressionSansMeta
+    | LetSM (List ( Pattern, ExpressionSansMeta )) ExpressionSansMeta
+    | CaseSM ExpressionSansMeta (List ( Pattern, ExpressionSansMeta ))
+    | LambdaSM (List Pattern) ExpressionSansMeta
     | ApplicationSM ExpressionSansMeta ExpressionSansMeta
     | BinOpSM ExpressionSansMeta ExpressionSansMeta ExpressionSansMeta
 
@@ -41,7 +41,7 @@ type StatementSansMeta
     | PortTypeDeclarationSM Name Type
     | PortDeclarationSM Name (List Name) ExpressionSansMeta
     | FunctionTypeDeclarationSM Name Type
-    | FunctionDeclarationSM Name (List ExpressionSansMeta) ExpressionSansMeta
+    | FunctionDeclarationSM Pattern ExpressionSansMeta
     | InfixDeclarationSM Assoc Int Name
     | CommentSM String
 
@@ -76,8 +76,8 @@ dropStatementMeta ( s, _ ) =
         FunctionTypeDeclaration n t ->
             FunctionTypeDeclarationSM n t
 
-        FunctionDeclaration n l e ->
-            FunctionDeclarationSM n (List.map dropMExpMeta l) (dropMExpMeta e)
+        FunctionDeclaration p e ->
+            FunctionDeclarationSM p (dropMExpMeta e)
 
         InfixDeclaration a i n ->
             InfixDeclarationSM a i n
@@ -99,6 +99,18 @@ dropWithMetaMExp ( a, b ) =
 dropDoubleMExp : ( MExp, MExp ) -> ( ExpressionSansMeta, ExpressionSansMeta )
 dropDoubleMExp ( a, b ) =
     ( dropMExpMeta a, dropMExpMeta b )
+
+
+dropPatternMatches : List ( Pattern, MExp ) -> List ( Pattern, ExpressionSansMeta )
+dropPatternMatches l =
+    let
+        ( patterns, exps ) =
+            List.unzip l
+
+        expsSM =
+            List.map dropMExpMeta exps
+    in
+    List.map2 (,) patterns expsSM
 
 
 dropExpressionMeta : Expression -> ExpressionSansMeta
@@ -138,13 +150,13 @@ dropExpressionMeta e =
             IfSM (dropMExpMeta e1) (dropMExpMeta e2) (dropMExpMeta e3)
 
         Let l e ->
-            LetSM (List.map dropDoubleMExp l) (dropMExpMeta e)
+            LetSM (dropPatternMatches l) (dropMExpMeta e)
 
         Case e l ->
-            CaseSM (dropMExpMeta e) (List.map dropDoubleMExp l)
+            CaseSM (dropMExpMeta e) (dropPatternMatches l)
 
         Lambda l e ->
-            LambdaSM (List.map dropMExpMeta l) (dropMExpMeta e)
+            LambdaSM l (dropMExpMeta e)
 
         Application e1 e2 ->
             ApplicationSM (dropMExpMeta e1) (dropMExpMeta e2)
@@ -168,7 +180,7 @@ app left right =
     ApplicationSM left right
 
 
-lambda : List ExpressionSansMeta -> ExpressionSansMeta -> ExpressionSansMeta
+lambda : List Pattern -> ExpressionSansMeta -> ExpressionSansMeta
 lambda =
     LambdaSM
 
@@ -186,6 +198,31 @@ recordUpdate name =
 var : String -> ExpressionSansMeta
 var =
     VariableSM
+
+
+variablePattern : String -> Pattern
+variablePattern =
+    PVariable
+
+
+constructorPattern : String -> List Pattern -> Pattern
+constructorPattern =
+    PConstructor
+
+
+wild : Pattern
+wild =
+    PWild
+
+
+tuplePattern : List Pattern -> Pattern
+tuplePattern =
+    PTuple
+
+
+asPattern : Pattern -> String -> Pattern
+asPattern =
+    PAs
 
 
 integer : Int -> ExpressionSansMeta
@@ -237,7 +274,12 @@ binOp name l r =
     BinOpSM name l r
 
 
-let_ : List ( ExpressionSansMeta, ExpressionSansMeta ) -> ExpressionSansMeta -> ExpressionSansMeta
+functionPattern : String -> List Pattern -> Pattern
+functionPattern =
+    PFunction
+
+
+let_ : List ( Pattern, ExpressionSansMeta ) -> ExpressionSansMeta -> ExpressionSansMeta
 let_ =
     LetSM
 
@@ -249,7 +291,7 @@ tuple =
 
 case_ :
     ExpressionSansMeta
-    -> List ( ExpressionSansMeta, ExpressionSansMeta )
+    -> List ( Pattern, ExpressionSansMeta )
     -> ExpressionSansMeta
 case_ =
     CaseSM
@@ -314,8 +356,7 @@ functionTypeDeclaration =
 
 
 functionDeclaration :
-    Name
-    -> List ExpressionSansMeta
+    Pattern
     -> ExpressionSansMeta
     -> StatementSansMeta
 functionDeclaration =

@@ -66,9 +66,9 @@ type Expression
     | Record (List ( MName, MExp ))
     | RecordUpdate MName (List ( MName, MExp ))
     | If MExp MExp MExp
-    | Let (List ( MExp, MExp )) MExp
-    | Case MExp (List ( MExp, MExp ))
-    | Lambda (List MExp) MExp
+    | Let (List ( Pattern, MExp )) MExp
+    | Case MExp (List ( Pattern, MExp ))
+    | Lambda (List Pattern) MExp
     | Application MExp MExp
     | BinOp MExp MExp MExp
 
@@ -85,10 +85,7 @@ type Pattern
     | PList (List Pattern)
     | PRecord (List Name)
     | PAs Pattern Name
-
-
-type alias Match =
-    { pattern : List Pattern, body : Expression }
+    | PFunction Name (List Pattern)
 
 
 {-| Simple literal patterns
@@ -127,29 +124,51 @@ pattern : Parser s Pattern
 pattern =
     lazy <|
         \() ->
-            (PCons <$> tattern <* symbol "::" <*> pattern)
-                <|> tattern
+            tattern >>= pattern_
+
+
+pattern_ : Pattern -> Parser s Pattern
+pattern_ a =
+    lazy <|
+        \() ->
+            ((PAs a <$> (symbol "as" *> varName)) >>= pattern_) <|> succeed a
 
 
 tattern : Parser s Pattern
 tattern =
-    lazy <| \() -> fattern >>= tattern_
-
-
-tattern_ : Pattern -> Parser s Pattern
-tattern_ a =
     lazy <|
         \() ->
-            ((PAs a <$> (symbol "as" *> varName)) >>= tattern_) <|> succeed a
+            (PCons <$> fattern <* symbol "::" <*> tattern)
+                <|> fattern
 
 
 fattern : Parser s Pattern
 fattern =
     lazy <|
+        \() -> PConstructor <$> upName <*> many (between_ spaces cattern) <|> battern
+
+
+battern : Parser s Pattern
+battern =
+    lazy <|
+        \() ->
+            PFunction
+                <$> loName
+                <*> many1
+                        (between_ spaces
+                            -- in case there is a constructor without arguments it can go without parens
+                            -- so needs to be added here
+                            (cattern <|> (flip PConstructor [] <$> upName))
+                        )
+                <|> cattern
+
+
+cattern : Parser s Pattern
+cattern =
+    lazy <|
         \() ->
             choice
-                [ PConstructor <$> upName <*> many (between_ spaces pattern)
-                , wildPattern
+                [ wildPattern
                 , varPattern
                 , PLiteral <$> literalParser
                 , PRecord <$> (braces <| commaSeparated_ loName)
@@ -380,12 +399,12 @@ letExpression ops =
                     <*> (symbol "in" *> expression ops)
 
 
-letBinding : OpTable -> Parser s ( MExp, MExp )
+letBinding : OpTable -> Parser s ( Pattern, MExp )
 letBinding ops =
     lazy <|
         \() ->
             (,)
-                <$> (between_ whitespace <| expression ops)
+                <$> between_ whitespace pattern
                 <*> (symbol "=" *> expression ops)
 
 
@@ -407,7 +426,7 @@ caseExpression ops =
             lazy <|
                 \() ->
                     (,)
-                        <$> (exactIndentation indent *> expression ops)
+                        <$> (exactIndentation indent *> pattern)
                         <*> (symbol "->" *> expression ops)
     in
     lazy <|
@@ -435,7 +454,7 @@ lambda ops =
         \() ->
             withMeta <|
                 Lambda
-                    <$> (symbol "\\" *> many (between_ spaces <| term ops))
+                    <$> (symbol "\\" *> many (between_ spaces pattern))
                     <*> (symbol "->" *> expression ops)
 
 

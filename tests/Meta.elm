@@ -26,9 +26,7 @@ oneLine =
             , ( "let f x = x + 1.2 in f 4.5"
               , addMeta 0 0 <|
                     Let
-                        [ ( addMeta 0 4 <|
-                                Application (addMeta 0 4 <| Variable "f")
-                                    (addMeta 0 6 <| Variable "x")
+                        [ ( functionPattern "f" [ variablePattern "x" ]
                           , addMeta 0 11 <|
                                 BinOp (addMeta 0 11 <| Variable "+")
                                     (addMeta 0 10 <| Variable "x")
@@ -40,11 +38,10 @@ oneLine =
             , ( "\\(x, y) -> x ++ \":\" ++ y"
               , addMeta 0 0 <|
                     Lambda
-                        [ addMeta 0 1 <|
-                            Tuple
-                                [ addMeta 0 2 <| Variable "x"
-                                , addMeta 0 5 <| Variable "y"
-                                ]
+                        [ tuplePattern
+                            [ variablePattern "x"
+                            , variablePattern "y"
+                            ]
                         ]
                         (addMeta 0 12 <|
                             BinOp (addMeta 0 12 <| Variable "++")
@@ -92,7 +89,7 @@ in
         expectation =
             addMeta 0 0 <|
                 Let
-                    [ ( addMeta 1 4 <| Variable "a"
+                    [ ( variablePattern "a"
                       , addMeta 1 8 <|
                             Record
                                 [ ( addMeta 1 10 <| "b"
@@ -103,10 +100,7 @@ in
                                   )
                                 ]
                       )
-                    , ( addMeta 2 4 <|
-                            Application
-                                (addMeta 2 4 <| Variable "f")
-                                (addMeta 2 6 <| Variable "x")
+                    , ( functionPattern "f" [ variablePattern "x" ]
                       , addMeta 3 8 <|
                             RecordUpdate (addMeta 3 10 <| "a")
                                 [ ( addMeta 3 14 <| "b"
@@ -153,8 +147,10 @@ f s = text <| s ++ s
                         (TypeConstructor [ "String" ] [])
                         (TypeConstructor [ "Html" ] [ TypeVariable "msg" ])
             , addMeta 5 0 <|
-                FunctionDeclaration "f"
-                    [ addMeta 5 2 <| Variable "s" ]
+                FunctionDeclaration
+                    (functionPattern "f"
+                        [ variablePattern "s" ]
+                    )
                 <|
                     addMeta 5 10 <|
                         BinOp (addMeta 5 10 <| Variable "<|")

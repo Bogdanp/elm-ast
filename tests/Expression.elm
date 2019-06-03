@@ -91,7 +91,7 @@ letExpressions =
                 "let a = 42 in a"
                     |> isExpressionSansMeta
                         (let_
-                            [ ( var "a", integer 42 ) ]
+                            [ ( variablePattern "a", integer 42 ) ]
                             (var "a")
                         )
         , test "bind to _" <|
@@ -99,7 +99,7 @@ letExpressions =
                 "let _ = 42 in 24"
                     |> isExpressionSansMeta
                         (let_
-                            [ ( var "_", integer 42 ) ]
+                            [ ( wild, integer 42 ) ]
                             (integer 24)
                         )
         , test "Can start with a tag name" <|
@@ -107,7 +107,7 @@ letExpressions =
                 "let letter = 1 \n in letter"
                     |> isExpressionSansMeta
                         (let_
-                            [ ( var "letter", integer 1 ) ]
+                            [ ( variablePattern "letter", integer 1 ) ]
                             (var "letter")
                         )
         , test "function 1" <|
@@ -120,7 +120,7 @@ in
         """
                     |> isExpressionSansMeta
                         (let_
-                            [ ( app (var "f") (var "x"), binOp (var "+") (var "x") (integer 1) ) ]
+                            [ ( functionPattern "f" [ variablePattern "x" ], binOp (var "+") (var "x") (integer 1) ) ]
                             (app (var "f") (integer 4))
                         )
         , test "function 2" <|
@@ -134,10 +134,10 @@ in
 """
                     |> isExpressionSansMeta
                         (let_
-                            [ ( app (var "f") (var "x")
+                            [ ( functionPattern "f" [ variablePattern "x" ]
                               , binOp (var "+") (var "x") (integer 1)
                               )
-                            , ( app (var "g") (var "x")
+                            , ( functionPattern "g" [ variablePattern "x" ]
                               , binOp (var "+") (var "x") (integer 1)
                               )
                             ]
@@ -155,8 +155,8 @@ in
             """
                     |> isExpressionSansMeta
                         (let_
-                            [ ( var "a", integer 42 )
-                            , ( var "b", binOp (var "+") (var "a") (integer 1) )
+                            [ ( variablePattern "a", integer 42 )
+                            , ( variablePattern "b", binOp (var "+") (var "a") (integer 1) )
                             ]
                             (var "b")
                         )
@@ -179,8 +179,8 @@ case x of
                     |> isExpressionSansMeta
                         (case_
                             (var "x")
-                            [ ( ConstructorSM "Nothing", integer 0 )
-                            , ( app (ConstructorSM "Just") (var "y"), var "y" )
+                            [ ( constructorPattern "Nothing" [], integer 0 )
+                            , ( constructorPattern "Just" [ variablePattern "y" ], var "y" )
                             ]
                         )
         , test "binding to underscore" <|
@@ -193,7 +193,7 @@ case x of
                     |> isExpressionSansMeta
                         (case_
                             (var "x")
-                            [ ( var "_", integer 42 ) ]
+                            [ ( wild, integer 42 ) ]
                         )
         , test "Nested case" <|
             \() ->
@@ -209,9 +209,14 @@ case x of
                     |> isExpressionSansMeta
                         (case_
                             (var "x")
-                            [ ( var "a", var "a" )
-                            , ( var "b", case_ (var "y") [ ( var "a1", var "a1" ), ( var "b1", var "b1" ) ] )
-                            , ( var "c", var "c" )
+                            [ ( variablePattern "a", var "a" )
+                            , ( variablePattern "b"
+                              , case_ (var "y")
+                                    [ ( variablePattern "a1", var "a1" )
+                                    , ( variablePattern "b1", var "b1" )
+                                    ]
+                              )
+                            , ( variablePattern "c", var "c" )
                             ]
                         )
         ]
@@ -463,11 +468,7 @@ expressions =
                     |> isExpressionSansMeta
                         (case_
                             (var "a")
-                            [ ( binOp (var "as")
-                                    (app (ConstructorSM "T")
-                                        (var "_")
-                                    )
-                                    (var "x")
+                            [ ( asPattern (constructorPattern "T" [ wild ]) "x"
                               , integer 1
                               )
                             ]
@@ -495,13 +496,13 @@ expressions =
             \() ->
                 "\\(a,b) acc -> 1"
                     |> isExpressionSansMeta
-                        (lambda [ tuple [ var "a", var "b" ], var "acc" ] (integer 1))
+                        (lambda [ tuplePattern [ variablePattern "a", variablePattern "b" ], variablePattern "acc" ] (integer 1))
         , test "Destructuring Let" <|
             \() ->
                 "let (a,b) = (1,2) in a"
                     |> isExpressionSansMeta
                         (let_
-                            [ ( tuple [ var "a", var "b" ]
+                            [ ( tuplePattern [ variablePattern "a", variablePattern "b" ]
                               , tuple [ integer 1, integer 2 ]
                               )
                             ]

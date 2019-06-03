@@ -1,6 +1,5 @@
 module Pattern exposing (..)
 
-
 import Ast.Expression exposing (Literal(..), Pattern(..), pattern)
 import Helpers exposing (..)
 import Test exposing (Test, describe, test)
@@ -143,4 +142,34 @@ wildcard =
             \() ->
                 "[x, _] as y"
                     |> isPattern (PAs (PList [ PVariable "x", PWild ]) "y")
+        ]
+
+
+functions : Test
+functions =
+    describe "Functions"
+        [ test "simple" <| \() -> "f x y _" |> isPattern (PFunction "f" [ PVariable "x", PVariable "y", PWild ])
+        , test "with constructors" <|
+            \() ->
+                "a B c D e"
+                    |> isPattern
+                        (PFunction "a"
+                            [ PConstructor "B" []
+                            , PVariable "c"
+                            , PConstructor "D" []
+                            , PVariable "e"
+                            ]
+                        )
+        , test "mixed" <|
+            \() ->
+                "f (Just x) Nothing y (a :: b as c) (_, 3.6)"
+                    |> isPattern
+                        (PFunction "f"
+                            [ PConstructor "Just" [ PVariable "x" ]
+                            , PConstructor "Nothing" []
+                            , PVariable "y"
+                            , PAs (PCons (PVariable "a") (PVariable "b")) "c"
+                            , PTuple [ PWild, floatPattern 3.6 ]
+                            ]
+                        )
         ]
