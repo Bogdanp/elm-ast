@@ -1,4 +1,4 @@
-module Ast.Pattern exposing (Pattern(..), applicationToList, pattern)
+module Ast.Pattern exposing (Pattern(..), applicationFromList, applicationToList, pattern)
 
 import Ast.Common exposing (..)
 import Ast.Helpers exposing (..)
@@ -48,7 +48,7 @@ constructorParser =
 -- listElems -> pattern, listElems | epsilon
 -- cons -> pattern :: pattern
 -- as -> pattern as varName
--- included helpers starting with other letters to enforce precedence and associativity
+-- precedence describes which patterns' bind is stronger, in increasing order
 -- in case of left associativity, there is an unparsable left recursion, therefore I used
 -- -- Elimination of left recursion:
 -- -- A -> A a | b
@@ -61,28 +61,36 @@ constructorParser =
 -}
 pattern : Parser s Pattern
 pattern =
+    lazy <| \() -> List.foldr identity pattern precedence
+
+
+precedence : List (Parser s Pattern -> Parser s Pattern)
+precedence =
+    [ asParser, consParser, appParser, terminalParser ]
+
+
+asParser : Parser s Pattern -> Parser s Pattern
+asParser next =
+    lazy <| \() -> next >>= asParser_
+
+
+asParser_ : Pattern -> Parser s Pattern
+asParser_ a =
     lazy <|
         \() ->
-            tattern >>= pattern_
+            ((PAs a <$> (symbol "as" *> varName)) >>= asParser_) <|> succeed a
 
 
-pattern_ : Pattern -> Parser s Pattern
-pattern_ a =
+consParser : Parser s Pattern -> Parser s Pattern
+consParser next =
     lazy <|
         \() ->
-            ((PAs a <$> (symbol "as" *> varName)) >>= pattern_) <|> succeed a
+            (PCons <$> next <* symbol "::" <*> consParser next)
+                <|> next
 
 
-tattern : Parser s Pattern
-tattern =
-    lazy <|
-        \() ->
-            (PCons <$> fattern <* symbol "::" <*> tattern)
-                <|> fattern
-
-
-fattern : Parser s Pattern
-fattern =
+appParser : Parser s Pattern -> Parser s Pattern
+appParser next =
     lazy <|
         \() ->
             withColumn
@@ -91,13 +99,13 @@ fattern =
                         ((\a b -> PApplication a b)
                             <$ spacesOrIndentedNewline (column + 1)
                         )
-                        cattern
+                        next
                 )
-                <|> cattern
+                <|> next
 
 
-cattern : Parser s Pattern
-cattern =
+terminalParser : Parser s Pattern -> Parser s Pattern
+terminalParser next =
     lazy <|
         \() ->
             choice
@@ -106,9 +114,9 @@ cattern =
                 , constructorParser
                 , PLiteral <$> literalParser
                 , PRecord <$> (braces <| commaSeparated_ loName)
-                , PTuple <$> tupleParser pattern
-                , PList <$> listParser pattern
-                , parens pattern
+                , PTuple <$> tupleParser next
+                , PList <$> listParser next
+                , parens next
                 ]
 
 
@@ -120,3 +128,13 @@ applicationToList application =
 
         other ->
             [ other ]
+
+
+applicationFromList : Pattern -> List Pattern -> Pattern
+applicationFromList acc l =
+    case l of
+        right :: rest ->
+            applicationFromList (PApplication acc right) rest
+
+        _ ->
+            acc

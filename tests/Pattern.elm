@@ -1,7 +1,7 @@
 module Pattern exposing (aliases, characterLiterals, cons, constructor, floatLiterals, functions, intLiterals, stringLiterals, variable, wildcard)
 
 import Ast.Literal exposing (Literal(..))
-import Ast.Pattern exposing (Pattern(..), pattern)
+import Ast.Pattern exposing (..)
 import Helpers exposing (..)
 import Test exposing (Test, describe, test)
 
@@ -82,21 +82,13 @@ constructor =
             \() ->
                 "A 1 2.5 'a' \"b\" _ c"
                     |> isPattern
-                        (PApplication
-                            (PApplication
-                                (PApplication
-                                    (PApplication
-                                        (PApplication
-                                            (PApplication (PConstructor "A") (integerPattern 1))
-                                            (floatPattern 2.5)
-                                        )
-                                        (characterPattern 'a')
-                                    )
-                                    (stringPattern "b")
-                                )
-                                PWild
-                            )
-                            (PVariable "c")
+                        (applicationFromList (PApplication (PConstructor "A") (integerPattern 1))
+                            [ floatPattern 2.5
+                            , characterPattern 'a'
+                            , stringPattern "b"
+                            , PWild
+                            , PVariable "c"
+                            ]
                         )
         , test "recursive" <|
             \() ->
@@ -184,42 +176,31 @@ functions =
             \() ->
                 "f x y _"
                     |> isPattern
-                        (PApplication
-                            (PApplication
-                                (PApplication (PVariable "f") (PVariable "x"))
-                                (PVariable "y")
-                            )
-                            PWild
+                        (applicationFromList
+                            (PApplication (PVariable "f") (PVariable "x"))
+                            [ PVariable "y"
+                            , PWild
+                            ]
                         )
         , test "with constructors" <|
             \() ->
                 "a B c D e"
                     |> isPattern
-                        (PApplication
-                            (PApplication
-                                (PApplication
-                                    (PApplication (PVariable "a") (PConstructor "B"))
-                                    (PVariable "c")
-                                )
-                                (PConstructor "D")
-                            )
-                            (PVariable "e")
+                        (applicationFromList (PApplication (PVariable "a") (PConstructor "B"))
+                            [ PVariable "c"
+                            , PConstructor "D"
+                            , PVariable "e"
+                            ]
                         )
         , test "mixed" <|
             \() ->
                 "f (Just x) Nothing y (a :: b as c) (_, 3.6)"
                     |> isPattern
-                        (PApplication
-                            (PApplication
-                                (PApplication
-                                    (PApplication
-                                        (PApplication (PVariable "f") (PApplication (PConstructor "Just") (PVariable "x")))
-                                        (PConstructor "Nothing")
-                                    )
-                                    (PVariable "y")
-                                )
-                                (PAs (PCons (PVariable "a") (PVariable "b")) "c")
-                            )
-                            (PTuple [ PWild, PLiteral <| Float 3.6 ])
+                        (applicationFromList (PApplication (PVariable "f") (PApplication (PConstructor "Just") (PVariable "x")))
+                            [ PConstructor "Nothing"
+                            , PVariable "y"
+                            , PAs (PCons (PVariable "a") (PVariable "b")) "c"
+                            , PTuple [ PWild, PLiteral <| Float 3.6 ]
+                            ]
                         )
         ]
