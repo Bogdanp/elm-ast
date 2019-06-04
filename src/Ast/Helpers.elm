@@ -2,10 +2,13 @@ module Ast.Helpers exposing
     ( between_
     , commaSeparated
     , commaSeparated_
+    , countIndent
     , emptyTuple
     , exactIndentation
+    , funName
     , functionName
     , initialSymbol
+    , listParser
     , loName
     , logContent
     , moduleName
@@ -15,9 +18,11 @@ module Ast.Helpers exposing
     , reserved
     , reservedOperators
     , spaces
+    , spacesOrIndentedNewline
     , spaces_
     , symbol
     , symbol_
+    , tupleParser
     , upName
     , varName
     , wild
@@ -119,6 +124,11 @@ loName =
     wild <|> varName
 
 
+funName : Parser s String
+funName =
+    choice [ varName, parens operator ]
+
+
 wild : Parser s String
 wild =
     string "_"
@@ -173,3 +183,42 @@ moduleName =
 logContent : String -> Parser s x -> Parser s x
 logContent label xsParser =
     xsParser >>= (Debug.log label >> succeed)
+
+
+listParser : Parser s a -> Parser s (List a)
+listParser el =
+    brackets <| commaSeparated_ el
+
+
+tupleParser : Parser s a -> Parser s (List a)
+tupleParser el =
+    parens (commaSeparated_ <| el)
+        >>= (\a ->
+                case a of
+                    [ _ ] ->
+                        fail "No single tuples"
+
+                    anyOther ->
+                        succeed anyOther
+            )
+
+
+spacesOrIndentedNewline : Int -> Parser s ()
+spacesOrIndentedNewline indentation =
+    lazy <|
+        \() ->
+            or (spaces_ *> succeed ())
+                (countIndent
+                    >>= (\column ->
+                            if column < indentation then
+                                fail "Arguments have to be at least the same indentation as the function"
+
+                            else
+                                succeed ()
+                        )
+                )
+
+
+countIndent : Parser s Int
+countIndent =
+    newline *> spaces >>= (String.filter (\char -> char == ' ') >> String.length >> succeed)

@@ -1,9 +1,11 @@
-module Helpers exposing (ExpressionSansMeta(..), StatementSansMeta(..), access, accessFun, app, areStatements, areStatementsSansMeta, asPattern, binOp, case_, character, characterPattern, comment, constructorPattern, dropDoubleMExp, dropExpressionMeta, dropMExpMeta, dropPatternMatches, dropStatementMeta, dropWithMetaMExp, effectModuleDeclaration, fails, failsPattern, failure, float, floatPattern, functionDeclaration, functionPattern, functionTypeDeclaration, importStatement, infixDeclaration, integer, integerPattern, isApplicationSansMeta, isExpression, isExpressionSansMeta, isPattern, isStatement, isStatementSansMeta, lambda, let_, list, moduleDeclaration, portDeclaration, portModuleDeclaration, portTypeDeclaration, record, recordUpdate, simpleParse, string, stringPattern, tuple, tuplePattern, typeAliasDeclaration, typeDeclaration, var, variablePattern, wild)
+module Helpers exposing (..)
 
 import Ast exposing (parse, parseExpression, parsePattern, parseStatement)
 import Ast.BinOp exposing (Assoc, operators)
 import Ast.Common exposing (..)
-import Ast.Expression exposing (Expression(..), Literal(..), MExp, Pattern(..))
+import Ast.Expression exposing (Expression(..), MExp)
+import Ast.Literal exposing (Literal(..))
+import Ast.Pattern exposing (Pattern(..))
 import Ast.Statement exposing (ExportSet(..), Statement, StatementBase(..), Type(..))
 import Expect exposing (..)
 
@@ -205,13 +207,13 @@ variablePattern =
     PVariable
 
 
-constructorPattern : String -> List Pattern -> Pattern
+constructorPattern : String -> Pattern
 constructorPattern =
     PConstructor
 
 
-wild : Pattern
-wild =
+wildPattern : Pattern
+wildPattern =
     PWild
 
 
@@ -274,9 +276,9 @@ binOp name l r =
     BinOpSM name l r
 
 
-functionPattern : String -> List Pattern -> Pattern
-functionPattern =
-    PFunction
+applicationPattern : Pattern -> Pattern -> Pattern
+applicationPattern =
+    PApplication
 
 
 let_ : List ( Pattern, ExpressionSansMeta ) -> ExpressionSansMeta -> ExpressionSansMeta
@@ -484,7 +486,7 @@ areStatementsSansMeta s i =
             Expect.fail <| failure i position es
 
 
-isPattern : Ast.Expression.Pattern -> String -> Expectation
+isPattern : Pattern -> String -> Expectation
 isPattern p i =
     case parsePattern i of
         Ok ( _, _, r ) ->

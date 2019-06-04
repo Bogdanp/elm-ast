@@ -1,6 +1,6 @@
 module Ast.Expression exposing
-    ( Expression(..), MExp, Literal(..), Pattern(..)
-    , expression, pattern
+    ( Expression(..), MExp
+    , expression
     , term
     )
 
@@ -9,12 +9,12 @@ module Ast.Expression exposing
 
 # Types
 
-@docs Expression, MExp, Literal, Pattern
+@docs Expression, MExp
 
 
 # rs
 
-@docs expression, pattern
+@docs expression
 
 
 # Expression
@@ -26,12 +26,10 @@ module Ast.Expression exposing
 import Ast.BinOp exposing (..)
 import Ast.Common exposing (..)
 import Ast.Helpers exposing (..)
-import Char
+import Ast.Literal exposing (..)
+import Ast.Pattern exposing (..)
 import Combine exposing (..)
-import Combine.Char exposing (..)
-import Combine.Num
 import Dict exposing (Dict)
-import Hex
 import List exposing (singleton)
 import List.Extra exposing (break)
 import String
@@ -71,211 +69,6 @@ type Expression
     | Lambda (List Pattern) MExp
     | Application MExp MExp
     | BinOp MExp MExp MExp
-
-
-{-| Pattern to match
--}
-type Pattern
-    = PWild
-    | PVariable Name
-    | PConstructor Name (List Pattern)
-    | PLiteral Literal
-    | PTuple (List Pattern)
-    | PCons Pattern Pattern
-    | PList (List Pattern)
-    | PRecord (List Name)
-    | PAs Pattern Name
-    | PFunction Name (List Pattern)
-
-
-{-| Simple literal patterns
--}
-type Literal
-    = Character Char
-    | String String
-    | Integer Int
-    | Float Float
-
-
-
--- Our grammar is
--- pattern -> terminal | constructor | tuple | list | cons | as | (pattern)
--- terminal -> wild | var | literal | record
--- constructor -> name constructorPatterns
--- constructorPatterns -> pattern constructorPatterns | epsilon
--- tuple -> (tupleElems)
--- tupleElems -> pattern, tupleElems | epsilon
--- list -> [listElems]
--- listElems -> pattern, listElems | epsilon
--- cons -> pattern :: pattern
--- as -> pattern as varName
--- included helpers starting with other letters to enforce precedence and associativity
--- in case of left associativity, there is an unparsable left recursion, therefore I used
--- -- Elimination of left recursion:
--- -- A -> A a | b
--- -- ------------
--- -- A -> b A'
--- -- A' -> a A' | epsilon
-
-
-{-| Parse a pattern
--}
-pattern : Parser s Pattern
-pattern =
-    lazy <|
-        \() ->
-            tattern >>= pattern_
-
-
-pattern_ : Pattern -> Parser s Pattern
-pattern_ a =
-    lazy <|
-        \() ->
-            ((PAs a <$> (symbol "as" *> varName)) >>= pattern_) <|> succeed a
-
-
-tattern : Parser s Pattern
-tattern =
-    lazy <|
-        \() ->
-            (PCons <$> fattern <* symbol "::" <*> tattern)
-                <|> fattern
-
-
-fattern : Parser s Pattern
-fattern =
-    lazy <|
-        \() -> PConstructor <$> upName <*> many (between_ spaces cattern) <|> battern
-
-
-battern : Parser s Pattern
-battern =
-    lazy <|
-        \() ->
-            PFunction
-                <$> loName
-                <*> many1
-                        (between_ spaces
-                            -- in case there is a constructor without arguments it can go without parens
-                            -- so needs to be added here
-                            (cattern <|> (flip PConstructor [] <$> upName))
-                        )
-                <|> cattern
-
-
-cattern : Parser s Pattern
-cattern =
-    lazy <|
-        \() ->
-            choice
-                [ wildPattern
-                , varPattern
-                , PLiteral <$> literalParser
-                , PRecord <$> (braces <| commaSeparated_ loName)
-                , PTuple <$> tupleParser pattern
-                , PList <$> listParser pattern
-                , parens pattern
-                ]
-
-
-varPattern : Parser s Pattern
-varPattern =
-    PVariable <$> varName
-
-
-wildPattern : Parser s Pattern
-wildPattern =
-    always PWild <$> wild
-
-
-listParser : Parser s a -> Parser s (List a)
-listParser el =
-    brackets <| commaSeparated_ el
-
-
-tupleParser : Parser s a -> Parser s (List a)
-tupleParser el =
-    parens (commaSeparated_ <| el)
-        >>= (\a ->
-                case a of
-                    [ _ ] ->
-                        fail "No single tuples"
-
-                    anyOther ->
-                        succeed anyOther
-            )
-
-
-literalParser : Parser s Literal
-literalParser =
-    choice
-        [ Float <$> floatParser
-        , Integer <$> intParser
-        , Character <$> characterParser
-        , String <$> stringParser
-        ]
-
-
-characterParser : Parser s Char
-characterParser =
-    between_ (Combine.string "'")
-        (((Combine.string "\\" *> regex "(n|t|r|\\\\|x..)")
-            >>= (\a ->
-                    case String.uncons a of
-                        Just ( 'n', "" ) ->
-                            succeed '\n'
-
-                        Just ( 't', "" ) ->
-                            succeed '\t'
-
-                        Just ( 'r', "" ) ->
-                            succeed '\x0D'
-
-                        Just ( '\\', "" ) ->
-                            succeed '\\'
-
-                        Just ( '0', "" ) ->
-                            succeed '\x00'
-
-                        Just ( 'x', hex ) ->
-                            hex
-                                |> String.toLower
-                                |> Hex.fromString
-                                |> Result.map Char.fromCode
-                                |> Result.map succeed
-                                |> Result.withDefault (fail "Invalid charcode")
-
-                        Just other ->
-                            fail ("No such character as \\" ++ toString other)
-
-                        Nothing ->
-                            fail "No character"
-                )
-         )
-            <|> anyChar
-        )
-
-
-stringParser : Parser s String
-stringParser =
-    let
-        singleString =
-            Combine.string "\"" *> regex "(\\\\\\\\|\\\\\"|[^\"\n])*" <* Combine.string "\""
-
-        multiString =
-            String.concat <$> (Combine.string "\"\"\"" *> many (regex "[^\"]*") <* Combine.string "\"\"\"")
-    in
-    multiString <|> singleString
-
-
-intParser : Parser s Int
-intParser =
-    Combine.Num.int
-
-
-floatParser : Parser s Float
-floatParser =
-    Combine.Num.float
 
 
 character : Parser s MExp
@@ -443,18 +236,13 @@ caseExpression ops =
                         )
 
 
-countIndent : Parser s Int
-countIndent =
-    newline *> spaces >>= (String.filter (\char -> char == ' ') >> String.length >> succeed)
-
-
 lambda : OpTable -> Parser s MExp
 lambda ops =
     lazy <|
         \() ->
             withMeta <|
                 Lambda
-                    <$> (symbol "\\" *> many (between_ spaces pattern))
+                    <$> (symbol "\\" *> (pattern >>= succeed << applicationToList))
                     <*> (symbol "->" *> expression ops)
 
 
@@ -467,22 +255,6 @@ application ops =
                     chainl
                         ((\a b -> addMeta l.line l.column (Application a b)) <$ spacesOrIndentedNewline (l.column + 1))
                         (term ops)
-                )
-
-
-spacesOrIndentedNewline : Int -> Parser s ()
-spacesOrIndentedNewline indentation =
-    lazy <|
-        \() ->
-            or (spaces_ *> succeed ())
-                (countIndent
-                    >>= (\column ->
-                            if column < indentation then
-                                fail "Arguments have to be at least the same indentation as the function"
-
-                            else
-                                succeed ()
-                        )
                 )
 
 

@@ -99,7 +99,7 @@ letExpressions =
                 "let _ = 42 in 24"
                     |> isExpressionSansMeta
                         (let_
-                            [ ( wild, integer 42 ) ]
+                            [ ( wildPattern, integer 42 ) ]
                             (integer 24)
                         )
         , test "Can start with a tag name" <|
@@ -120,7 +120,7 @@ in
         """
                     |> isExpressionSansMeta
                         (let_
-                            [ ( functionPattern "f" [ variablePattern "x" ], binOp (var "+") (var "x") (integer 1) ) ]
+                            [ ( applicationPattern (variablePattern "f") (variablePattern "x"), binOp (var "+") (var "x") (integer 1) ) ]
                             (app (var "f") (integer 4))
                         )
         , test "function 2" <|
@@ -134,10 +134,10 @@ in
 """
                     |> isExpressionSansMeta
                         (let_
-                            [ ( functionPattern "f" [ variablePattern "x" ]
+                            [ ( applicationPattern (variablePattern "f") (variablePattern "x")
                               , binOp (var "+") (var "x") (integer 1)
                               )
-                            , ( functionPattern "g" [ variablePattern "x" ]
+                            , ( applicationPattern (variablePattern "g") (variablePattern "x")
                               , binOp (var "+") (var "x") (integer 1)
                               )
                             ]
@@ -179,8 +179,8 @@ case x of
                     |> isExpressionSansMeta
                         (case_
                             (var "x")
-                            [ ( constructorPattern "Nothing" [], integer 0 )
-                            , ( constructorPattern "Just" [ variablePattern "y" ], var "y" )
+                            [ ( constructorPattern "Nothing", integer 0 )
+                            , ( applicationPattern (constructorPattern "Just") (variablePattern "y"), var "y" )
                             ]
                         )
         , test "binding to underscore" <|
@@ -193,7 +193,7 @@ case x of
                     |> isExpressionSansMeta
                         (case_
                             (var "x")
-                            [ ( wild, integer 42 ) ]
+                            [ ( wildPattern, integer 42 ) ]
                         )
         , test "Nested case" <|
             \() ->
@@ -468,7 +468,7 @@ expressions =
                     |> isExpressionSansMeta
                         (case_
                             (var "a")
-                            [ ( asPattern (constructorPattern "T" [ wild ]) "x"
+                            [ ( asPattern (applicationPattern (constructorPattern "T") wildPattern) "x"
                               , integer 1
                               )
                             ]

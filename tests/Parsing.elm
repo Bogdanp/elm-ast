@@ -24,7 +24,7 @@ wrongWhitespace =
                 wrongWhitespaceInput
                     |> areStatementsSansMeta
                         [ comment " Empty line with spaces at the end here"
-                        , functionDeclaration (functionPattern "b" []) (integer 2)
-                        , functionDeclaration (functionPattern "a" []) (integer 1)
+                        , functionDeclaration (variablePattern "b") (integer 2)
+                        , functionDeclaration (variablePattern "a") (integer 1)
                         ]
         ]

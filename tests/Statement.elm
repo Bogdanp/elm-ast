@@ -283,8 +283,8 @@ singleDeclaration =
                             (TypeConstructor [ "Int" ] [])
                         )
                     , functionDeclaration
-                        (functionPattern "f"
-                            [ variablePattern "x" ]
+                        (applicationPattern (variablePattern "f")
+                            (variablePattern "x")
                         )
                         (app
                             (app
@@ -330,8 +330,8 @@ multipleDeclarations =
                             (TypeConstructor [ "Int" ] [])
                         )
                     , functionDeclaration
-                        (functionPattern "f"
-                            [ variablePattern "x" ]
+                        (applicationPattern (variablePattern "f")
+                            (variablePattern "x")
                         )
                         (binOp
                             (var "+")
@@ -344,8 +344,8 @@ multipleDeclarations =
                             (TypeConstructor [ "Int" ] [])
                         )
                     , functionDeclaration
-                        (functionPattern "g"
-                            [ variablePattern "x" ]
+                        (applicationPattern (variablePattern "g")
+                            (variablePattern "x")
                         )
                         (binOp
                             (var "+")
@@ -361,8 +361,8 @@ multipleDeclarations =
                             (TypeConstructor [ "Int" ] [])
                         )
                     , functionDeclaration
-                        (functionPattern "h"
-                            [ tuplePattern [ variablePattern "a", variablePattern "b" ] ]
+                        (applicationPattern (variablePattern "h")
+                            (tuplePattern [ variablePattern "a", variablePattern "b" ])
                         )
                         (binOp
                             (var "+")
@@ -374,7 +374,12 @@ multipleDeclarations =
                             (TypeConstructor [ "Int" ] [])
                             (TypeConstructor [ "Int" ] [])
                         )
-                    , functionDeclaration (functionPattern "+" [ variablePattern "a", variablePattern "b" ]) (integer 1)
+                    , functionDeclaration
+                        (applicationPattern
+                            (applicationPattern (variablePattern "+") (variablePattern "a"))
+                            (variablePattern "b")
+                        )
+                        (integer 1)
                     ]
 
 
@@ -398,9 +403,7 @@ moduleFixityDeclarations =
             moduleFixityInput
                 |> areStatementsSansMeta
                     [ functionDeclaration
-                        (functionPattern "f"
-                            []
-                        )
+                        (variablePattern "f")
                         (binOp
                             (var "++")
                             (binOp (var "++") (var "a") (var "b"))
@@ -408,9 +411,7 @@ moduleFixityDeclarations =
                         )
                     , infixDeclaration L 1 "++"
                     , functionDeclaration
-                        (functionPattern "g"
-                            []
-                        )
+                        (variablePattern "g")
                         (binOp
                             (var "**")
                             (var "a")

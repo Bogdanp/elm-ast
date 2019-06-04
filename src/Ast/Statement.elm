@@ -19,8 +19,9 @@ module Ast.Statement exposing
 
 import Ast.BinOp exposing (Assoc(..), OpTable)
 import Ast.Common exposing (..)
-import Ast.Expression exposing (Expression, MExp, Pattern, expression, pattern, term)
+import Ast.Expression exposing (Expression, MExp, expression, term)
 import Ast.Helpers exposing (..)
+import Ast.Pattern exposing (Pattern(..), pattern)
 import Combine exposing (..)
 import Combine.Char exposing (..)
 import Combine.Num
@@ -317,7 +318,7 @@ functionTypeDeclaration : Parser s Statement
 functionTypeDeclaration =
     withMeta <|
         FunctionTypeDeclaration
-            <$> (choice [ loName, parens operator ] <* symbol ":")
+            <$> (funName <* symbol ":")
             <*> typeAnnotation
 
 
@@ -330,7 +331,10 @@ functionDeclaration ops =
     )
         >>= (\(( decl, _ ) as full) ->
                 case decl of
-                    FunctionDeclaration (Ast.Expression.PFunction _ _) _ ->
+                    FunctionDeclaration (PVariable _) _ ->
+                        succeed full
+
+                    FunctionDeclaration (PApplication _ _) _ ->
                         succeed full
 
                     _ ->

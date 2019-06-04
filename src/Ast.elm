@@ -1,7 +1,4 @@
-module Ast exposing
-    ( parseExpression, parseStatement, parseOpTable, parseModule, parse
-    , parsePattern
-    )
+module Ast exposing (parseExpression, parseStatement, parseOpTable, parseModule, parse, parsePattern)
 
 {-| This module exposes functions for parsing Elm code.
 
@@ -13,7 +10,8 @@ module Ast exposing
 -}
 
 import Ast.BinOp exposing (OpTable, operators)
-import Ast.Expression exposing (MExp, Pattern, expression, pattern)
+import Ast.Expression exposing (MExp, expression)
+import Ast.Pattern exposing (Pattern, pattern)
 import Ast.Statement exposing (Statement, opTable, statement, statements)
 import Combine exposing ((<*), end)
 

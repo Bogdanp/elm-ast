@@ -1,7 +1,8 @@
 module Meta exposing (multiline, oneLine, statements)
 
 import Ast.Common exposing (..)
-import Ast.Expression exposing (Expression(..), Literal(..))
+import Ast.Expression exposing (Expression(..))
+import Ast.Literal exposing (Literal(..))
 import Ast.Statement exposing (..)
 import Helpers exposing (..)
 import Test exposing (Test, describe, test)
@@ -26,7 +27,7 @@ oneLine =
             , ( "let f x = x + 1.2 in f 4.5"
               , addMeta 0 0 <|
                     Let
-                        [ ( functionPattern "f" [ variablePattern "x" ]
+                        [ ( applicationPattern (variablePattern "f") (variablePattern "x")
                           , addMeta 0 11 <|
                                 BinOp (addMeta 0 11 <| Variable "+")
                                     (addMeta 0 10 <| Variable "x")
@@ -100,7 +101,7 @@ in
                                   )
                                 ]
                       )
-                    , ( functionPattern "f" [ variablePattern "x" ]
+                    , ( applicationPattern (variablePattern "f") (variablePattern "x")
                       , addMeta 3 8 <|
                             RecordUpdate (addMeta 3 10 <| "a")
                                 [ ( addMeta 3 14 <| "b"
@@ -148,8 +149,8 @@ f s = text <| s ++ s
                         (TypeConstructor [ "Html" ] [ TypeVariable "msg" ])
             , addMeta 5 0 <|
                 FunctionDeclaration
-                    (functionPattern "f"
-                        [ variablePattern "s" ]
+                    (applicationPattern (variablePattern "f")
+                        (variablePattern "s")
                     )
                 <|
                     addMeta 5 10 <|
