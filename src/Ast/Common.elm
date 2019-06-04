@@ -1,6 +1,7 @@
 module Ast.Common exposing
     ( Alias, Column, Line, Located, MName, ModuleName, Name, QualifiedType, WithMeta
     , addMeta, dropMeta, withMeta
+    , Literal(..)
     )
 
 {-| This module exposes types and helpers common for statement and expression.
@@ -8,7 +9,7 @@ module Ast.Common exposing
 
 # Types
 
-@docs Alias, Column, Line, Located, MName, ModuleName, Name, QualifiedType, WithMeta
+@docs Alias, Column, Line, Located, MName, ModuleName, Name, QualifiedType, WithMeta, Literal
 
 
 # helpers
@@ -72,6 +73,14 @@ type alias ModuleName =
 -}
 type alias Alias =
     String
+
+{-| Simple literal patterns
+-}
+type Literal
+    = Character Char
+    | String String
+    | Integer Int
+    | Float Float
 
 
 {-| Helper adding metadata to an entity

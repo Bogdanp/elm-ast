@@ -1,20 +1,12 @@
-module Ast.Literal exposing (Literal(..), characterParser, floatParser, intParser, literalParser, stringParser)
+module Ast.Literal exposing (characterParser, floatParser, intParser, literalParser, stringParser)
 
 import Ast.Helpers exposing (..)
+import Ast.Common exposing (Literal(..))
 import Char
 import Combine exposing (..)
 import Combine.Char exposing (..)
 import Combine.Num
 import Hex
-
-
-{-| Simple literal patterns
--}
-type Literal
-    = Character Char
-    | String String
-    | Integer Int
-    | Float Float
 
 
 literalParser : Parser s Literal
