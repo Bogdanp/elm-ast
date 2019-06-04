@@ -6,21 +6,6 @@ import Ast.Literal exposing (..)
 import Combine exposing (..)
 
 
-{-| Pattern to match
--}
-type Pattern
-    = PWild
-    | PVariable Name
-    | PConstructor Name
-    | PLiteral Literal
-    | PTuple (List Pattern)
-    | PCons Pattern Pattern
-    | PList (List Pattern)
-    | PRecord (List Name)
-    | PAs Pattern Name
-    | PApplication Pattern Pattern
-
-
 wildParser : Parser s Pattern
 wildParser =
     always PWild <$> wild
