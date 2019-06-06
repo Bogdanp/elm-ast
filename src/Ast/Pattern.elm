@@ -6,19 +6,19 @@ import Ast.Literal exposing (..)
 import Combine exposing (..)
 
 
-wildParser : Parser s Pattern
+wildParser : Parser s MPattern
 wildParser =
-    always PWild <$> wild
+    withMeta <| always PWild <$> wild
 
 
-varParser : Parser s Pattern
+varParser : Parser s MPattern
 varParser =
-    PVariable <$> funName
+    withMeta <| PVariable <$> funName
 
 
-constructorParser : Parser s Pattern
+constructorParser : Parser s MPattern
 constructorParser =
-    PConstructor <$> upName
+    withMeta <| PConstructor <$> upName
 
 
 
@@ -44,52 +44,61 @@ constructorParser =
 
 {-| Parse a pattern
 -}
-pattern : Parser s Pattern
+pattern : Parser s MPattern
 pattern =
     lazy <| \() -> List.foldr identity pattern precedence
 
 
-precedence : List (Parser s Pattern -> Parser s Pattern)
+precedence : List (Parser s MPattern -> Parser s MPattern)
 precedence =
     [ asParser, consParser, appParser, terminalParser ]
 
 
-asParser : Parser s Pattern -> Parser s Pattern
+asParser : Parser s MPattern -> Parser s MPattern
 asParser next =
     lazy <| \() -> next >>= asParser_
 
 
-asParser_ : Pattern -> Parser s Pattern
+asParser_ : MPattern -> Parser s MPattern
 asParser_ a =
     lazy <|
         \() ->
-            ((PAs a <$> (symbol "as" *> varName)) >>= asParser_) <|> succeed a
+            ((withMeta <| PAs a <$> (symbol "as" *> varName)) >>= asParser_)
+                <|> succeed a
 
 
-consParser : Parser s Pattern -> Parser s Pattern
+consParser : Parser s MPattern -> Parser s MPattern
 consParser next =
     lazy <|
         \() ->
-            (PCons <$> next <* symbol "::" <*> consParser next)
+            (withMeta <|
+                PCons
+                    <$> next
+                    <* withMeta (symbol "::")
+                    <*> consParser next
+            )
                 <|> next
 
 
-appParser : Parser s Pattern -> Parser s Pattern
+appParser : Parser s MPattern -> Parser s MPattern
 appParser next =
     lazy <|
         \() ->
-            withColumn
-                (\column ->
+            withLocation
+                (\l ->
                     chainl
-                        ((\a b -> PApplication a b)
-                            <$ spacesOrIndentedNewline (column + 1)
+                        ((\a b ->
+                            addMeta l.line l.column <|
+                                PApplication a b
+                         )
+                            <$ spacesOrIndentedNewline (l.column + 1)
                         )
                         next
                 )
                 <|> next
 
 
-terminalParser : Parser s Pattern -> Parser s Pattern
+terminalParser : Parser s MPattern -> Parser s MPattern
 terminalParser next =
     lazy <|
         \() ->
@@ -97,29 +106,29 @@ terminalParser next =
                 [ wildParser
                 , varParser
                 , constructorParser
-                , PLiteral <$> literalParser
-                , PRecord <$> (braces <| commaSeparated_ loName)
-                , PTuple <$> tupleParser next
-                , PList <$> listParser next
+                , withMeta <| PLiteral <$> literalParser
+                , withMeta <| PRecord <$> (braces <| commaSeparated_ <| withMeta loName)
+                , withMeta <| PTuple <$> tupleParser next
+                , withMeta <| PList <$> listParser next
                 , parens next
                 ]
 
 
-applicationToList : Pattern -> List Pattern
+applicationToList : MPattern -> List MPattern
 applicationToList application =
     case application of
-        PApplication left right ->
+        ( PApplication left right, _ ) ->
             applicationToList left ++ [ right ]
 
         other ->
             [ other ]
 
 
-applicationFromList : Pattern -> List Pattern -> Pattern
+applicationFromList : MPattern -> List MPattern -> MPattern
 applicationFromList acc l =
     case l of
-        right :: rest ->
-            applicationFromList (PApplication acc right) rest
+        (( _, meta ) as right) :: rest ->
+            applicationFromList ( PApplication acc right, meta ) rest
 
         _ ->
             acc

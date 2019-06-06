@@ -26,7 +26,10 @@ oneLine =
             , ( "let f x = x + 1.2 in f 4.5"
               , addMeta 0 0 <|
                     Let
-                        [ ( applicationPattern (variablePattern "f") (variablePattern "x")
+                        [ ( addMeta 0 4 <|
+                                PApplication
+                                    (addMeta 0 4 <| PVariable "f")
+                                    (addMeta 0 6 <| PVariable "x")
                           , addMeta 0 11 <|
                                 BinOp (addMeta 0 11 <| Variable "+")
                                     (addMeta 0 10 <| Variable "x")
@@ -38,10 +41,11 @@ oneLine =
             , ( "\\(x, y) -> x ++ \":\" ++ y"
               , addMeta 0 0 <|
                     Lambda
-                        [ tuplePattern
-                            [ variablePattern "x"
-                            , variablePattern "y"
-                            ]
+                        [ addMeta 0 1 <|
+                            PTuple
+                                [ addMeta 0 2 <| PVariable "x"
+                                , addMeta 0 5 <| PVariable "y"
+                                ]
                         ]
                         (addMeta 0 12 <|
                             BinOp (addMeta 0 12 <| Variable "++")
@@ -89,7 +93,7 @@ in
         expectation =
             addMeta 0 0 <|
                 Let
-                    [ ( variablePattern "a"
+                    [ ( addMeta 1 4 <| PVariable "a"
                       , addMeta 1 8 <|
                             Record
                                 [ ( addMeta 1 10 <| "b"
@@ -100,7 +104,10 @@ in
                                   )
                                 ]
                       )
-                    , ( applicationPattern (variablePattern "f") (variablePattern "x")
+                    , ( addMeta 2 4 <|
+                            PApplication
+                                (addMeta 2 4 <| PVariable "f")
+                                (addMeta 2 6 <| PVariable "x")
                       , addMeta 3 8 <|
                             RecordUpdate (addMeta 3 10 <| "a")
                                 [ ( addMeta 3 14 <| "b"
@@ -148,8 +155,9 @@ f s = text <| s ++ s
                         (TypeConstructor [ "Html" ] [ TypeVariable "msg" ])
             , addMeta 5 0 <|
                 FunctionDeclaration
-                    (applicationPattern (variablePattern "f")
-                        (variablePattern "s")
+                    (addMeta 5 0 <|
+                        PApplication (addMeta 5 0 <| PVariable "f")
+                            (addMeta 5 2 <| PVariable "s")
                     )
                 <|
                     addMeta 5 10 <|

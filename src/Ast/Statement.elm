@@ -61,7 +61,7 @@ type StatementBase
     | PortTypeDeclaration Name Type
     | PortDeclaration Name (List Name) MExp
     | FunctionTypeDeclaration Name Type
-    | FunctionDeclaration Pattern MExp
+    | FunctionDeclaration MPattern MExp
     | InfixDeclaration Assoc Int Name
     | Comment String
 
@@ -331,10 +331,10 @@ functionDeclaration ops =
     )
         >>= (\(( decl, _ ) as full) ->
                 case decl of
-                    FunctionDeclaration (PVariable _) _ ->
+                    FunctionDeclaration (PVariable _, _) _ ->
                         succeed full
 
-                    FunctionDeclaration (PApplication _ _) _ ->
+                    FunctionDeclaration (PApplication _ _, _) _ ->
                         succeed full
 
                     _ ->

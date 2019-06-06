@@ -64,9 +64,9 @@ type Expression
     | Record (List ( MName, MExp ))
     | RecordUpdate MName (List ( MName, MExp ))
     | If MExp MExp MExp
-    | Let (List ( Pattern, MExp )) MExp
-    | Case MExp (List ( Pattern, MExp ))
-    | Lambda (List Pattern) MExp
+    | Let (List ( MPattern, MExp )) MExp
+    | Case MExp (List ( MPattern, MExp ))
+    | Lambda (List MPattern) MExp
     | Application MExp MExp
     | BinOp MExp MExp MExp
 
@@ -192,7 +192,7 @@ letExpression ops =
                     <*> (symbol "in" *> expression ops)
 
 
-letBinding : OpTable -> Parser s ( Pattern, MExp )
+letBinding : OpTable -> Parser s ( MPattern, MExp )
 letBinding ops =
     lazy <|
         \() ->
@@ -258,13 +258,6 @@ application ops =
                 )
 
 
-operatorOrAsBetween : Parser s (WithMeta String {})
-operatorOrAsBetween =
-    lazy <|
-        \() ->
-            withMeta <| between_ whitespace <| operator <|> symbol_ "as"
-
-
 successOrEmptyList : Parser s (List a) -> Parser s (List a)
 successOrEmptyList p =
     lazy <| \() -> choice [ p, succeed [] ]
@@ -276,7 +269,7 @@ binary ops =
         \() ->
             let
                 next =
-                    operatorOrAsBetween
+                    (withMeta <| between_ whitespace <| operator)
                         >>= (\op ->
                                 lazy <|
                                     \() ->

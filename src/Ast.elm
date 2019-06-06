@@ -10,16 +10,16 @@ module Ast exposing (parseExpression, parseStatement, parseOpTable, parseModule,
 -}
 
 import Ast.BinOp exposing (OpTable, operators)
+import Ast.Common exposing (MPattern, Pattern(..))
 import Ast.Expression exposing (MExp, expression)
 import Ast.Pattern exposing (pattern)
-import Ast.Common exposing (Pattern)
 import Ast.Statement exposing (Statement, opTable, statement, statements)
 import Combine exposing ((<*), end)
 
 
 {-| Parse an Elm pattern
 -}
-parsePattern : String -> Result (Combine.ParseErr ()) (Combine.ParseOk () Pattern)
+parsePattern : String -> Result (Combine.ParseErr ()) (Combine.ParseOk () MPattern)
 parsePattern =
     Combine.parse (pattern <* end)
 

@@ -1,7 +1,6 @@
 module Ast.Common exposing
-    ( Alias, Column, Line, Located, MName, ModuleName, Name, QualifiedType, WithMeta
+    ( Alias, Column, Line, Located, MName, ModuleName, Name, QualifiedType, WithMeta, Literal(..), Pattern(..), MPattern
     , addMeta, dropMeta, withMeta
-    , Literal(..), Pattern(..)
     )
 
 {-| This module exposes types and helpers common for statement and expression.
@@ -9,7 +8,7 @@ module Ast.Common exposing
 
 # Types
 
-@docs Alias, Column, Line, Located, MName, ModuleName, Name, QualifiedType, WithMeta, Literal, Pattern
+@docs Alias, Column, Line, Located, MName, ModuleName, Name, QualifiedType, WithMeta, Literal, Pattern, MPattern
 
 
 # helpers
@@ -74,6 +73,7 @@ type alias ModuleName =
 type alias Alias =
     String
 
+
 {-| Simple literal patterns
 -}
 type Literal
@@ -90,13 +90,18 @@ type Pattern
     | PVariable Name
     | PConstructor Name
     | PLiteral Literal
-    | PTuple (List Pattern)
-    | PCons Pattern Pattern
-    | PList (List Pattern)
-    | PRecord (List Name)
-    | PAs Pattern Name
-    | PApplication Pattern Pattern
+    | PTuple (List MPattern)
+    | PCons MPattern MPattern
+    | PList (List MPattern)
+    | PRecord (List MName)
+    | PAs MPattern Name
+    | PApplication MPattern MPattern
 
+
+{-| Pattern with location
+-}
+type alias MPattern =
+    WithMeta Pattern {}
 
 
 {-| Helper adding metadata to an entity

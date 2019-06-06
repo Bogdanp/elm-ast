@@ -1,4 +1,4 @@
-module Helpers exposing (ExpressionSansMeta(..), StatementSansMeta(..), access, accessFun, app, applicationPattern, areStatements, areStatementsSansMeta, asPattern, binOp, case_, character, characterPattern, comment, constructorPattern, dropDoubleMExp, dropExpressionMeta, dropMExpMeta, dropPatternMatches, dropStatementMeta, dropWithMetaMExp, effectModuleDeclaration, fails, failsPattern, failure, float, floatPattern, functionDeclaration, functionTypeDeclaration, importStatement, infixDeclaration, integer, integerPattern, isApplicationSansMeta, isExpression, isExpressionSansMeta, isPattern, isStatement, isStatementSansMeta, lambda, let_, list, moduleDeclaration, portDeclaration, portModuleDeclaration, portTypeDeclaration, record, recordUpdate, simpleParse, string, stringPattern, tuple, tuplePattern, typeAliasDeclaration, typeDeclaration, var, variablePattern, wildPattern)
+module Helpers exposing (ExpressionSansMeta(..), PatternSansMeta(..), StatementSansMeta(..), access, accessFun, app, applicationFromListSM, applicationPattern, areStatements, areStatementsSansMeta, asPattern, binOp, case_, character, characterPattern, comment, consPattern, constructorPattern, dropDoubleMExp, dropExpressionMeta, dropMExpMeta, dropPatternMatches, dropPatternMeta, dropStatementMeta, dropWithMetaMExp, effectModuleDeclaration, fails, failsPattern, failure, float, floatPattern, functionDeclaration, functionTypeDeclaration, importStatement, infixDeclaration, integer, integerPattern, isApplicationSansMeta, isExpression, isExpressionSansMeta, isPattern, isPatternSansMeta, isStatement, isStatementSansMeta, lambda, let_, list, listPattern, moduleDeclaration, portDeclaration, portModuleDeclaration, portTypeDeclaration, record, recordUpdate, simpleParse, string, stringPattern, tuple, tuplePattern, typeAliasDeclaration, typeDeclaration, var, variablePattern, wildPattern)
 
 import Ast exposing (parse, parseExpression, parsePattern, parseStatement)
 import Ast.BinOp exposing (Assoc, operators)
@@ -24,9 +24,9 @@ type ExpressionSansMeta
     | RecordSM (List ( Name, ExpressionSansMeta ))
     | RecordUpdateSM Name (List ( Name, ExpressionSansMeta ))
     | IfSM ExpressionSansMeta ExpressionSansMeta ExpressionSansMeta
-    | LetSM (List ( Pattern, ExpressionSansMeta )) ExpressionSansMeta
-    | CaseSM ExpressionSansMeta (List ( Pattern, ExpressionSansMeta ))
-    | LambdaSM (List Pattern) ExpressionSansMeta
+    | LetSM (List ( PatternSansMeta, ExpressionSansMeta )) ExpressionSansMeta
+    | CaseSM ExpressionSansMeta (List ( PatternSansMeta, ExpressionSansMeta ))
+    | LambdaSM (List PatternSansMeta) ExpressionSansMeta
     | ApplicationSM ExpressionSansMeta ExpressionSansMeta
     | BinOpSM ExpressionSansMeta ExpressionSansMeta ExpressionSansMeta
 
@@ -41,9 +41,22 @@ type StatementSansMeta
     | PortTypeDeclarationSM Name Type
     | PortDeclarationSM Name (List Name) ExpressionSansMeta
     | FunctionTypeDeclarationSM Name Type
-    | FunctionDeclarationSM Pattern ExpressionSansMeta
+    | FunctionDeclarationSM PatternSansMeta ExpressionSansMeta
     | InfixDeclarationSM Assoc Int Name
     | CommentSM String
+
+
+type PatternSansMeta
+    = PWildSM
+    | PVariableSM Name
+    | PConstructorSM Name
+    | PLiteralSM Literal
+    | PTupleSM (List PatternSansMeta)
+    | PConsSM PatternSansMeta PatternSansMeta
+    | PListSM (List PatternSansMeta)
+    | PRecordSM (List Name)
+    | PAsSM PatternSansMeta Name
+    | PApplicationSM PatternSansMeta PatternSansMeta
 
 
 dropStatementMeta : Statement -> StatementSansMeta
@@ -77,7 +90,7 @@ dropStatementMeta ( s, _ ) =
             FunctionTypeDeclarationSM n t
 
         FunctionDeclaration p e ->
-            FunctionDeclarationSM p (dropMExpMeta e)
+            FunctionDeclarationSM (dropPatternMeta p) (dropMExpMeta e)
 
         InfixDeclaration a i n ->
             InfixDeclarationSM a i n
@@ -101,7 +114,7 @@ dropDoubleMExp ( a, b ) =
     ( dropMExpMeta a, dropMExpMeta b )
 
 
-dropPatternMatches : List ( Pattern, MExp ) -> List ( Pattern, ExpressionSansMeta )
+dropPatternMatches : List ( MPattern, MExp ) -> List ( PatternSansMeta, ExpressionSansMeta )
 dropPatternMatches l =
     let
         ( patterns, exps ) =
@@ -109,8 +122,11 @@ dropPatternMatches l =
 
         expsSM =
             List.map dropMExpMeta exps
+
+        patternsSM =
+            List.map dropPatternMeta patterns
     in
-    List.map2 (,) patterns expsSM
+    List.map2 (,) patternsSM expsSM
 
 
 dropExpressionMeta : Expression -> ExpressionSansMeta
@@ -156,13 +172,47 @@ dropExpressionMeta e =
             CaseSM (dropMExpMeta e) (dropPatternMatches l)
 
         Lambda l e ->
-            LambdaSM l (dropMExpMeta e)
+            LambdaSM (List.map dropPatternMeta l) (dropMExpMeta e)
 
         Application e1 e2 ->
             ApplicationSM (dropMExpMeta e1) (dropMExpMeta e2)
 
         BinOp e1 e2 e3 ->
             BinOpSM (dropMExpMeta e1) (dropMExpMeta e2) (dropMExpMeta e3)
+
+
+dropPatternMeta : MPattern -> PatternSansMeta
+dropPatternMeta ( p, _ ) =
+    case p of
+        PWild ->
+            PWildSM
+
+        PVariable n ->
+            PVariableSM n
+
+        PConstructor n ->
+            PConstructorSM n
+
+        PLiteral l ->
+            PLiteralSM l
+
+        PTuple li ->
+            PTupleSM <| List.map dropPatternMeta li
+
+        PCons head tail ->
+            PConsSM (dropPatternMeta head) (dropPatternMeta tail)
+
+        PList li ->
+            PListSM <| List.map dropPatternMeta li
+
+        PRecord li ->
+            PRecordSM <| List.map Tuple.first li
+
+        PAs pat name ->
+            PAsSM (dropPatternMeta pat) name
+
+        PApplication p1 p2 ->
+            PApplicationSM (dropPatternMeta p1) (dropPatternMeta p2)
 
 
 access : ExpressionSansMeta -> List Name -> ExpressionSansMeta
@@ -180,7 +230,7 @@ app left right =
     ApplicationSM left right
 
 
-lambda : List Pattern -> ExpressionSansMeta -> ExpressionSansMeta
+lambda : List PatternSansMeta -> ExpressionSansMeta -> ExpressionSansMeta
 lambda =
     LambdaSM
 
@@ -200,29 +250,39 @@ var =
     VariableSM
 
 
-variablePattern : String -> Pattern
+variablePattern : String -> PatternSansMeta
 variablePattern =
-    PVariable
+    PVariableSM
 
 
-constructorPattern : String -> Pattern
+constructorPattern : String -> PatternSansMeta
 constructorPattern =
-    PConstructor
+    PConstructorSM
 
 
-wildPattern : Pattern
+wildPattern : PatternSansMeta
 wildPattern =
-    PWild
+    PWildSM
 
 
-tuplePattern : List Pattern -> Pattern
+consPattern : PatternSansMeta -> PatternSansMeta -> PatternSansMeta
+consPattern =
+    PConsSM
+
+
+tuplePattern : List PatternSansMeta -> PatternSansMeta
 tuplePattern =
-    PTuple
+    PTupleSM
 
 
-asPattern : Pattern -> String -> Pattern
+listPattern : List PatternSansMeta -> PatternSansMeta
+listPattern =
+    PListSM
+
+
+asPattern : PatternSansMeta -> Name -> PatternSansMeta
 asPattern =
-    PAs
+    PAsSM
 
 
 integer : Int -> ExpressionSansMeta
@@ -230,9 +290,9 @@ integer =
     LiteralSM << Integer
 
 
-integerPattern : Int -> Pattern
+integerPattern : Int -> PatternSansMeta
 integerPattern =
-    PLiteral << Integer
+    PLiteralSM << Integer
 
 
 float : Float -> ExpressionSansMeta
@@ -240,9 +300,9 @@ float =
     LiteralSM << Float
 
 
-floatPattern : Float -> Pattern
+floatPattern : Float -> PatternSansMeta
 floatPattern =
-    PLiteral << Float
+    PLiteralSM << Float
 
 
 character : Char -> ExpressionSansMeta
@@ -250,9 +310,9 @@ character =
     LiteralSM << Character
 
 
-characterPattern : Char -> Pattern
+characterPattern : Char -> PatternSansMeta
 characterPattern =
-    PLiteral << Character
+    PLiteralSM << Character
 
 
 string : String -> ExpressionSansMeta
@@ -260,9 +320,9 @@ string =
     LiteralSM << String
 
 
-stringPattern : String -> Pattern
+stringPattern : String -> PatternSansMeta
 stringPattern =
-    PLiteral << String
+    PLiteralSM << String
 
 
 binOp :
@@ -274,12 +334,22 @@ binOp name l r =
     BinOpSM name l r
 
 
-applicationPattern : Pattern -> Pattern -> Pattern
+applicationPattern : PatternSansMeta -> PatternSansMeta -> PatternSansMeta
 applicationPattern =
-    PApplication
+    PApplicationSM
 
 
-let_ : List ( Pattern, ExpressionSansMeta ) -> ExpressionSansMeta -> ExpressionSansMeta
+applicationFromListSM : PatternSansMeta -> List PatternSansMeta -> PatternSansMeta
+applicationFromListSM acc li =
+    case li of
+        [] ->
+            acc
+
+        right :: rest ->
+            applicationFromListSM (PApplicationSM acc right) rest
+
+
+let_ : List ( PatternSansMeta, ExpressionSansMeta ) -> ExpressionSansMeta -> ExpressionSansMeta
 let_ =
     LetSM
 
@@ -291,7 +361,7 @@ tuple =
 
 case_ :
     ExpressionSansMeta
-    -> List ( Pattern, ExpressionSansMeta )
+    -> List ( PatternSansMeta, ExpressionSansMeta )
     -> ExpressionSansMeta
 case_ =
     CaseSM
@@ -356,7 +426,7 @@ functionTypeDeclaration =
 
 
 functionDeclaration :
-    Pattern
+    PatternSansMeta
     -> ExpressionSansMeta
     -> StatementSansMeta
 functionDeclaration =
@@ -484,11 +554,21 @@ areStatementsSansMeta s i =
             Expect.fail <| failure i position es
 
 
-isPattern : Pattern -> String -> Expectation
+isPattern : MPattern -> String -> Expectation
 isPattern p i =
     case parsePattern i of
         Ok ( _, _, r ) ->
             Expect.equal r p
+
+        Err ( _, { position }, es ) ->
+            Expect.fail <| failure i position es
+
+
+isPatternSansMeta : PatternSansMeta -> String -> Expectation
+isPatternSansMeta p i =
+    case parsePattern i of
+        Ok ( _, _, r ) ->
+            Expect.equal (dropPatternMeta r) p
 
         Err ( _, { position }, es ) ->
             Expect.fail <| failure i position es
