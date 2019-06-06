@@ -4,8 +4,6 @@ import Ast exposing (parse, parseExpression, parsePattern, parseStatement)
 import Ast.BinOp exposing (Assoc, operators)
 import Ast.Common exposing (..)
 import Ast.Expression exposing (Expression(..), MExp)
-import Ast.Literal exposing (Literal(..))
-import Ast.Pattern exposing (Pattern(..))
 import Ast.Statement exposing (ExportSet(..), Statement, StatementBase(..), Type(..))
 import Expect exposing (..)
 

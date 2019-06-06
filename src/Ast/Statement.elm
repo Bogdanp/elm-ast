@@ -21,7 +21,7 @@ import Ast.BinOp exposing (Assoc(..), OpTable)
 import Ast.Common exposing (..)
 import Ast.Expression exposing (Expression, MExp, expression, term)
 import Ast.Helpers exposing (..)
-import Ast.Pattern exposing (Pattern(..), pattern)
+import Ast.Pattern exposing (pattern)
 import Combine exposing (..)
 import Combine.Char exposing (..)
 import Combine.Num

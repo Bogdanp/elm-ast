@@ -1,4 +1,4 @@
-module Ast.Pattern exposing (Pattern(..), applicationFromList, applicationToList, pattern)
+module Ast.Pattern exposing (applicationFromList, applicationToList, pattern)
 
 import Ast.Common exposing (..)
 import Ast.Helpers exposing (..)

@@ -1,6 +1,6 @@
 module Pattern exposing (aliases, characterLiterals, cons, constructor, floatLiterals, functions, intLiterals, stringLiterals, variable, wildcard)
 
-import Ast.Literal exposing (Literal(..))
+import Ast.Common exposing (Literal(..), Pattern(..))
 import Ast.Pattern exposing (..)
 import Helpers exposing (..)
 import Test exposing (Test, describe, test)

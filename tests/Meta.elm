@@ -2,7 +2,6 @@ module Meta exposing (multiline, oneLine, statements)
 
 import Ast.Common exposing (..)
 import Ast.Expression exposing (Expression(..))
-import Ast.Literal exposing (Literal(..))
 import Ast.Statement exposing (..)
 import Helpers exposing (..)
 import Test exposing (Test, describe, test)

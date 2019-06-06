@@ -11,7 +11,8 @@ module Ast exposing (parseExpression, parseStatement, parseOpTable, parseModule,
 
 import Ast.BinOp exposing (OpTable, operators)
 import Ast.Expression exposing (MExp, expression)
-import Ast.Pattern exposing (Pattern, pattern)
+import Ast.Pattern exposing (pattern)
+import Ast.Common exposing (Pattern)
 import Ast.Statement exposing (Statement, opTable, statement, statements)
 import Combine exposing ((<*), end)
 
