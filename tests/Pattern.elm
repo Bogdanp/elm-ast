@@ -1,4 +1,4 @@
-module Pattern exposing (aliases, characterLiterals, cons, constructor, floatLiterals, functions, intLiterals, stringLiterals, variable, wildcardcard)
+module Pattern exposing (aliases, characterLiterals, cons, constructor, floatLiterals, functions, intLiterals, stringLiterals, variable, wildcard)
 
 import Helpers exposing (..)
 import Test exposing (Test, describe, test)
@@ -155,8 +155,8 @@ cons =
         ]
 
 
-wildcardcard : Test
-wildcardcard =
+wildcard : Test
+wildcard =
     describe "Wildcard"
         [ test "simple" <| \() -> "_" |> isPatternSansMeta wildcardPattern
         , test "constructor" <|
