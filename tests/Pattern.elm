@@ -1,4 +1,4 @@
-module Pattern exposing (aliases, characterLiterals, cons, constructor, floatLiterals, functions, intLiterals, stringLiterals, variable, wildcard)
+module Pattern exposing (aliases, characterLiterals, cons, constructor, floatLiterals, functions, intLiterals, stringLiterals, variable, wildcardcard)
 
 import Helpers exposing (..)
 import Test exposing (Test, describe, test)
@@ -84,7 +84,7 @@ constructor =
                             [ floatPattern 2.5
                             , characterPattern 'a'
                             , stringPattern "b"
-                            , wildPattern
+                            , wildcardPattern
                             , variablePattern "c"
                             ]
                         )
@@ -155,20 +155,20 @@ cons =
         ]
 
 
-wildcard : Test
-wildcard =
+wildcardcard : Test
+wildcardcard =
     describe "Wildcard"
-        [ test "simple" <| \() -> "_" |> isPatternSansMeta wildPattern
+        [ test "simple" <| \() -> "_" |> isPatternSansMeta wildcardPattern
         , test "constructor" <|
             \() ->
                 "A _ _"
                     |> isPatternSansMeta
-                        (applicationPattern (applicationPattern (constructorPattern "A") wildPattern) wildPattern)
-        , test "list" <| \() -> "[x, _]" |> isPatternSansMeta (listPattern [ variablePattern "x", wildPattern ])
+                        (applicationPattern (applicationPattern (constructorPattern "A") wildcardPattern) wildcardPattern)
+        , test "list" <| \() -> "[x, _]" |> isPatternSansMeta (listPattern [ variablePattern "x", wildcardPattern ])
         , test "as" <|
             \() ->
                 "[x, _] as y"
-                    |> isPatternSansMeta (asPattern (listPattern [ variablePattern "x", wildPattern ]) "y")
+                    |> isPatternSansMeta (asPattern (listPattern [ variablePattern "x", wildcardPattern ]) "y")
         ]
 
 
@@ -182,7 +182,7 @@ functions =
                         (applicationFromListSM
                             (applicationPattern (variablePattern "f") (variablePattern "x"))
                             [ variablePattern "y"
-                            , wildPattern
+                            , wildcardPattern
                             ]
                         )
         , test "with constructors" <|
@@ -203,7 +203,7 @@ functions =
                             [ constructorPattern "Nothing"
                             , variablePattern "y"
                             , asPattern (consPattern (variablePattern "a") (variablePattern "b")) "c"
-                            , tuplePattern [ wildPattern, floatPattern 3.6 ]
+                            , tuplePattern [ wildcardPattern, floatPattern 3.6 ]
                             ]
                         )
         ]

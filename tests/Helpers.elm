@@ -1,4 +1,4 @@
-module Helpers exposing (ExpressionSansMeta(..), PatternSansMeta(..), StatementSansMeta(..), access, accessFun, app, applicationFromListSM, applicationPattern, areStatements, areStatementsSansMeta, asPattern, binOp, case_, character, characterPattern, comment, consPattern, constructorPattern, dropDoubleMExp, dropExpressionMeta, dropMExpMeta, dropPatternMatches, dropPatternMeta, dropStatementMeta, dropWithMetaMExp, effectModuleDeclaration, fails, failsPattern, failure, float, floatPattern, functionDeclaration, functionTypeDeclaration, importStatement, infixDeclaration, integer, integerPattern, isApplicationSansMeta, isExpression, isExpressionSansMeta, isPattern, isPatternSansMeta, isStatement, isStatementSansMeta, lambda, let_, list, listPattern, moduleDeclaration, portDeclaration, portModuleDeclaration, portTypeDeclaration, record, recordUpdate, simpleParse, string, stringPattern, tuple, tuplePattern, typeAliasDeclaration, typeDeclaration, var, variablePattern, wildPattern)
+module Helpers exposing (ExpressionSansMeta(..), PatternSansMeta(..), StatementSansMeta(..), access, accessFun, app, applicationFromListSM, applicationPattern, areStatements, areStatementsSansMeta, asPattern, binOp, case_, character, characterPattern, comment, consPattern, constructorPattern, dropDoubleMExp, dropExpressionMeta, dropMExpMeta, dropPatternMatches, dropPatternMeta, dropStatementMeta, dropWithMetaMExp, effectModuleDeclaration, fails, failsPattern, failure, float, floatPattern, functionDeclaration, functionTypeDeclaration, importStatement, infixDeclaration, integer, integerPattern, isApplicationSansMeta, isExpression, isExpressionSansMeta, isPattern, isPatternSansMeta, isStatement, isStatementSansMeta, lambda, let_, list, listPattern, moduleDeclaration, portDeclaration, portModuleDeclaration, portTypeDeclaration, record, recordUpdate, simpleParse, string, stringPattern, tuple, tuplePattern, typeAliasDeclaration, typeDeclaration, var, variablePattern, wildcardPattern)
 
 import Ast exposing (parse, parseExpression, parsePattern, parseStatement)
 import Ast.BinOp exposing (Assoc, operators)
@@ -47,7 +47,7 @@ type StatementSansMeta
 
 
 type PatternSansMeta
-    = PWildSM
+    = PWildcardSM
     | PVariableSM Name
     | PConstructorSM Name
     | PLiteralSM Literal
@@ -184,8 +184,8 @@ dropExpressionMeta e =
 dropPatternMeta : MPattern -> PatternSansMeta
 dropPatternMeta ( p, _ ) =
     case p of
-        PWild ->
-            PWildSM
+        PWildcard ->
+            PWildcardSM
 
         PVariable n ->
             PVariableSM n
@@ -260,9 +260,9 @@ constructorPattern =
     PConstructorSM
 
 
-wildPattern : PatternSansMeta
-wildPattern =
-    PWildSM
+wildcardPattern : PatternSansMeta
+wildcardPattern =
+    PWildcardSM
 
 
 consPattern : PatternSansMeta -> PatternSansMeta -> PatternSansMeta

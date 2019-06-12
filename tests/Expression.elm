@@ -99,7 +99,7 @@ letExpressions =
                 "let _ = 42 in 24"
                     |> isExpressionSansMeta
                         (let_
-                            [ ( wildPattern, integer 42 ) ]
+                            [ ( wildcardPattern, integer 42 ) ]
                             (integer 24)
                         )
         , test "Can start with a tag name" <|
@@ -193,7 +193,7 @@ case x of
                     |> isExpressionSansMeta
                         (case_
                             (var "x")
-                            [ ( wildPattern, integer 42 ) ]
+                            [ ( wildcardPattern, integer 42 ) ]
                         )
         , test "Nested case" <|
             \() ->
@@ -468,7 +468,7 @@ expressions =
                     |> isExpressionSansMeta
                         (case_
                             (var "a")
-                            [ ( asPattern (applicationPattern (constructorPattern "T") wildPattern) "x"
+                            [ ( asPattern (applicationPattern (constructorPattern "T") wildcardPattern) "x"
                               , integer 1
                               )
                             ]
