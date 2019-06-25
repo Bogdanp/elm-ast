@@ -60,7 +60,7 @@ expression e =
 statement : Statement -> Html Msg
 statement (s, _) =
     case s of
-        FunctionDeclaration _ _ e ->
+        FunctionDeclaration _ e ->
             withChild s [ expression e ]
 
         s ->

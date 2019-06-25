@@ -21,6 +21,7 @@ import Ast.BinOp exposing (Assoc(..), OpTable)
 import Ast.Common exposing (..)
 import Ast.Expression exposing (Expression, MExp, expression, term)
 import Ast.Helpers exposing (..)
+import Ast.Pattern exposing (pattern)
 import Combine exposing (..)
 import Combine.Char exposing (..)
 import Combine.Num
@@ -60,7 +61,7 @@ type StatementBase
     | PortTypeDeclaration Name Type
     | PortDeclaration Name (List Name) MExp
     | FunctionTypeDeclaration Name Type
-    | FunctionDeclaration Name (List MExp) MExp
+    | FunctionDeclaration MPattern MExp
     | InfixDeclaration Assoc Int Name
     | Comment String
 
@@ -317,17 +318,28 @@ functionTypeDeclaration : Parser s Statement
 functionTypeDeclaration =
     withMeta <|
         FunctionTypeDeclaration
-            <$> (choice [ loName, parens operator ] <* symbol ":")
+            <$> (funName <* symbol ":")
             <*> typeAnnotation
 
 
 functionDeclaration : OpTable -> Parser s Statement
 functionDeclaration ops =
-    withMeta <|
+    (withMeta <|
         FunctionDeclaration
-            <$> choice [ loName, parens operator ]
-            <*> many (between_ whitespace <| term ops)
+            <$> pattern
             <*> (symbol "=" *> whitespace *> expression ops)
+    )
+        >>= (\(( decl, _ ) as full) ->
+                case decl of
+                    FunctionDeclaration (PVariable _, _) _ ->
+                        succeed full
+
+                    FunctionDeclaration (PApplication _ _, _) _ ->
+                        succeed full
+
+                    _ ->
+                        fail "wrong pattern in function declaration"
+            )
 
 
 

@@ -1,7 +1,7 @@
 module Meta exposing (multiline, oneLine, statements)
 
 import Ast.Common exposing (..)
-import Ast.Expression exposing (Expression(..), Literal(..))
+import Ast.Expression exposing (Expression(..))
 import Ast.Statement exposing (..)
 import Helpers exposing (..)
 import Test exposing (Test, describe, test)
@@ -27,8 +27,9 @@ oneLine =
               , addMeta 0 0 <|
                     Let
                         [ ( addMeta 0 4 <|
-                                Application (addMeta 0 4 <| Variable "f")
-                                    (addMeta 0 6 <| Variable "x")
+                                PApplication
+                                    (addMeta 0 4 <| PVariable "f")
+                                    (addMeta 0 6 <| PVariable "x")
                           , addMeta 0 11 <|
                                 BinOp (addMeta 0 11 <| Variable "+")
                                     (addMeta 0 10 <| Variable "x")
@@ -41,9 +42,9 @@ oneLine =
               , addMeta 0 0 <|
                     Lambda
                         [ addMeta 0 1 <|
-                            Tuple
-                                [ addMeta 0 2 <| Variable "x"
-                                , addMeta 0 5 <| Variable "y"
+                            PTuple
+                                [ addMeta 0 2 <| PVariable "x"
+                                , addMeta 0 5 <| PVariable "y"
                                 ]
                         ]
                         (addMeta 0 12 <|
@@ -92,7 +93,7 @@ in
         expectation =
             addMeta 0 0 <|
                 Let
-                    [ ( addMeta 1 4 <| Variable "a"
+                    [ ( addMeta 1 4 <| PVariable "a"
                       , addMeta 1 8 <|
                             Record
                                 [ ( addMeta 1 10 <| "b"
@@ -104,9 +105,9 @@ in
                                 ]
                       )
                     , ( addMeta 2 4 <|
-                            Application
-                                (addMeta 2 4 <| Variable "f")
-                                (addMeta 2 6 <| Variable "x")
+                            PApplication
+                                (addMeta 2 4 <| PVariable "f")
+                                (addMeta 2 6 <| PVariable "x")
                       , addMeta 3 8 <|
                             RecordUpdate (addMeta 3 10 <| "a")
                                 [ ( addMeta 3 14 <| "b"
@@ -153,8 +154,11 @@ f s = text <| s ++ s
                         (TypeConstructor [ "String" ] [])
                         (TypeConstructor [ "Html" ] [ TypeVariable "msg" ])
             , addMeta 5 0 <|
-                FunctionDeclaration "f"
-                    [ addMeta 5 2 <| Variable "s" ]
+                FunctionDeclaration
+                    (addMeta 5 0 <|
+                        PApplication (addMeta 5 0 <| PVariable "f")
+                            (addMeta 5 2 <| PVariable "s")
+                    )
                 <|
                     addMeta 5 10 <|
                         BinOp (addMeta 5 10 <| Variable "<|")

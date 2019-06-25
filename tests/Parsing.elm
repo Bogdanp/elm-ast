@@ -1,6 +1,5 @@
 module Parsing exposing (wrongWhitespace)
 
-import Ast.Statement exposing (..)
 import Helpers exposing (..)
 import Test exposing (Test, describe, test)
 
@@ -25,7 +24,7 @@ wrongWhitespace =
                 wrongWhitespaceInput
                     |> areStatementsSansMeta
                         [ comment " Empty line with spaces at the end here"
-                        , functionDeclaration "b" [] (integer 2)
-                        , functionDeclaration "a" [] (integer 1)
+                        , functionDeclaration (variablePattern "b") (integer 2)
+                        , functionDeclaration (variablePattern "a") (integer 1)
                         ]
         ]
