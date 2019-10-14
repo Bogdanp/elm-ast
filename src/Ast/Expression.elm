@@ -147,7 +147,16 @@ record : OpTable -> Parser s MExp
 record ops =
     lazy <|
         \() ->
-            withMeta <| Record <$> braces (commaSeparated ((,) <$> withMeta loName <*> (symbol "=" *> expression ops)))
+            withMeta <|
+                Record
+                    <$> braces
+                            (commaSeparated
+                                ((,)
+                                    <$> withMeta loName
+                                    <*> (symbol "=" *> expression ops)
+                                )
+                                <|> (whitespace *> succeed [])
+                            )
 
 
 simplifiedRecord : Parser s MExp
