@@ -269,7 +269,7 @@ binary ops =
         \() ->
             let
                 next =
-                    (withMeta <| between_ whitespace <| operator)
+                    (between_ whitespace <| withMeta operator)
                         >>= (\op ->
                                 lazy <|
                                     \() ->

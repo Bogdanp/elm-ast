@@ -1,7 +1,7 @@
 module Ast.Literal exposing (characterParser, floatParser, intParser, literalParser, stringParser)
 
-import Ast.Helpers exposing (..)
 import Ast.Common exposing (Literal(..))
+import Ast.Helpers exposing (..)
 import Char
 import Combine exposing (..)
 import Combine.Char exposing (..)
