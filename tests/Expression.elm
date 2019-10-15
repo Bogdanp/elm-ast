@@ -40,6 +40,10 @@ intLiterals =
             \() -> "+12" |> isExpressionSansMeta (integer 12)
         , test "negative literal" <|
             \() -> "-12" |> isExpressionSansMeta (integer -12)
+        , test "hex literal" <|
+            \() -> "0x00002Fa" |> isExpressionSansMeta (integer 762)
+        , test "negative hex literal" <|
+            \() -> "-0x01cA" |> isExpressionSansMeta (integer -458)
         ]
 
 

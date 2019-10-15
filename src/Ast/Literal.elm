@@ -1,7 +1,7 @@
 module Ast.Literal exposing (characterParser, floatParser, intParser, literalParser, stringParser)
 
-import Ast.Helpers exposing (..)
 import Ast.Common exposing (Literal(..))
+import Ast.Helpers exposing (..)
 import Char
 import Combine exposing (..)
 import Combine.Char exposing (..)
@@ -73,7 +73,18 @@ stringParser =
 
 intParser : Parser s Int
 intParser =
-    Combine.Num.int
+    choice
+        [ (optional "" (Combine.string "-")
+            |> map String.append
+          )
+            <*> (Combine.string "0x" *> regex "[0-9a-fA-F]+")
+            >>= (String.toLower
+                    >> Hex.fromString
+                    >> Result.map succeed
+                    >> Result.withDefault (fail "Not a number")
+                )
+        , Combine.Num.int
+        ]
 
 
 floatParser : Parser s Float
