@@ -1,7 +1,7 @@
 module Ast.Literal exposing (characterParser, floatParser, intParser, literalParser, stringParser)
 
-import Ast.Helpers exposing (..)
 import Ast.Common exposing (Literal(..))
+import Ast.Helpers exposing (..)
 import Char
 import Combine exposing (..)
 import Combine.Char exposing (..)
@@ -12,50 +12,52 @@ import Hex
 literalParser : Parser s Literal
 literalParser =
     choice
-        [ Float <$> floatParser
-        , Integer <$> intParser
-        , Character <$> characterParser
-        , String <$> stringParser
+        [ map Float floatParser
+        , map Integer intParser
+        , map Character characterParser
+        , map String stringParser
         ]
 
 
 characterParser : Parser s Char
 characterParser =
     between_ (Combine.string "'")
-        (((Combine.string "\\" *> regex "(n|t|r|\\\\|x..)")
-            >>= (\a ->
-                    case String.uncons a of
-                        Just ( 'n', "" ) ->
-                            succeed '\n'
+        (or
+            ((Combine.string "\\" |> keep (regex "(n|t|r|\\\\|x..)"))
+                |> andThen
+                    (\a ->
+                        case String.uncons a of
+                            Just ( 'n', "" ) ->
+                                succeed '\n'
 
-                        Just ( 't', "" ) ->
-                            succeed '\t'
+                            Just ( 't', "" ) ->
+                                succeed '\t'
 
-                        Just ( 'r', "" ) ->
-                            succeed '\x0D'
+                            Just ( 'r', "" ) ->
+                                succeed '\u{000D}'
 
-                        Just ( '\\', "" ) ->
-                            succeed '\\'
+                            Just ( '\\', "" ) ->
+                                succeed '\\'
 
-                        Just ( '0', "" ) ->
-                            succeed '\x00'
+                            Just ( '0', "" ) ->
+                                succeed '\u{0000}'
 
-                        Just ( 'x', hex ) ->
-                            hex
-                                |> String.toLower
-                                |> Hex.fromString
-                                |> Result.map Char.fromCode
-                                |> Result.map succeed
-                                |> Result.withDefault (fail "Invalid charcode")
+                            Just ( 'x', hex ) ->
+                                hex
+                                    |> String.toLower
+                                    |> Hex.fromString
+                                    |> Result.map Char.fromCode
+                                    |> Result.map succeed
+                                    |> Result.withDefault (fail "Invalid charcode")
 
-                        Just other ->
-                            fail ("No such character as \\" ++ toString other)
+                            Just other ->
+                                fail ("No such character as \\" ++ String.fromChar (Tuple.first other))
 
-                        Nothing ->
-                            fail "No character"
-                )
-         )
-            <|> anyChar
+                            Nothing ->
+                                fail "No character"
+                    )
+            )
+            anyChar
         )
 
 
@@ -63,12 +65,17 @@ stringParser : Parser s String
 stringParser =
     let
         singleString =
-            Combine.string "\"" *> regex "(\\\\\\\\|\\\\\"|[^\"\n])*" <* Combine.string "\""
+            Combine.string "\""
+                |> keep (regex "(\\\\\\\\|\\\\\"|[^\"\n])*")
+                |> ignore (Combine.string "\"")
 
         multiString =
-            String.concat <$> (Combine.string "\"\"\"" *> many (regex "[^\"]*") <* Combine.string "\"\"\"")
+            Combine.string "\"\"\""
+                |> keep (many (regex "[^\"]*"))
+                |> ignore (Combine.string "\"\"\"")
+                |> map String.concat
     in
-    multiString <|> singleString
+    or multiString singleString
 
 
 intParser : Parser s Int

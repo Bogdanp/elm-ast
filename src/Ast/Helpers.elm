@@ -31,6 +31,7 @@ module Ast.Helpers exposing
 import Ast.Common exposing (..)
 import Combine exposing (..)
 import Combine.Char exposing (..)
+import Flip exposing (flip)
 import String
 
 
@@ -61,7 +62,7 @@ reservedOperators =
 
 optionalParens : Parser s a -> Parser s a
 optionalParens p =
-    lazy <| \() -> p <|> (parens <| optionalParens p)
+    lazy <| \() -> or p (parens <| optionalParens p)
 
 
 between_ : Parser s a -> Parser s res -> Parser s res
@@ -81,17 +82,17 @@ spaces_ =
 
 notWhitespace_ : Parser s String
 notWhitespace_ =
-    regex "[^ \t\x0D\n]*" <?> "whitespace"
+    regex "[^ \t\u{000D}\n]*" |> onerror "whitespace"
 
 
 exactIndentation : Int -> Parser s String
 exactIndentation int =
-    regex ("\n*[ \\t]{" ++ toString int ++ "}\n*")
+    regex ("\n*[ \\t]{" ++ String.fromInt int ++ "}\n*")
 
 
 symbol_ : String -> Parser s String
 symbol_ k =
-    between_ whitespace (string k <* regex "( |\\n)+")
+    between_ whitespace (string k |> ignore (regex "( |\\n)+"))
 
 
 symbol : String -> Parser s String
@@ -101,7 +102,7 @@ symbol k =
 
 initialSymbol : String -> Parser s String
 initialSymbol k =
-    string k <* spaces_
+    string k |> ignore spaces_
 
 
 commaSeparated : Parser s res -> Parser s (List res)
@@ -116,12 +117,13 @@ commaSeparated_ p =
 
 name : Parser s Char -> Parser s String
 name p =
-    String.cons <$> p <*> regex "[a-zA-Z0-9-_]*"
+    map String.cons p
+        |> andMap (regex "[a-zA-Z0-9-_]*")
 
 
 loName : Parser s String
 loName =
-    wild <|> varName
+    or wild varName
 
 
 funName : Parser s String
@@ -137,7 +139,8 @@ wild =
 varName : Parser s String
 varName =
     name lower
-        >>= (\n ->
+        |> andThen
+            (\n ->
                 if List.member n reserved then
                     fail <| "name '" ++ n ++ "' is reserved"
 
@@ -160,8 +163,9 @@ operator : Parser s String
 operator =
     lazy <|
         \() ->
-            regex "[+\\-\\/*=.$<>:&|^?%#@~!]+|\x8As\x08"
-                >>= (\n ->
+            regex "[+\\-\\/*=.$<>:&|^?%#@~!]+|\u{008A}s\u{0008}"
+                |> andThen
+                    (\n ->
                         if List.member n reservedOperators then
                             fail <| "operator '" ++ n ++ "' is reserved"
 
@@ -182,7 +186,7 @@ moduleName =
 
 logContent : String -> Parser s x -> Parser s x
 logContent label xsParser =
-    xsParser >>= (Debug.log label >> succeed)
+    xsParser |> andThen (Debug.log label >> succeed)
 
 
 listParser : Parser s a -> Parser s (List a)
@@ -193,7 +197,8 @@ listParser el =
 tupleParser : Parser s a -> Parser s (List a)
 tupleParser el =
     parens (commaSeparated_ <| el)
-        >>= (\a ->
+        |> andThen
+            (\a ->
                 case a of
                     [ _ ] ->
                         fail "No single tuples"
@@ -207,9 +212,10 @@ spacesOrIndentedNewline : Int -> Parser s ()
 spacesOrIndentedNewline indentation =
     lazy <|
         \() ->
-            or (spaces_ *> succeed ())
+            or (spaces_ |> keep (succeed ()))
                 (countIndent
-                    >>= (\column ->
+                    |> andThen
+                        (\column ->
                             if column < indentation then
                                 fail "Arguments have to be at least the same indentation as the function"
 
@@ -221,4 +227,4 @@ spacesOrIndentedNewline indentation =
 
 countIndent : Parser s Int
 countIndent =
-    newline *> spaces >>= (String.filter (\char -> char == ' ') >> String.length >> succeed)
+    newline |> keep spaces |> andThen (String.filter (\char -> char == ' ') >> String.length >> succeed)

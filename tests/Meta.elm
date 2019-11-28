@@ -88,7 +88,7 @@ let
         { a | b = x }
 in
     f 12
-""" |> String.trim
+"""
 
         expectation =
             addMeta 0 0 <|
@@ -124,7 +124,7 @@ in
     in
     describe "Multiline location"
         [ test "Multiple lines" <|
-            \() -> isExpression expectation input
+            \() -> isExpression expectation (input |> String.trim)
         ]
 
 
@@ -139,7 +139,7 @@ import Html exposing (text)
 
 f : String -> Html msg
 f s = text <| s ++ s
-""" |> String.trim
+"""
 
         expectations =
             [ addMeta 0 0 <|
@@ -171,4 +171,4 @@ f s = text <| s ++ s
             ]
     in
     describe "Statements location"
-        [ test "full module" <| \() -> areStatements expectations input ]
+        [ test "full module" <| \() -> areStatements expectations (input |> String.trim) ]

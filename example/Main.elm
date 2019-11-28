@@ -3,6 +3,7 @@ module Main exposing (main)
 import Ast
 import Ast.Expression exposing (..)
 import Ast.Statement exposing (..)
+import Browser
 import Html exposing (..)
 import Html.Events exposing (..)
 import Json.Decode as JD
@@ -36,7 +37,7 @@ update action model =
 withChild : a -> List (Html Msg) -> Html Msg
 withChild title children =
     li []
-        [ pre [] [ text <| toString title ]
+        [ pre [] [ text <| Debug.toString title ]
         , ul [] children
         ]
 
@@ -53,18 +54,18 @@ expression e =
                 , expression e2
                 ]
 
-        e ->
-            li [] [ pre [] [ text <| toString e ] ]
+        e_ ->
+            li [] [ pre [] [ text <| Debug.toString e ] ]
 
 
 statement : Statement -> Html Msg
-statement (s, _) =
+statement ( s, _ ) =
     case s of
         FunctionDeclaration _ e ->
             withChild s [ expression e ]
 
-        s ->
-            li [] [ pre [] [ text <| toString s ] ]
+        s_ ->
+            li [] [ pre [] [ text <| Debug.toString s ] ]
 
 
 tree : String -> Html Msg
@@ -74,7 +75,7 @@ tree m =
             ul [] (List.map statement statements)
 
         err ->
-            div [] [ text <| toString err ]
+            div [] [ text <| Debug.toString err ]
 
 
 view : String -> Html Msg
@@ -85,10 +86,10 @@ view model =
         ]
 
 
-main : Program Never String Msg
+main : Program () String Msg
 main =
-    Html.beginnerProgram
-        { model = init
+    Browser.sandbox
+        { init = init
         , update = update
         , view = view
         }
