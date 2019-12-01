@@ -11,7 +11,7 @@ cache:
 os:
   - linux
 
-env: ELM_VERSION=0.18.0
+env: ELM_VERSION=0.19.1
 
 before_install:
   - echo -e "Host github.com\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
@@ -19,7 +19,7 @@ before_install:
 install:
   - node --version
   - npm --version
-  - npm install -g elm@$ELM_VERSION elm-test@0.18.7
+  - npm install -g elm@$ELM_VERSION elm-test@0.19.1
   - npm install -g elm-github-install
   - git clone https://github.com/NoRedInk/elm-ops-tooling
   - elm-ops-tooling/with_retry.rb elm package install --yes
