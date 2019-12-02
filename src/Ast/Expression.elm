@@ -73,81 +73,89 @@ type Expression
 
 character : Parser s MExp
 character =
-    withMeta <|
-        Literal
-            << Character
-            <$> characterParser
+    withMeta <| map (Literal << Character) characterParser
 
 
 string : Parser s MExp
 string =
-    withMeta <|
-        (Literal << String <$> stringParser)
+    withMeta <| map (Literal << String) stringParser
 
 
 integer : Parser s MExp
 integer =
-    withMeta <| Literal << Integer <$> intParser
+    withMeta <| map (Literal << Integer) intParser
 
 
 float : Parser s MExp
 float =
-    withMeta <| Literal << Float <$> floatParser
+    withMeta <| map (Literal << Float) floatParser
 
 
 access : Parser s MExp
 access =
-    withMeta <| Access <$> variable <*> many1 (Combine.string "." *> withMeta varName)
+    map Access variable
+        |> andMap (many1 (Combine.string "." |> keep (withMeta varName)))
+        |> withMeta
 
 
 accessFunction : Parser s MExp
 accessFunction =
-    withMeta <| AccessFunction <$> (Combine.string "." *> loName)
+    map AccessFunction (Combine.string "." |> keep loName)
+        |> withMeta
 
 
 external : Parser s MExp
 external =
-    withMeta <| External <$> many1 (upName <* Combine.string ".") <*> (variable <|> constructor)
+    map External (many1 (upName |> ignore (Combine.string ".")))
+        |> andMap (or variable constructor)
+        |> withMeta
 
 
 variable : Parser s MExp
 variable =
-    withMeta <|
-        Variable
-            <$> choice
-                    [ loName
-                    , parens operator
-                    , parens (Combine.regex ",+")
-                    , emptyTuple
-                    ]
+    map Variable
+        (choice
+            [ loName
+            , parens operator
+            , parens (Combine.regex ",+")
+            , emptyTuple
+            ]
+        )
+        |> withMeta
 
 
 constructor : Parser s MExp
 constructor =
-    withMeta <| Constructor <$> upName
+    withMeta <| map Constructor upName
 
 
 list : OpTable -> Parser s MExp
 list ops =
     lazy <|
         \() ->
-            withMeta <| List <$> (listParser <| expression ops)
+            map List (listParser <| expression ops)
+                |> withMeta
 
 
 tuple : OpTable -> Parser s MExp
 tuple ops =
     lazy <|
         \() ->
-            withMeta <|
-                Tuple
-                    <$> tupleParser (expression ops)
+            map Tuple (tupleParser (expression ops))
+                |> withMeta
 
 
 record : OpTable -> Parser s MExp
 record ops =
     lazy <|
         \() ->
-            withMeta <| Record <$> braces (commaSeparated ((,) <$> withMeta loName <*> (symbol "=" *> expression ops)))
+            withMeta <|
+                map Record <|
+                    braces <|
+                        commaSeparated <|
+                            (map Tuple.pair (withMeta loName)
+                                |> andMap (symbol "=" |> keep (expression ops))
+                            )
 
 
 simplifiedRecord : Parser s MExp
@@ -164,52 +172,52 @@ simplifiedRecord =
     in
     lazy <|
         \() ->
-            withMeta <|
-                Record
-                    <$> braces (commaSeparated (withLocation branch))
+            withMeta <| map Record <| braces (commaSeparated (withLocation branch))
 
 
 recordUpdate : OpTable -> Parser s MExp
 recordUpdate ops =
     lazy <|
         \() ->
-            withMeta <|
-                RecordUpdate
-                    <$> (symbol "{" *> withMeta loName)
-                    <*> (symbol "|"
-                            *> commaSeparated ((,) <$> withMeta loName <*> (symbol "=" *> expression ops))
-                            <* Combine.string "}"
-                        )
+            map RecordUpdate (symbol "{" |> keep (withMeta loName))
+                |> andMap
+                    (symbol "|"
+                        |> keep
+                            (commaSeparated
+                                (map Tuple.pair (withMeta loName)
+                                    |> andMap (symbol "=" |> keep (expression ops))
+                                )
+                            )
+                        |> ignore (Combine.string "}")
+                    )
+                |> withMeta
 
 
 letExpression : OpTable -> Parser s MExp
 letExpression ops =
     lazy <|
         \() ->
-            withMeta <|
-                Let
-                    <$> (symbol_ "let" *> many1 (letBinding ops))
-                    <*> (symbol "in" *> expression ops)
+            map Let (symbol_ "let" |> keep (many1 (letBinding ops)))
+                |> andMap (symbol "in" |> keep (expression ops))
+                |> withMeta
 
 
 letBinding : OpTable -> Parser s ( MPattern, MExp )
 letBinding ops =
     lazy <|
         \() ->
-            (,)
-                <$> between_ whitespace pattern
-                <*> (symbol "=" *> expression ops)
+            map Tuple.pair (between_ whitespace pattern)
+                |> andMap (symbol "=" |> keep (expression ops))
 
 
 ifExpression : OpTable -> Parser s MExp
 ifExpression ops =
     lazy <|
         \() ->
-            withMeta <|
-                If
-                    <$> (symbol "if" *> expression ops)
-                    <*> (symbol "then" *> expression ops)
-                    <*> (symbol "else" *> expression ops)
+            map If (symbol "if" |> keep (expression ops))
+                |> andMap (symbol "then" |> keep (expression ops))
+                |> andMap (symbol "else" |> keep (expression ops))
+                |> withMeta
 
 
 caseExpression : OpTable -> Parser s MExp
@@ -218,32 +226,31 @@ caseExpression ops =
         binding indent =
             lazy <|
                 \() ->
-                    (,)
-                        <$> (exactIndentation indent *> pattern)
-                        <*> (symbol "->" *> expression ops)
+                    map Tuple.pair (exactIndentation indent |> keep pattern)
+                        |> andMap (symbol "->" |> keep (expression ops))
     in
     lazy <|
         \() ->
-            withMeta <|
-                Case
-                    <$> (symbol "case" *> expression ops)
-                    <*> (whitespace
-                            *> Combine.string "of"
-                            *> lookAhead countIndent
-                            >>= (\indent ->
-                                    many1 (binding indent)
-                                )
-                        )
+            map Case (symbol "case" |> keep (expression ops))
+                |> andMap
+                    (whitespace
+                        |> keep (Combine.string "of")
+                        |> keep (lookAhead countIndent)
+                        |> andThen
+                            (\indent ->
+                                many1 (binding indent)
+                            )
+                    )
+                |> withMeta
 
 
 lambda : OpTable -> Parser s MExp
 lambda ops =
     lazy <|
         \() ->
-            withMeta <|
-                Lambda
-                    <$> (symbol "\\" *> (pattern >>= succeed << applicationToList))
-                    <*> (symbol "->" *> expression ops)
+            map Lambda (symbol "\\" |> keep (pattern |> andThen (succeed << applicationToList)))
+                |> andMap (symbol "->" |> keep (expression ops))
+                |> withMeta
 
 
 application : OpTable -> Parser s MExp
@@ -253,42 +260,50 @@ application ops =
             withLocation
                 (\l ->
                     chainl
-                        ((\a b -> addMeta l.line l.column (Application a b)) <$ spacesOrIndentedNewline (l.column + 1))
+                        (onsuccess
+                            (\a b -> addMeta l.line l.column (Application a b))
+                            (spacesOrIndentedNewline (l.column + 1))
+                        )
                         (term ops)
                 )
 
 
 successOrEmptyList : Parser s (List a) -> Parser s (List a)
 successOrEmptyList p =
-    lazy <| \() -> choice [ p, succeed [] ]
+    lazy <|
+        \() ->
+            choice [ p, succeed [] ]
+
+
+next_ : OpTable -> Parser s (List ( WithMeta String {}, MExp ))
+next_ ops =
+    (withMeta <| between_ whitespace <| operator)
+        |> andThen
+            (\o ->
+                or (map Cont (application ops)) (map Stop (expression ops))
+                    |> andThen
+                        (\e ->
+                            case e of
+                                Cont t ->
+                                    map ((::) ( o, t )) (successOrEmptyList (next_ ops))
+
+                                Stop ex ->
+                                    succeed [ ( o, ex ) ]
+                        )
+            )
 
 
 binary : OpTable -> Parser s MExp
 binary ops =
-    lazy <|
-        \() ->
-            let
-                next =
-                    (withMeta <| between_ whitespace <| operator)
-                        >>= (\op ->
-                                lazy <|
-                                    \() ->
-                                        or (Cont <$> application ops) (Stop <$> expression ops)
-                                            >>= (\e ->
-                                                    case e of
-                                                        Cont t ->
-                                                            (::) ( op, t ) <$> successOrEmptyList next
-
-                                                        Stop ex ->
-                                                            succeed [ ( op, ex ) ]
-                                                )
-                            )
-            in
-            application ops
-                >>= (\e -> successOrEmptyList next >>= (\eops -> split ops 0 e eops))
+    application ops
+        |> andThen
+            (\e ->
+                successOrEmptyList (next_ ops)
+                    |> andThen (\eops -> split ops 0 e eops)
+            )
 
 
-{-| A parses for term
+{-| A parser for term
 -}
 term : OpTable -> Parser s MExp
 term ops =
@@ -357,9 +372,11 @@ split ops l e eops =
 
         _ ->
             findAssoc ops l eops
-                >>= (\assoc ->
+                |> andThen
+                    (\association ->
                         sequence (splitLevel ops l e eops)
-                            >>= (\es ->
+                            |> andThen
+                                (\es ->
                                     let
                                         ops_ =
                                             List.filterMap
@@ -372,7 +389,7 @@ split ops l e eops =
                                                 )
                                                 eops
                                     in
-                                    case assoc of
+                                    case association of
                                         R ->
                                             joinR es ops_
 

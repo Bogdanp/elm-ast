@@ -7,13 +7,13 @@ import Test exposing (Test, describe, test)
 wrongWhitespaceInput : String
 wrongWhitespaceInput =
     """
--- Empty line with spaces at the end here
-b =
-  2
-""" ++ "  " ++ """
-a =
-  1
-"""
+    -- Empty line with spaces at the end here
+    b =
+    2
+    """ ++ "  " ++ """
+    a =
+    1
+    """
 
 
 wrongWhitespace : Test

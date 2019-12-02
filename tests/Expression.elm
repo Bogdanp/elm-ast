@@ -14,7 +14,7 @@ module Expression exposing
     )
 
 import Helpers exposing (..)
-import Test exposing (Test, describe, test)
+import Test exposing (Test, describe, only, test)
 
 
 characterLiterals : Test
@@ -37,7 +37,7 @@ intLiterals =
         [ test "integer literal" <|
             \() -> "0" |> isExpressionSansMeta (integer 0)
         , test "positive literal" <|
-            \() -> "+12" |> isExpressionSansMeta (integer 12)
+            \() -> "12" |> isExpressionSansMeta (integer 12)
         , test "negative literal" <|
             \() -> "-12" |> isExpressionSansMeta (integer -12)
         ]
@@ -49,7 +49,7 @@ floatLiterals =
         [ test "float literal" <|
             \() -> "0.5" |> isExpressionSansMeta (float 0.5)
         , test "positive literal" <|
-            \() -> "+12.5" |> isExpressionSansMeta (float 12.5)
+            \() -> "12.5" |> isExpressionSansMeta (float 12.5)
         , test "negative literal" <|
             \() -> "-12.5" |> isExpressionSansMeta (float -12.5)
         ]

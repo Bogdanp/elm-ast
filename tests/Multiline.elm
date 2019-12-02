@@ -1,7 +1,7 @@
 module Multiline exposing (application)
 
-import Test exposing (describe, test, Test)
 import Helpers exposing (isApplicationSansMeta, var)
+import Test exposing (Test, describe, test)
 
 
 application : Test

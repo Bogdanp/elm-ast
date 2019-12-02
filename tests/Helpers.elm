@@ -6,6 +6,7 @@ import Ast.Common exposing (..)
 import Ast.Expression exposing (Expression(..), MExp)
 import Ast.Statement exposing (ExportSet(..), Statement, StatementBase(..), Type(..))
 import Expect exposing (..)
+import Flip exposing (flip)
 
 
 
@@ -95,8 +96,8 @@ dropStatementMeta ( s, _ ) =
         InfixDeclaration a i n ->
             InfixDeclarationSM a i n
 
-        Comment s ->
-            CommentSM s
+        Comment s_ ->
+            CommentSM s_
 
 
 dropMExpMeta : MExp -> ExpressionSansMeta
@@ -126,7 +127,7 @@ dropPatternMatches l =
         patternsSM =
             List.map dropPatternMeta patterns
     in
-    List.map2 (,) patternsSM expsSM
+    List.map2 Tuple.pair patternsSM expsSM
 
 
 dropExpressionMeta : Expression -> ExpressionSansMeta
@@ -141,8 +142,8 @@ dropExpressionMeta e =
         Constructor n ->
             ConstructorSM n
 
-        External l e ->
-            ExternalSM l (dropMExpMeta e)
+        External l e_ ->
+            ExternalSM l (dropMExpMeta e_)
 
         List l ->
             ListSM (List.map dropMExpMeta l)
@@ -165,14 +166,14 @@ dropExpressionMeta e =
         If e1 e2 e3 ->
             IfSM (dropMExpMeta e1) (dropMExpMeta e2) (dropMExpMeta e3)
 
-        Let l e ->
-            LetSM (dropPatternMatches l) (dropMExpMeta e)
+        Let l e_ ->
+            LetSM (dropPatternMatches l) (dropMExpMeta e_)
 
-        Case e l ->
-            CaseSM (dropMExpMeta e) (dropPatternMatches l)
+        Case e_ l ->
+            CaseSM (dropMExpMeta e_) (dropPatternMatches l)
 
-        Lambda l e ->
-            LambdaSM (List.map dropPatternMeta l) (dropMExpMeta e)
+        Lambda l e_ ->
+            LambdaSM (List.map dropPatternMeta l) (dropMExpMeta e_)
 
         Application e1 e2 ->
             ApplicationSM (dropMExpMeta e1) (dropMExpMeta e2)
@@ -500,13 +501,13 @@ isExpressionSansMeta e i =
 isApplicationSansMeta : ExpressionSansMeta -> List ExpressionSansMeta -> String -> Expectation
 isApplicationSansMeta fn args i =
     case parseExpression operators (String.trim i) of
-        Ok ( _, _, app ) ->
+        Ok ( _, _, app_ ) ->
             let
                 l =
                     List.foldl (flip ApplicationSM) fn args
 
                 r =
-                    dropMExpMeta app
+                    dropMExpMeta app_
             in
             Expect.equal l r
 
@@ -576,4 +577,4 @@ isPatternSansMeta p i =
 
 failure : String -> Int -> List String -> String
 failure i position es =
-    "failed to parse: " ++ i ++ " at position " ++ toString position ++ " (" ++ String.slice position (position + 1) i ++ ") with errors: " ++ toString es
+    "failed to parse: " ++ i ++ " at position " ++ Debug.toString position ++ " (" ++ String.slice position (position + 1) i ++ ") with errors: " ++ Debug.toString es

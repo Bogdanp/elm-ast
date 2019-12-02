@@ -8,17 +8,17 @@ import Combine exposing (..)
 
 wildParser : Parser s MPattern
 wildParser =
-    withMeta <| always PWild <$> wild
+    withMeta <| map (always PWild) wild
 
 
 varParser : Parser s MPattern
 varParser =
-    withMeta <| PVariable <$> funName
+    withMeta <| map PVariable funName
 
 
 constructorParser : Parser s MPattern
 constructorParser =
-    withMeta <| PConstructor <$> upName
+    withMeta <| map PConstructor upName
 
 
 
@@ -56,46 +56,50 @@ precedence =
 
 asParser : Parser s MPattern -> Parser s MPattern
 asParser next =
-    lazy <| \() -> next >>= asParser_
+    lazy <| \() -> andThen asParser_ next
 
 
 asParser_ : MPattern -> Parser s MPattern
 asParser_ a =
     lazy <|
         \() ->
-            ((withMeta <| PAs a <$> (symbol "as" *> varName)) >>= asParser_)
-                <|> succeed a
+            or
+                ((withMeta <| map (PAs a) (symbol "as" |> keep varName)) |> andThen asParser_)
+                (succeed a)
 
 
 consParser : Parser s MPattern -> Parser s MPattern
 consParser next =
     lazy <|
         \() ->
-            (withMeta <|
-                PCons
-                    <$> next
-                    <* withMeta (symbol "::")
-                    <*> consParser next
-            )
-                <|> next
+            or
+                (map PCons next
+                    |> ignore (withMeta (symbol "::"))
+                    |> andMap (consParser next)
+                    |> withMeta
+                )
+                next
 
 
 appParser : Parser s MPattern -> Parser s MPattern
 appParser next =
     lazy <|
         \() ->
-            withLocation
-                (\l ->
-                    chainl
-                        ((\a b ->
-                            addMeta l.line l.column <|
-                                PApplication a b
-                         )
-                            <$ spacesOrIndentedNewline (l.column + 1)
-                        )
-                        next
+            or
+                (withLocation
+                    (\l ->
+                        chainl
+                            (onsuccess
+                                (\a b ->
+                                    addMeta l.line l.column <|
+                                        PApplication a b
+                                )
+                                (spacesOrIndentedNewline (l.column + 1))
+                            )
+                            next
+                    )
                 )
-                <|> next
+                next
 
 
 terminalParser : Parser s MPattern -> Parser s MPattern
@@ -106,10 +110,10 @@ terminalParser next =
                 [ wildParser
                 , varParser
                 , constructorParser
-                , withMeta <| PLiteral <$> literalParser
-                , withMeta <| PRecord <$> (braces <| commaSeparated_ <| withMeta loName)
-                , withMeta <| PTuple <$> tupleParser next
-                , withMeta <| PList <$> listParser next
+                , withMeta <| map PLiteral literalParser
+                , withMeta <| map PRecord (braces <| commaSeparated_ <| withMeta loName)
+                , withMeta <| map PTuple <| tupleParser next
+                , withMeta <| map PList <| listParser next
                 , parens next
                 ]
 

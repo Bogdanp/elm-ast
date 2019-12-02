@@ -115,7 +115,7 @@ addMeta l c e =
 -}
 withMeta : Parser s x -> Parser s (WithMeta x {})
 withMeta p =
-    withLocation (\a -> (\x -> addMeta a.line a.column x) <$> p)
+    withLocation <| \a -> map (\x -> addMeta a.line a.column x) p
 
 
 {-| Extract only an entity dropping its metadata

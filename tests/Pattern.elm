@@ -22,7 +22,7 @@ intLiterals =
         [ test "integer literal" <|
             \() -> "0" |> isPatternSansMeta (integerPattern 0)
         , test "positive literal" <|
-            \() -> "+12" |> isPatternSansMeta (integerPattern 12)
+            \() -> "12" |> isPatternSansMeta (integerPattern 12)
         , test "negative literal" <|
             \() -> "-12" |> isPatternSansMeta (integerPattern -12)
         ]
@@ -34,7 +34,7 @@ floatLiterals =
         [ test "float literal" <|
             \() -> "0.5" |> isPatternSansMeta (floatPattern 0.5)
         , test "positive literal" <|
-            \() -> "+12.5" |> isPatternSansMeta (floatPattern 12.5)
+            \() -> "12.5" |> isPatternSansMeta (floatPattern 12.5)
         , test "negative literal" <|
             \() -> "-12.5" |> isPatternSansMeta (floatPattern -12.5)
         ]
