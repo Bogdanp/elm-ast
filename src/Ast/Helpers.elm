@@ -187,7 +187,7 @@ logContent label xsParser =
 
 listParser : Parser s a -> Parser s (List a)
 listParser el =
-    brackets <| commaSeparated_ el
+    brackets (commaSeparated el <|> whitespace *> succeed [])
 
 
 tupleParser : Parser s a -> Parser s (List a)
