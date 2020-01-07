@@ -1,4 +1,4 @@
-module Meta exposing (multiline, oneLine, statements)
+module Meta exposing (multiline, oneLine, statements, whitespace)
 
 import Ast.Common exposing (..)
 import Ast.Expression exposing (Expression(..))
@@ -30,8 +30,8 @@ oneLine =
                                 PApplication
                                     (addMeta 0 4 <| PVariable "f")
                                     (addMeta 0 6 <| PVariable "x")
-                          , addMeta 0 11 <|
-                                BinOp (addMeta 0 11 <| Variable "+")
+                          , addMeta 0 12 <|
+                                BinOp (addMeta 0 12 <| Variable "+")
                                     (addMeta 0 10 <| Variable "x")
                                     (addMeta 0 14 <| Literal <| Float 1.2)
                           )
@@ -47,11 +47,11 @@ oneLine =
                                 , addMeta 0 5 <| PVariable "y"
                                 ]
                         ]
-                        (addMeta 0 12 <|
-                            BinOp (addMeta 0 12 <| Variable "++")
+                        (addMeta 0 13 <|
+                            BinOp (addMeta 0 13 <| Variable "++")
                                 (addMeta 0 11 <| Variable "x")
-                                (addMeta 0 19 <|
-                                    BinOp (addMeta 0 19 <| Variable "++")
+                                (addMeta 0 20 <|
+                                    BinOp (addMeta 0 20 <| Variable "++")
                                         (addMeta 0 16 <| Literal <| String ":")
                                         (addMeta 0 23 <| Variable "y")
                                 )
@@ -73,6 +73,46 @@ oneLine =
         List.map
             (\( input, expectation ) ->
                 test ("One line: " ++ input) (\() -> isExpression expectation input)
+            )
+            cases
+
+
+whitespace : Test
+whitespace =
+    let
+        cases =
+            [ ( "let x = 2 + 2 in x"
+              , addMeta 0 0 <|
+                    Let
+                        [ ( addMeta 0 4 <| PVariable "x"
+                          , addMeta 0 10 <|
+                                BinOp
+                                    (addMeta 0 10 <| Variable "+")
+                                    (addMeta 0 8 <| Literal (Integer 2))
+                                    (addMeta 0 12 <| Literal (Integer 2))
+                          )
+                        ]
+                        (addMeta 0 17 <| Variable "x")
+              )
+            , ( "let     x = 2    + 2 in    x"
+              , addMeta 0 0 <|
+                    Let
+                        [ ( addMeta 0 8 <| PVariable "x"
+                          , addMeta 0 17 <|
+                                BinOp
+                                    (addMeta 0 17 <| Variable "+")
+                                    (addMeta 0 12 <| Literal (Integer 2))
+                                    (addMeta 0 19 <| Literal (Integer 2))
+                          )
+                        ]
+                        (addMeta 0 27 <| Variable "x")
+              )
+            ]
+    in
+    describe "Whitespace location" <|
+        List.map
+            (\( input, expectation ) ->
+                test ("White space: " ++ input) (\() -> isExpression expectation input)
             )
             cases
 
@@ -160,12 +200,12 @@ f s = text <| s ++ s
                             (addMeta 5 2 <| PVariable "s")
                     )
                 <|
-                    addMeta 5 10 <|
-                        BinOp (addMeta 5 10 <| Variable "<|")
+                    addMeta 5 11 <|
+                        BinOp (addMeta 5 11 <| Variable "<|")
                             (addMeta 5 6 <| Variable "text")
                         <|
-                            addMeta 5 15 <|
-                                BinOp (addMeta 5 15 <| Variable "++")
+                            addMeta 5 16 <|
+                                BinOp (addMeta 5 16 <| Variable "++")
                                     (addMeta 5 14 <| Variable "s")
                                     (addMeta 5 19 <| Variable "s")
             ]
