@@ -8,6 +8,7 @@ module Expression exposing
     , letExpressions
     , lists
     , literals
+    , negation
     , records
     , stringLiterals
     , tuples
@@ -84,6 +85,20 @@ literals =
         , intLiterals
         , floatLiterals
         , stringLiterals
+        ]
+
+
+negation : Test
+negation =
+    describe "Negation"
+        [ test "simple negation" <| \() -> "-g" |> isExpressionSansMeta (app (var "-") (var "g"))
+        , test "simple subtraction" <| \() -> "g - g" |> isExpressionSansMeta (binOp (var "-") (var "g") (var "g"))
+        , test "subtraction without whitespace" <| \() -> "g-g" |> isExpressionSansMeta (binOp (var "-") (var "g") (var "g"))
+        , test "application with negated argument" <| \() -> "g -g" |> isExpressionSansMeta (app (var "g") (app (var "-") (var "g")))
+        , test "subtraction and negation" <| \() -> "g - -g" |> isExpressionSansMeta (binOp (var "-") (var "g") (app (var "-") (var "g")))
+        , test "subtraction of negations" <| \() -> "-g - -g" |> isExpressionSansMeta (binOp (var "-") (app (var "-") (var "g")) (app (var "-") (var "g")))
+        , test "subtraction of negations without one space" <| \() -> "-g- -g" |> isExpressionSansMeta (binOp (var "-") (app (var "-") (var "g")) (app (var "-") (var "g")))
+        , test "negation with whitespace" <| \() -> fails "- g"
         ]
 
 

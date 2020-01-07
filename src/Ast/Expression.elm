@@ -272,6 +272,15 @@ successOrEmptyList p =
     lazy <| \() -> choice [ p, succeed [] ]
 
 
+unary : OpTable -> Parser s MExp
+unary ops =
+    -- support only (-), as far as I can tell there are no other unary operators
+    withMeta <|
+        Application
+            <$> (withMeta <| Variable <$> Combine.string "-")
+            <*> variable
+
+
 binary : OpTable -> Parser s MExp
 binary ops =
     lazy <|
@@ -319,6 +328,7 @@ term ops =
                 , recordUpdate ops
                 , record ops
                 , simplifiedRecord
+                , unary ops
                 ]
 
 

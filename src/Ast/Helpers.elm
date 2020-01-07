@@ -116,7 +116,7 @@ commaSeparated_ p =
 
 name : Parser s Char -> Parser s String
 name p =
-    String.cons <$> p <*> regex "[a-zA-Z0-9-_]*"
+    String.cons <$> p <*> regex "[a-zA-Z0-9_]*"
 
 
 loName : Parser s String
