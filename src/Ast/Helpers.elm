@@ -3,6 +3,7 @@ module Ast.Helpers exposing
     , commaSeparated
     , commaSeparated_
     , countIndent
+    , cycle
     , emptyTuple
     , exactIndentation
     , funName
@@ -25,7 +26,7 @@ module Ast.Helpers exposing
     , tupleParser
     , upName
     , varName
-    , wild
+    , wildcard
     )
 
 import Ast.Common exposing (..)
@@ -121,7 +122,7 @@ name p =
 
 loName : Parser s String
 loName =
-    wild <|> varName
+    wildcard <|> varName
 
 
 funName : Parser s String
@@ -129,8 +130,8 @@ funName =
     choice [ varName, parens operator ]
 
 
-wild : Parser s String
-wild =
+wildcard : Parser s String
+wildcard =
     string "_"
 
 
@@ -222,3 +223,19 @@ spacesOrIndentedNewline indentation =
 countIndent : Parser s Int
 countIndent =
     newline *> spaces >>= (String.filter (\char -> char == ' ') >> String.length >> succeed)
+
+
+{-| Cycle combinator executes the first parser passing the next parser as an argument
+thanks to that the parser can utilize self recursion in the most lazy way possible
+
+cycle [parserA, parserB, parserC] is equal to
+parserA parserB
+parserB parserC
+parserC parserA
+
+-}
+cycle : List (Parser s a -> Parser s a) -> Parser s a
+cycle parsers =
+    lazy <|
+        \() ->
+            List.foldr identity (cycle parsers) parsers

@@ -6,80 +6,51 @@ import Ast.Literal exposing (..)
 import Combine exposing (..)
 
 
-wildParser : Parser s MPattern
-wildParser =
-    withMeta <| always PWild <$> wild
-
-
-varParser : Parser s MPattern
-varParser =
-    withMeta <| PVariable <$> funName
-
-
-constructorParser : Parser s MPattern
-constructorParser =
-    withMeta <| PConstructor <$> upName
-
-
-
--- Our grammar is
--- pattern -> terminal | constructor | tuple | list | cons | as | (pattern)
--- terminal -> wild | var | literal | record
--- constructor -> name constructorPatterns
--- constructorPatterns -> pattern constructorPatterns | epsilon
--- tuple -> (tupleElems)
--- tupleElems -> pattern, tupleElems | epsilon
--- list -> [listElems]
--- listElems -> pattern, listElems | epsilon
--- cons -> pattern :: pattern
--- as -> pattern as varName
--- precedence describes which patterns' bind is stronger, in increasing order
--- in case of left associativity, there is an unparsable left recursion, therefore I used
--- -- Elimination of left recursion:
--- -- A -> A a | b
--- -- ------------
--- -- A -> b A'
--- -- A' -> a A' | epsilon
-
-
-{-| Parse a pattern
+{-| Parses a pattern for matching
 -}
 pattern : Parser s MPattern
 pattern =
-    lazy <| \() -> List.foldr identity pattern precedence
-
-
-precedence : List (Parser s MPattern -> Parser s MPattern)
-precedence =
-    [ asParser, consParser, appParser, terminalParser ]
-
-
-asParser : Parser s MPattern -> Parser s MPattern
-asParser next =
-    lazy <| \() -> next >>= asParser_
-
-
-asParser_ : MPattern -> Parser s MPattern
-asParser_ a =
     lazy <|
         \() ->
-            ((withMeta <| PAs a <$> (symbol "as" *> varName)) >>= asParser_)
-                <|> succeed a
+            cycle
+                [ asParser
+                , consParser
+                , appParser
+                , terminalParser
+                ]
 
 
+{-| Parses an `as` keyword used to assign another name to an expression in pattern
+-}
+asParser : Parser s MPattern -> Parser s MPattern
+asParser next =
+    lazy <|
+        \() ->
+            choice
+                [ (withMeta <| PAs <$> next <*> (symbol "as" *> varName)) >>= (asParser << succeed)
+                , next
+                ]
+
+
+{-| Parses a cons (::) operator recursively
+-}
 consParser : Parser s MPattern -> Parser s MPattern
 consParser next =
     lazy <|
         \() ->
-            (withMeta <|
-                PCons
-                    <$> next
-                    <* withMeta (symbol "::")
-                    <*> consParser next
-            )
-                <|> next
+            choice
+                [ withMeta <|
+                    PCons
+                        <$> next
+                        <* withMeta (symbol "::")
+                        <*> consParser next
+                , next
+                ]
 
 
+{-| Parses an application in a pattern. Used both for tagged union constructors
+and for function definitions in let..in
+-}
 appParser : Parser s MPattern -> Parser s MPattern
 appParser next =
     lazy <|
@@ -95,7 +66,6 @@ appParser next =
                         )
                         next
                 )
-                <|> next
 
 
 terminalParser : Parser s MPattern -> Parser s MPattern
@@ -103,7 +73,7 @@ terminalParser next =
     lazy <|
         \() ->
             choice
-                [ wildParser
+                [ wildcardParser
                 , varParser
                 , constructorParser
                 , withMeta <| PLiteral <$> literalParser
@@ -112,6 +82,20 @@ terminalParser next =
                 , withMeta <| PList <$> listParser next
                 , parens next
                 ]
+{-| Parsers a distinguishable wildcard variable specified as an underscore -}
+wildcardParser : Parser s MPattern
+wildcardParser =
+    withMeta <| always PWildcard <$> wildcard
+
+{-| Parser a variable in a pattern -}
+varParser : Parser s MPattern
+varParser =
+    withMeta <| PVariable <$> funName
+
+{-| Parses a constructor function for a tagged union without its parameters -}
+constructorParser : Parser s MPattern
+constructorParser =
+    withMeta <| PConstructor <$> upName
 
 
 applicationToList : MPattern -> List MPattern

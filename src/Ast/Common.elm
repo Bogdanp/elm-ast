@@ -86,7 +86,7 @@ type Literal
 {-| Pattern to match
 -}
 type Pattern
-    = PWild
+    = PWildcard
     | PVariable Name
     | PConstructor Name
     | PLiteral Literal
