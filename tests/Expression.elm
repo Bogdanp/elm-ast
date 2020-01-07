@@ -360,7 +360,11 @@ lists =
 records : Test
 records =
     describe "Record"
-        [ test "Simple record" <|
+        [ test "Empty record" <|
+            \() ->
+                "{}"
+                    |> isExpressionSansMeta (record [])
+        , test "Simple record" <|
             \() ->
                 "{a = b}"
                     |> isExpressionSansMeta
